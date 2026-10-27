@@ -1,0 +1,12 @@
+# Install once with: uv tool install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: check-customer-data
+        name: no customer device data
+        language: python
+        entry: python scripts/check_customer_data.py
