@@ -4,6 +4,7 @@ Sample secrets are assembled at runtime so this file doesn't trip the check itse
 """
 
 import importlib.util
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -20,11 +21,13 @@ SP = " "
     "line",
     [
         "username admin password" + SP + "7 0822455D0A16",
+        "username admin password" + SP + "0 Plain1Text",
         "enable secret" + SP + "5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0",
         "username ops secret"
         + SP
         + "9 $9$nhEmQVczB7dqsO$X.HsgL6x1il0RxkOSSvyQYwucySCt7qFm4v7pqCxkKM",
         "snmp-server" + SP + "community Pub1ic RO",
+        "snmp-server" + SP + "community 8 Pub1ic RO",
         "    set password" + SP + "ENC SH2Bk7t5hZ3lPa9kE0Q==",
         "    set psksecret" + SP + "ENC 4mUcZzYp1qO1sQ==",
         "-----BEGIN RSA" + SP + "PRIVATE KEY-----",
@@ -39,6 +42,8 @@ def test_unmasked_device_secrets_are_caught(line):
     [
         "enable secret" + SP + "5 <masked:3fa1>",
         "snmp-server" + SP + "community **** RO",
+        "snmp-server" + SP + "community 0 <masked:9c2e> RO",
+        "username admin password" + SP + "0 <masked:41d0>",
         "    set password" + SP + "ENC MASKED",
         "secret = models.CharField(max_length=200)",
         "def check_secret(self, secret: str) -> bool:",
@@ -69,6 +74,15 @@ def test_main_reports_and_fails(tmp_path, capsys):
     assert check.main([str(good)]) == 0
     assert check.main([str(good), str(bad)]) == 1
     assert "notes.txt:1: unmasked SNMP community" in capsys.readouterr().err
+
+
+def test_tracked_files_keeps_unusual_names(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    subprocess.run(["git", "init", "-q"], check=True)  # noqa: S607
+    (tmp_path / "M\u00fcnchen-running-config.txt").write_text("hostname r1\n")
+    subprocess.run(["git", "add", "."], check=True)  # noqa: S607
+    assert check.tracked_files() == ["M\u00fcnchen-running-config.txt"]
+    assert check.main([]) == 1
 
 
 def test_the_repo_itself_is_clean():

@@ -22,10 +22,12 @@ _UNMASKED = r"(?!<|\*{3,}|MASKED\b)\S+"
 
 SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
     "Cisco type 7 password": re.compile(r"\bpassword 7 [0-9A-Fa-f]{4,}"),
+    "Cisco clear-text password": re.compile(r"\bpassword 0 " + _UNMASKED),
     "Cisco secret": re.compile(r"\b(?:enable )?secret [0589] " + _UNMASKED),
     # Plain-text form only; the typed form (with a 0, 5, 8 or 9 first) is the pattern above.
     "Cisco enable secret": re.compile(r"\benable secret (?![0589] )" + _UNMASKED),
-    "SNMP community": re.compile(r"\bsnmp-server community " + _UNMASKED),
+    # An optional 0 or 8 type comes before the value; the value itself is what gets checked.
+    "SNMP community": re.compile(r"\bsnmp-server community (?:(?![08] )|[08] )" + _UNMASKED),
     "FortiOS encrypted secret": re.compile(
         r"\bset (?:password|passwd|psksecret|private-key|key|auth-pwd|priv-pwd) ENC " + _UNMASKED
     ),
@@ -70,13 +72,13 @@ def check_file(path: str) -> list[str]:
 
 
 def tracked_files() -> list[str]:
+    # -z keeps unusual file names unquoted, so every tracked file is really opened.
     out = subprocess.run(  # noqa: S603
-        ["git", "ls-files"],  # noqa: S607
+        ["git", "ls-files", "-z"],  # noqa: S607
         check=True,
         capture_output=True,
-        text=True,
     ).stdout
-    return out.splitlines()
+    return [name for name in out.decode("utf-8", "surrogateescape").split("\0") if name]
 
 
 def main(argv: list[str] | None = None) -> int:
