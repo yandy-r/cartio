@@ -4,8 +4,9 @@ Cartio is IT Cloud Network's in-house tool for discovering and assessing custome
 Collectors run inside each customer network and dial out to one central controller, so an
 engineer connects once and sees every customer. Version 1 is read-only.
 
-Planning, ADRs and issues live in the Linear project "Cartio v1". The stack is Python for
-both the collector and the controller (ADR-0006).
+Planning, ADRs and issues live in the Linear project "Cartio v1". The ADRs are also copied
+into [docs/adr](docs/adr/README.md). The stack is Python for both the collector and the
+controller (ADR-0006).
 
 ## Layout
 
@@ -23,6 +24,13 @@ Install [uv](https://docs.astral.sh/uv/), then:
 ```sh
 uv sync
 uv run pytest
+```
+
+Then install the commit hooks, which block credentials and customer device data:
+
+```sh
+uv tool install pre-commit
+pre-commit install
 ```
 
 Run a controller and a collector locally:
@@ -69,7 +77,8 @@ The controller reads its settings from the environment:
 
 - Drivers are read-only in v1 (ADR-0004). A non-read command needs an ADR.
 - No customer data in the repo: no real configs, outputs, IPs, hostnames or credentials in code,
-  tests or issues.
+  tests or issues. gitleaks and `scripts/check_customer_data.py` enforce the common cases, in
+  pre-commit and in CI. Sanitized test fixtures go under `tests/fixtures/sanitized/`.
 - Secrets are masked at the collector before anything leaves it (ADR-0003).
 - Every query and endpoint is scoped to one customer, with tests that try to cross customers.
 - Prefer MIT, BSD or Apache licensed dependencies, especially in the collector.
