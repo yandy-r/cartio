@@ -1,0 +1,13 @@
+[project]
+name = "cartio-core"
+version = "0.1.0"
+description = "Shared code for the Cartio collector and controller: the wire protocol, and later parsers, masking and checks."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cartio_core"]
