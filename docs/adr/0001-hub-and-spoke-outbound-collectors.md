@@ -17,6 +17,7 @@ Customer security teams generally refuse new inbound firewall rules, and many si
 * **Proposed:** collectors **only make outbound connections** to the controller (HTTPS on 443, through a proxy if required). The controller never connects into a customer network.
 * **Proposed:** each collector authenticates with a per-collector client certificate (mTLS) issued at enrollment from a one-time token. Certificates can be revoked from the controller.
 * **Proposed:** the collector pulls jobs (long-poll or websocket over the same outbound connection) and pushes results. Results are queued locally when offline and synced later, idempotently.
+* **Proposed (from review):** the offline replay contract. Every job has an id from the controller. Every result carries its job id, the collector id and a result id that the collector makes once. The controller acknowledges each result by its result id, and the collector keeps a result until it is acknowledged. A result id the controller already holds is acknowledged again and not stored twice. The check-in protocol in the repo doesn't do this yet.
 * **Proposed:** each collector belongs to exactly one customer and can only receive that customer's jobs and credentials.
 
 ## Consequences
@@ -25,7 +26,7 @@ Customer security teams generally refuse new inbound firewall rules, and many si
 * Collector must handle reconnects, offline queueing and replay safely.
 * The controller is a single point of management: its availability and security matter a lot (see controller hosting spike).
 * TLS-inspecting customer proxies may break mTLS; we need a documented fallback (for example pinned server cert plus token auth) and a test against a proxy.
-* Revoking a collector is immediate and central.
+* Revoking a collector is central. **Proposed (from review):** the controller checks each collector's certificate against its own revocation list on every new connection, and closes that collector's open connections when it is revoked, so revocation takes effect at once rather than at certificate expiry. Short-lived certificates are the alternative.
 
 ## Alternatives considered
 

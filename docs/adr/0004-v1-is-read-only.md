@@ -14,7 +14,7 @@ Yandy: v1 is mostly network assessments and discovery, to propose solutions, fix
 * **Decided by Yandy:** v1 discovers, records, compares and reports. It never changes customer devices.
 * **Proposed enforcement:**
   * Vendor drivers in v1 expose only read operations (show commands, GET API calls, SNMP get/walk). No config-mode commands, no POST/PUT/DELETE to device APIs, no SNMP set.
-  * SSH drivers use an allow-list of command prefixes (`show`, `get`, `diagnose` read-only subset for FortiOS, and similar) and reject anything else, with tests.
+  * SSH drivers check each whole command against a per-vendor allow-list of exact read commands and their allowed arguments, not just the first word, and reject anything else, including output redirection, pipes to anything that writes, and chained commands. Negative tests cover each rejected form. (Tightened after review: a prefix list such as `show` or `diagnose` would let a write slip through as an argument or modifier.)
   * Onboarding asks customers for read-only accounts (ADR-0003).
 
 ## Consequences

@@ -57,7 +57,7 @@ What this means:
 * **Controller:** Django with PostgreSQL.
   * Why Django: mature auth, admin, ORM and migrations for customers, engagements and audit.
   * It's the same framework as NetBox, so the NetBox plugin route in [YAN-1642](https://linear.app/yandy-r/issue/YAN-1642/spike-build-on-open-source-netbox-and-similar-or-write-in-house) stays open.
-  * The collector channel (ADR-0001, [YAN-1640](https://linear.app/yandy-r/issue/YAN-1640/spike-outbound-transport-and-proxy-compatibility)) runs as an async endpoint or a small companion service.
+  * The collector channel (ADR-0001, [YAN-1640](https://linear.app/yandy-r/issue/YAN-1640/spike-outbound-transport-and-proxy-compatibility)) runs on the controller side as an async endpoint or a small companion service. Collectors open the connection to it, and the controller never connects out to them.
   * FastAPI is the alternative if Django feels heavy.
 * **Engineer UI:** server-rendered Django templates with htmx for v1, with no separate front-end build.
 * **Rejected for now:**

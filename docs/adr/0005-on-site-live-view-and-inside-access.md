@@ -18,10 +18,11 @@ In On site mode (ADR-0002) network data stays in a customer-chosen store. The qu
 
 **Proposed details:**
 
-* Both paths are available by default for every On site customer, so engineers keep "connect once" where the customer allows it.
-* One per-customer switch, **Live view allowed** (on by default), lets a customer who requires it limit access to inside-only. This is the only extra setting, to keep choices few.
+* Both paths are available for every On site customer whose onboarding allows live view, so engineers keep "connect once" where the customer allows it.
+* One per-customer switch, **Live view allowed**, lets a customer who requires it limit access to inside-only. This is the only extra setting, to keep choices few. **Changed after review:** the switch is set explicitly during onboarding and stays off until then, rather than being on by default, so no data passes through the controller before the customer has chosen.
 * Turning the switch on or off is audit-logged.
-* Reports for On site customers are generated from on-site data and saved to the on-site store, whichever path the engineer used.
+* **Proposed (from review):** turning the switch off ends every open live view for that customer at once, and the controller drops any payload that arrives for it afterwards. The collector also checks the switch before it answers a live view request.
+* Reports for On site customers are generated from on-site data and saved to the on-site store, whichever path the engineer used. **Proposed (from review):** the on-site collector builds and saves the report itself. The controller only sends the request and gets back saved, or failed with a reason, and keeps nothing of the report. If saving fails, the collector keeps the report locally and retries, and the engineer sees that it isn't saved yet.
 
 ## Consequences
 

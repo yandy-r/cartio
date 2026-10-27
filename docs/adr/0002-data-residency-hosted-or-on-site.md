@@ -21,14 +21,14 @@ Yandy: some customers, especially under HIPAA and PCI, may require collected dat
 
 * **Proposed:** in On site mode, device credentials are also stored on site, never on the controller.
 * **Proposed:** the mode is a property of the customer, not of a collector or engagement, so all of a customer's data follows one rule.
-* **Proposed:** changing mode is an explicit admin action that is audit-logged; moving from Hosted to On site deletes that customer's network data from the controller after export.
+* **Proposed:** changing mode is an explicit admin action that is audit-logged; moving from Hosted to On site deletes that customer's network data from the controller after export. **Proposed (from review):** deletion waits until the on-site collector confirms that it wrote the export to the on-site store and the export's checksums match. If the export or the check fails, the controller keeps its copy and the change can be retried.
 
 ## Consequences
 
 * Two code paths for storage; keep them behind one storage interface so drivers and checks don't care.
 * On site customers need a reachable store and a collector with write access to it; the onboarding checklist must cover that.
 * Reports for On site customers are generated on the collector side or in the browser from on-site data, not stored centrally.
-* Compliance answers become simple to state: "On site mode: no network data or credentials leave your network."
+* Compliance answers become simple to state: "On site mode: your network data is stored only in your network, and credentials never leave it. With live view on, data passes through our controller in memory and is never stored there (ADR-0005)." (Corrected after review: the earlier wording said no network data leaves the network, which live view contradicts.)
 
 ## Alternatives considered
 
