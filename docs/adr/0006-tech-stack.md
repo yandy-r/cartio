@@ -77,4 +77,4 @@ What this means:
 ## Open
 
 * The hello-world collector landed in yandy-r/cartio#1 ([YAN-1646](https://linear.app/yandy-r/issue/YAN-1646/create-the-repo-ci-and-project-skeleton)).
-* **[Proposed]** The new repo is named for Cartio, not built on path-finder.
+* **[Decided]** Yandy created the repo as yandy-r/cartio, new and named for Cartio, not built on path-finder.
