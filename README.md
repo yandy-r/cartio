@@ -44,6 +44,8 @@ uv run cartio-collector checkin --once
 
 The check-in appears under Collectors in the admin at http://127.0.0.1:8000/admin/.
 
+The collector only accepts plain `http` for a controller on the same machine. Any other controller URL must use `https`.
+
 ## Configuration
 
 The controller reads its settings from the environment:

@@ -23,9 +23,11 @@ class CollectorConfig:
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # Create the file readable by its owner only; it holds the collector secret.
+        # Keep the file readable by its owner only; it holds the collector secret. The mode
+        # given to open only applies to a new file, so tighten an existing one too.
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
+            os.chmod(path, 0o600)
             json.dump(asdict(self), f, indent=2)
 
     @classmethod

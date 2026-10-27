@@ -25,10 +25,17 @@ def _cmd_enroll(args: argparse.Namespace) -> int:
 def _cmd_checkin(args: argparse.Namespace) -> int:
     config = CollectorConfig.load(args.config)
     while True:
-        result = check_in(config)
-        print(f"Checked in: {result.status}, {len(result.jobs)} job(s) waiting.")
-        if args.once:
-            return 0
+        try:
+            result = check_in(config)
+        except httpx.TransportError as exc:
+            # A network blip shouldn't stop a running collector; a refusal still does.
+            if args.once:
+                raise
+            print(f"warning: check-in failed, retrying: {exc}", file=sys.stderr)
+        else:
+            print(f"Checked in: {result.status}, {len(result.jobs)} job(s) waiting.")
+            if args.once:
+                return 0
         time.sleep(args.interval)
 
 
