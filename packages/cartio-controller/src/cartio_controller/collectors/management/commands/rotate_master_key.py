@@ -36,5 +36,5 @@ class Command(BaseCommand):
             raise CommandError(f"{left} keys still aren't on the new master key. Run it again.")
         self.stdout.write(
             "Every key is on the new master key. Unset CARTIO_PREVIOUS_MASTER_KEY_FILE and restart "
-            "the controller. Keep the old key's backup while older database backups exist."
+            "the controller. Keep the old key's backup until older database backups expire."
         )

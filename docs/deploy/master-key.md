@@ -60,8 +60,10 @@ nobody re-enrolls, and the controller keeps working throughout.
    everywhere and restart the controller. If you're unsure whether an old process wrote
    anything, run `rotate_master_key` once more first: it rewraps any stragglers and confirms
    nothing is left. From then on the old key opens nothing in the live database.
-6. Keep the old key's backup until every database backup made before the rotation has expired,
-   then destroy it.
+6. Keep the old key's backup until every database backup made before step 5 has expired, backups
+   taken while the rotation ran included, then destroy it. A backup taken mid-rotation holds keys
+   wrapped by both master keys, so restoring it needs both: set the old one as
+   `CARTIO_PREVIOUS_MASTER_KEY_FILE` and run `rotate_master_key` again.
 
 If the controller reports that a secret "was wrapped by another master key", the key that wrapped
 it isn't configured. The error names the key's id. Restore that key file, or set it as
