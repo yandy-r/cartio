@@ -14,6 +14,7 @@ from cartio_controller.collectors.models import Customer, Engagement
 # Per-customer screens, by URL name. The switcher keeps the engineer on one of these.
 SCREENS = {
     "customer": "Overview",
+    "sitemap": "Site map",
     "inventory": "Inventory",
     "findings": "Findings",
     "compare": "Compare",

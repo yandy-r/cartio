@@ -38,6 +38,7 @@ AUDIT_KINDS = {
             _A.AUDIT_EXPORTED,
             _A.MASTER_KEY_ROTATED,
             _A.INVENTORY_EXPORTED,
+            _A.SITEMAP_EXPORTED,
         ],
     ),
 }

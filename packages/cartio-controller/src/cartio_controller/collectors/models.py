@@ -630,6 +630,7 @@ class AuditEvent(CustomerOwned):
         FINDING_RESTORED = "finding.restored", "Finding restored"
         REPORT_EXPORTED = "report.exported", "Report exported"
         COMPARE_EXPORTED = "compare.exported", "Config diff exported"
+        SITEMAP_EXPORTED = "sitemap.exported", "Site map exported"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)

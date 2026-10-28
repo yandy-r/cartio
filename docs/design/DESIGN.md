@@ -164,8 +164,7 @@ The landing page after sign-in. An engineer connects once and sees every custome
 
 Until the screens and data they lean on land, the controller's version (YAN-1733) differs:
 
-* A row opens the customer's Overview, with the engagement in the URL, until the Site map
-  (YAN-1663) exists.
+* A row opens the customer's Site map, with the engagement in the URL.
 * **New customer** opens the onboarding wizard (YAN-1734). Engineers who can't add customers,
   sites, engagements and collectors don't see it. **New engagement** opens the admin's add form
   until engagement setup (YAN-1735) exists, and only for engineers who may add engagements.
@@ -278,6 +277,26 @@ The per-site L2/L3 map (YAN-1663), the main picture of a customer's network.
 * **Side panel with nothing pinned:** a **site summary**: device counts by role, findings by
   severity, and devices that need attention. Never the last device that was pinned.
 * **Export:** PNG and SVG of the current view, and the device list as CSV.
+* **As built (YAN-1663):**
+  * Site, layer, filters and the pinned device are in the URL, so a map can be linked to and the
+    back button works. The server lays the map out (top of the network first: external peers,
+    then firewalls and routers, then hops from them) from L2 and L3 links together, so switching
+    layer doesn't move devices. Filters dim what doesn't match rather than hiding it.
+  * Cartio doesn't store a device role, so the role comes from the platform, model and host name
+    (`sitemap.role_of`); anything it can't tell is "Unknown role".
+  * Discovery doesn't place devices on a site yet, so devices without one get a "No site yet" map.
+    A device on another site that this site links to is drawn greyed with its site's name;
+    clicking it opens that site's map with it pinned.
+  * An L2 link counts as seen from both ends when each device reported it (CDP and LLDP for the
+    same ports are one link). A link to a device that was never polled is always one end only.
+  * L2 links show their interfaces in a hover title rather than a card; L3 links are labelled
+    with protocol and subnet on the map.
+  * **Connect to…** is shown disabled until the Connect modal (YAN-1739) lands. The prototype's
+    links table and JSON graph exports and "Add to report" aren't built; the report's topology
+    page (YAN-1745) draws from the same SVG.
+  * PNG is drawn in the browser from the SVG the export sends, at twice the size, so the
+    controller needs no image library. Every export, PNG included, is logged as
+    `sitemap.exported`.
 
 ### 6. Inventory
 
