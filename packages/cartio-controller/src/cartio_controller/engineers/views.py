@@ -327,6 +327,9 @@ def onboard(request):
             return redirect("engineers:onboard")
         return _create_customer(request, state)
 
+    if request.POST.get("step") != str(state["step"]):
+        # A page from before Back, or from another tab: its fields belong to another step.
+        return redirect("engineers:onboard")
     onboarding.save_input(state, request.POST)
     request.session[onboarding.SESSION_KEY] = state
     request.session.modified = True
@@ -334,13 +337,13 @@ def onboard(request):
     if action == "add_site" and step == 3:
         onboarding.add_site(state)
     elif action.startswith("remove_site:") and step == 3:
-        index = action.partition(":")[2]
-        if index.isdigit():
-            onboarding.remove_site(state, int(index))
+        index = _small_number(action.partition(":")[2])
+        if index is not None:
+            onboarding.remove_site(state, index)
     elif action == "back":
         onboarding.go_to(state, step - 1)
-    elif action.startswith("goto:") and action[5:].isdigit():
-        target = int(action[5:])
+    elif action.startswith("goto:") and _small_number(action[5:]) is not None:
+        target = _small_number(action[5:])
         errors = onboarding.errors_for(state, step) if target > step else {}
         if errors:
             return _onboarding_page(request, state, errors, status=400)
@@ -354,6 +357,11 @@ def onboard(request):
     return redirect("engineers:onboard")
 
 
+def _small_number(text: str) -> int | None:
+    # isdecimal, unlike isdigit, accepts only what int() parses ("²" passes isdigit).
+    return int(text) if text.isdecimal() and len(text) <= 3 else None
+
+
 def _create_customer(request, state):
     incomplete = onboarding.first_incomplete(state)
     if incomplete is not None:
@@ -365,10 +373,13 @@ def _create_customer(request, state):
     try:
         customer, tokens = onboarding.create(state, request.user.get_username())
     except IntegrityError:
-        # Another engineer created a customer with this name meanwhile.
+        # Most likely another engineer created a customer with this name meanwhile.
         onboarding.go_to(state, 1)
         request.session.modified = True
-        return _onboarding_page(request, state, onboarding.errors_for(state, 1), status=409)
+        errors = onboarding.errors_for(state, 1) or {
+            "name": "The customer couldn't be created. Check the name and try again."
+        }
+        return _onboarding_page(request, state, errors, status=409)
     # The wizard is done: the next visit, or "Onboard another customer", starts a fresh one.
     request.session.pop(onboarding.SESSION_KEY, None)
     controller = request.build_absolute_uri("/").rstrip("/")

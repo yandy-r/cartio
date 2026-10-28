@@ -11,6 +11,7 @@
 {% block content %}
 <form class="wizard" id="wizard" method="post" action="{% url 'engineers:onboard' %}" novalidate>
   {% csrf_token %}
+  <input type="hidden" name="step" value="{{ step }}">
   {# Enter in a field continues, rather than pressing the first step in the list. #}
   <button class="sr-only" type="submit" name="action" value="next" tabindex="-1" aria-hidden="true">Continue</button>
 

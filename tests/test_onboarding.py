@@ -33,6 +33,9 @@ def engineer(client):
 
 
 def _post(client, action="next", **fields):
+    # The step the page was rendered for, as the wizard's hidden field sends it.
+    state = client.session.get("cartio_onboarding")
+    fields.setdefault("step", state["step"] if state else 1)
     return client.post(URL, {"action": action, **fields})
 
 
@@ -301,3 +304,21 @@ def test_compliance_tags_show_on_the_customer_list(client, engineer):
     page = client.get("/").content.decode()
     assert "HIPAA" in page
     assert "PCI" in page
+
+
+def test_a_page_from_another_step_changes_nothing(client, engineer):
+    _post(client, name="Acme", compliance=["pci"])
+    # A step 1 page left open in another tab, posted while the wizard is on step 2.
+    assert _post(client, step=1, name="Other").status_code == 302
+    _post(client, "back", data_mode="")
+    page = _page(client)
+    assert 'value="Acme"' in page
+    assert 'value="pci" checked' in page
+
+
+@pytest.mark.parametrize("action", ["goto:²", "remove_site:①", "goto:99999999", "goto:", "bogus"])
+def test_malformed_actions_are_ignored(client, engineer, action):
+    _post(client, name="Acme")
+    _post(client, data_mode="hosted")
+    assert _post(client, action, **{"site-0-name": "HQ"}).status_code == 302
+    assert "Sites and where discovery starts" in _page(client)
