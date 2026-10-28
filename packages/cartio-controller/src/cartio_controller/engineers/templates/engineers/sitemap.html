@@ -42,7 +42,7 @@
           <option value="">All vendors</option>
           {% for vendor in view.vendors %}<option value="{{ vendor }}"{% if vendor == view.vendor %} selected{% endif %}>{{ vendor }}</option>{% endfor %}
         </select>
-        <label class="chip-toggle"><input type="checkbox" name="findings" value="1"{% if view.with_findings %} checked{% endif %}>Has findings</label>
+        <label class="chip-toggle"><input id="sitemap-findings" type="checkbox" name="findings" value="1"{% if view.with_findings %} checked{% endif %}>Has findings</label>
         <noscript><button class="btn" type="submit">Apply</button></noscript>
         {% if view.filtered %}<a href="{{ view.clear_filters_link }}">Clear filters</a>{% endif %}
       </form>
