@@ -195,11 +195,25 @@ class CustomerOwned(models.Model):
         if update_fields is None or _link_fields(type(self)) & set(update_fields):
             self.check_customer_links()
         super().save(*args, **kwargs)
-        self._saved_customer_id = self.customer_id
+        if update_fields is None or {"customer", "customer_id"} & set(update_fields):
+            self._saved_customer_id = self.customer_id
+
+    def _stored_customer_id(self):
+        """The customer this row has in the database, or None for a row not saved yet."""
+        saved = getattr(self, "_saved_customer_id", None)
+        if saved is None and self.pk is not None:
+            # Loaded without its customer (`only()`, `defer()`) or built in memory with a pk.
+            saved = (
+                type(self)
+                .all_customers.filter(pk=self.pk)
+                .values_list("customer_id", flat=True)
+                .first()
+            )
+        return saved
 
     def check_customer_links(self) -> None:
         """Take the customer from a parent record, and refuse a parent of another customer."""
-        saved = getattr(self, "_saved_customer_id", None)
+        saved = self._stored_customer_id()
         if saved is not None and self.customer_id != saved:
             raise CrossCustomerError("A record can't move to another customer.")
         for field in self._meta.concrete_fields:

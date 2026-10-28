@@ -238,3 +238,23 @@ def test_scoped_create_accepts_the_same_customer_in_any_form(acme):
         Site.objects.for_customer(acme).create(name="A", customer_id=str(acme.pk)).customer == acme
     )
     assert Site.objects.for_customer(str(acme.pk)).create(name="B", customer=acme).customer == acme
+
+
+def test_a_record_loaded_or_built_without_its_customer_cannot_move(acme, globex):
+    site = Site.objects.for_customer(acme).create(name="HQ")
+
+    partial = Site.all_customers.only("name").get(pk=site.pk)
+    partial.customer = globex
+    with pytest.raises(CrossCustomerError):
+        partial.save()
+
+    with pytest.raises(CrossCustomerError):
+        Site(pk=site.pk, customer=globex, name="HQ").save()
+
+    # A save of unrelated fields doesn't make a pending customer change look saved.
+    loaded = Site.all_customers.get(pk=site.pk)
+    loaded.customer = globex
+    loaded.save(update_fields=["name"])
+    with pytest.raises(CrossCustomerError):
+        loaded.save()
+    assert Site.all_customers.get(pk=site.pk).customer == acme
