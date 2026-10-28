@@ -1,16 +1,21 @@
 import hashlib
-import hmac
 import ipaddress
 import json
 import secrets
 import uuid
+from datetime import timedelta
 
+from django.conf import settings
 from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Length, Lower
 from django.db.models.lookups import Exact
+from django.utils import timezone
 from django.views.decorators.debug import sensitive_variables
 
 from .validators import validate_compliance, validate_seed_hints
+
+# How long a new collector's enrollment token works (CARTIO_ENROLLMENT_TOKEN_HOURS).
+ENROLLMENT_TOKEN_LIFETIME = timedelta(hours=settings.ENROLLMENT_TOKEN_HOURS)
 
 
 def _hash(value: str) -> str:
@@ -387,15 +392,21 @@ class Collector(CustomerOwned):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Set when the collector is created, cleared when it enrolls.
+    # Set when the collector is created, cleared when it enrolls. The token works once, and
+    # only until `enrollment_expires_at`.
     enrollment_token_hash = models.CharField(max_length=64, blank=True, db_index=True)
+    enrollment_expires_at = models.DateTimeField(null=True, blank=True)
     enrolled_at = models.DateTimeField(null=True, blank=True)
-    secret_hash = models.CharField(max_length=64, blank=True)
+    # The collector's Ed25519 public key, sent at enrollment. It signs every request with the
+    # private key, which never leaves its host (ADR-0009).
+    public_key = models.CharField(max_length=64, blank=True)
 
     hostname = models.CharField(max_length=255, blank=True)
     version = models.CharField(max_length=50, blank=True)
     platform = models.CharField(max_length=200, blank=True)
     last_check_in = models.DateTimeField(null=True, blank=True)
+    # As of the last check-in: the controller's TLS key wasn't the one the collector pinned.
+    tls_inspected = models.BooleanField(default=False, db_default=False)
     # Set once, by `revoke()`. A revoked collector can't enroll, check in or fetch anything.
     revoked_at = models.DateTimeField(null=True, blank=True)
 
@@ -409,33 +420,30 @@ class Collector(CustomerOwned):
     def __str__(self) -> str:
         return f"{self.customer} / {self.name}"
 
-    def issue_enrollment_token(self) -> str:
+    def issue_enrollment_token(self, now=None) -> str:
         """Return a new one-time enrollment token. Only its hash is stored."""
         # Hex, so the token never starts with "-" and is safe to pass on a command line.
         token = secrets.token_hex(32)
         self.enrollment_token_hash = _hash(token)
+        self.enrollment_expires_at = (now or timezone.now()) + ENROLLMENT_TOKEN_LIFETIME
         return token
 
-    def issue_secret(self) -> str:
-        """Return a new collector secret. Only its hash is stored."""
-        secret = secrets.token_urlsafe(32)
-        self.secret_hash = _hash(secret)
-        return secret
-
-    def check_secret(self, secret: str) -> bool:
+    def enrollment_open(self, now=None) -> bool:
+        """Whether the collector still has a token that may be used to enroll."""
         return (
             self.revoked_at is None
-            and bool(self.secret_hash)
-            and hmac.compare_digest(self.secret_hash, _hash(secret))
+            and bool(self.enrollment_token_hash)
+            and self.enrollment_expires_at is not None
+            and (now or timezone.now()) < self.enrollment_expires_at
         )
 
     def revoke(self, when) -> None:
-        """Stop the collector for good: its secret and any unused enrollment token stop working.
+        """Stop the collector for good: its key and any unused enrollment token stop working.
 
         The caller saves the collector and writes the audit event in one transaction.
         """
         self.revoked_at = when
-        self.secret_hash = ""
+        self.public_key = ""
         self.enrollment_token_hash = ""
 
     def scoped(self, model: type[CustomerOwned]) -> CustomerScopedQuerySet:
@@ -465,10 +473,25 @@ class CheckIn(CustomerOwned):
     hostname = models.CharField(max_length=255)
     version = models.CharField(max_length=50)
     platform = models.CharField(max_length=200)
+    tls_inspected = models.BooleanField(default=False, db_default=False)
 
     class Meta(CustomerOwned.Meta):
         ordering = ["-at"]
         get_latest_by = "at"
+
+
+class RequestNonce(CustomerOwned):
+    """A signed request's nonce, kept until its timestamp leaves the clock window, so the same
+    request can't be replayed (ADR-0009)."""
+
+    collector = models.ForeignKey(Collector, on_delete=models.CASCADE, related_name="nonces")
+    nonce = models.CharField(max_length=64)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta(CustomerOwned.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=["collector", "nonce"], name="unique_request_nonce"),
+        ]
 
 
 class CustomerDataKey(CustomerOwned):

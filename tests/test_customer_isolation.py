@@ -1,7 +1,5 @@
 """No data, collector or credential crosses customers, enforced in the data layer (YAN-1649)."""
 
-import json
-
 import pytest
 from cartio_controller.collectors.models import (
     AssessmentRun,
@@ -24,13 +22,17 @@ from cartio_controller.collectors.models import (
     Link,
     LoginEvent,
     RawOutput,
+    RequestNonce,
     RoutingNeighbor,
     Site,
     Source,
     UnscopedQueryError,
 )
-from cartio_core.protocol import CHECKIN_PATH, bearer
+from cartio_core.protocol import CHECKIN_PATH
 from django.apps import apps
+from django.utils import timezone
+
+from tests.signed import CHECKIN, give_key, signed_post
 
 pytestmark = pytest.mark.django_db
 
@@ -51,9 +53,7 @@ def globex():
 
 def _collector(customer, name="vm01"):
     collector = Collector.objects.for_customer(customer).create(name=name)
-    secret = collector.issue_secret()
-    collector.save()
-    return collector, secret
+    return collector, give_key(collector)
 
 
 def _records(customer):
@@ -81,6 +81,9 @@ def _records(customer):
         Collector: collector,
         CheckIn: CheckIn.objects.for_customer(customer).create(
             collector=collector, hostname="vm01", version="1", platform="linux"
+        ),
+        RequestNonce: RequestNonce.objects.for_customer(customer).create(
+            collector=collector, nonce="ab" * 16, expires_at=timezone.now()
         ),
         Credential: credential,
         # Created by the credential's encryption.
@@ -127,6 +130,7 @@ def test_every_table_carries_a_customer():
         "Site",
         "Collector",
         "CheckIn",
+        "RequestNonce",
         "CustomerDataKey",
         "Credential",
         "AuditEvent",
@@ -242,14 +246,9 @@ def test_a_collector_sees_only_its_own_customer(acme, globex):
 
 def test_checkin_is_recorded_under_the_collectors_customer(client, acme, globex):
     _collector(globex, name="vm01")
-    collector, secret = _collector(acme, name="vm02")
+    collector, key = _collector(acme, name="vm02")
 
-    response = client.post(
-        CHECKIN_PATH,
-        data=json.dumps({"hostname": "vm02", "version": "1", "platform": "linux"}),
-        content_type="application/json",
-        HTTP_AUTHORIZATION=bearer(str(collector.id), secret),
-    )
+    response = signed_post(client, collector.id, key, CHECKIN_PATH, CHECKIN)
     assert response.status_code == 200
     stored = CheckIn.all_customers.get()
     assert stored.customer == acme
@@ -258,15 +257,11 @@ def test_checkin_is_recorded_under_the_collectors_customer(client, acme, globex)
 
 
 def test_a_collector_cannot_act_as_another_customers_collector(client, acme, globex):
-    _, acme_secret = _collector(acme)
+    _, acme_key = _collector(acme)
     globex_collector, _ = _collector(globex)
 
-    response = client.post(
-        CHECKIN_PATH,
-        data=json.dumps({"hostname": "vm01", "version": "1", "platform": "linux"}),
-        content_type="application/json",
-        HTTP_AUTHORIZATION=bearer(str(globex_collector.id), acme_secret),
-    )
+    # Acme's collector signs as Globex's: its key isn't Globex's collector's key.
+    response = signed_post(client, globex_collector.id, acme_key, CHECKIN_PATH, CHECKIN)
     assert response.status_code == 401
     assert not CheckIn.all_customers.exists()
 

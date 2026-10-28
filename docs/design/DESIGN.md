@@ -171,8 +171,10 @@ Until the screens and data they lean on land, the controller's version (YAN-1733
 * Open findings say "No findings yet" until findings (YAN-1738) exist, and the summary has no
   critical findings tile. Tags show compliance (HIPAA, PCI, SOC 2), live view on and inside
   access only.
-* The collector hover card says "Not tracked yet" for the certificate and queue until client
-  certificates (YAN-1650) and the job channel (YAN-1651) exist. Needs attention lists offline,
+* The collector hover card shows the TLS path (Direct, or Inspected when the collector's pin saw
+  another TLS key) in place of the certificate, since collectors enroll a key pair rather than a
+  client certificate (ADR-0009, YAN-1650). The queue says "Not tracked yet" until the job channel
+  (YAN-1651) exists. Needs attention lists offline,
   never checked in and not yet enrolled collectors.
 * Tabs (All, Hosted, On site, Archived) replace the old "show archived" link. The prototype's
   **Export list** is left out: the issue doesn't ask for it.
@@ -209,8 +211,9 @@ transaction. It differs from the prototype:
   checked by the API's own validator on **Continue**, rather than added one chip at a time.
 * Step 4 has name, status (Planned or Active), dates and what the assessment covers. Engagements
   have no type yet.
-* Collectors have a name but no "Runs on" choice, and their tokens don't expire yet. The tokens
-  are only in the done page's response; reloading it starts a fresh wizard.
+* Collectors have a name but no "Runs on" choice. Their tokens expire after 24 hours
+  (`CARTIO_ENROLLMENT_TOKEN_HOURS`), and the screen says so. The tokens are only in the done
+  page's response; reloading it starts a fresh wizard.
 * The done page's checklist is text. Its PDF, DOCX and email exports, "Set up scope and
   credentials" (YAN-1735) and "Import files instead" (YAN-1662) come later.
 
@@ -246,13 +249,16 @@ As built (YAN-1736):
 
 * Each tab is its own URL (`collectors`, `jobs`, `audit`), so the switcher and links keep the
   tab. Jobs and Audit show only with the permissions their APIs ask for.
-* A collector has an optional site. Revoking clears its secret and any unused token, so it can't
+* A collector has an optional site. Revoking clears its public key and any unused token, so it can't
   check in, start a run or receive credentials again; a collector that never enrolled shows
   **Cancel enrollment** instead. The confirmation is on the collector's card.
 * The wizard asks for name and site only. The prototype's "Runs on" choice and the 24-hour
-  check-in sparkline are left out until the controller records them. Certificate expiry and the
-  offline queue read "Not tracked yet" until client certificates (YAN-1650) and the job channel
-  (YAN-1651) exist. Enrollment tokens don't expire yet.
+  check-in sparkline are left out until the controller records them. There are no client
+  certificates (ADR-0009), so the card shows **TLS path** (Direct, Inspected, or Not reported yet)
+  instead of certificate expiry, and a collector waiting to enroll shows when its token expires.
+  The offline queue reads "Not tracked yet" until the job channel (YAN-1651) exists.
+  Enrollment tokens expire after 24 hours; an expired one is replaced by revoking the collector
+  and adding a new one.
 * **Start a discovery** and **Run health check** are shown disabled until Engagement setup
   (YAN-1735) and health jobs (YAN-1725) land.
 * The audit filter kinds are Jobs, Collectors, Credentials and Admin. Sign-ins aren't tied to a
