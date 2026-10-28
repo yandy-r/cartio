@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from cartio_controller.collectors.models import Collector, Customer
@@ -14,6 +14,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         with transaction.atomic():
             customer, _ = Customer.objects.get_or_create(name=options["customer"])
+            if customer.is_archived:
+                raise CommandError(f"Customer {customer.name} is archived. Restore it first.")
             collector = Collector(customer=customer, name=options["name"])
             token = collector.issue_enrollment_token()
             collector.save()
