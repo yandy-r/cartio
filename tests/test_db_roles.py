@@ -5,7 +5,7 @@ as the app role named by CARTIO_DB_APP_ROLE. Each half checks its own side.
 """
 
 import pytest
-from cartio_controller.collectors import db_guards
+from cartio_controller.collectors import db_grants, db_guards
 from cartio_controller.collectors.models import (
     AuditEvent,
     CollectionRun,
@@ -14,6 +14,7 @@ from cartio_controller.collectors.models import (
     LoginEvent,
 )
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError, connection, transaction
 
 pytestmark = pytest.mark.django_db
@@ -46,7 +47,8 @@ def _privileges():
     kinds = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"]
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT tablename, tableowner = %s FROM pg_tables WHERE schemaname = 'public'", [ROLE]
+            "SELECT tablename, tableowner = %s FROM pg_tables WHERE schemaname = current_schema()",
+            [ROLE],
         )
         tables = cursor.fetchall()
         result = {}
@@ -74,6 +76,16 @@ def test_the_app_role_gets_row_access_only(owner):
         else:
             expected = {"SELECT", "INSERT", "UPDATE", "DELETE"}
         assert held == expected, table
+
+
+def test_migrate_fails_while_public_can_still_rewrite_the_audit_log(owner):
+    table = AuditEvent._meta.db_table
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute(f"GRANT DELETE ON {table} TO PUBLIC")
+        with pytest.raises(ImproperlyConfigured, match=table):
+            db_grants.grant_app_role()
+        transaction.set_rollback(True)
 
 
 @pytest.fixture

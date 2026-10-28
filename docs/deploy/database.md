@@ -27,8 +27,9 @@ REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 ALTER SCHEMA public OWNER TO cartio_owner;
 ```
 
-Don't make the app role a member of the owner role, or a superuser: either would give it
-the owner's rights back.
+Don't make the app role a member of the owner role, or a superuser, and don't grant table
+privileges to `PUBLIC`: any of these would give it rights back. `migrate` checks for them and
+fails until they're gone.
 
 ## Migrate as the owner, run as the app role
 
@@ -52,9 +53,15 @@ don't survive it. Keep the owner's password out of the running controller's envi
 ## An existing database
 
 A controller that has run as the table owner keeps working as before while
-`CARTIO_DB_APP_ROLE` is unset. To switch it over, create the app role as above, then run
-`migrate` once as the owner with `CARTIO_DB_APP_ROLE` set (it has nothing to apply, but it
-grants), and change the controller's `DATABASE_URL` to the app role.
+`CARTIO_DB_APP_ROLE` is unset. To switch it over:
+
+1. Create whichever role is missing, as above.
+2. Make sure the owner role owns the tables. If the controller's current role is to become the
+   app role, hand its objects over, as a superuser: `REASSIGN OWNED BY cartio_app TO
+   cartio_owner;` in the `cartio` database.
+3. Run `migrate` once as the owner with `CARTIO_DB_APP_ROLE` set. It has nothing to apply, but
+   it grants and checks.
+4. Change the controller's `DATABASE_URL` to the app role.
 
 ## Tests
 
