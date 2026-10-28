@@ -25,6 +25,12 @@ urlpatterns = [
         views.inventory_export,
         name="inventory-export",
     ),
+    path("customers/<int:customer>/findings", views.findings, name="findings"),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/findings",
+        views.findings,
+        name="findings",
+    ),
     path("customers/<int:customer>/collectors", views.collectors, name="collectors"),
     path(
         "customers/<int:customer>/engagements/<int:engagement>/collectors",

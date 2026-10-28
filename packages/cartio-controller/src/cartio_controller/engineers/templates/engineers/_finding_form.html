@@ -1,0 +1,43 @@
+{# Add a finding, or edit the selected one. Check findings keep their devices and evidence. #}
+{% with item=view.selected %}
+<form method="post" action="{{ here }}" class="finding-form" novalidate>
+  {% csrf_token %}
+  {% if view.mode == "edit" %}<input type="hidden" name="action" value="edit"><input type="hidden" name="finding" value="{{ item.key }}">{% else %}<input type="hidden" name="action" value="add">{% endif %}
+  <h2>{% if view.mode == "edit" %}Edit finding{% else %}Add a finding{% endif %}</h2>
+  <p class="hint">{% if view.mode == "add" %}For something the checks didn't catch. It is marked "Added by engineer".{% elif item.manual %}Changes are logged in the audit log.{% else %}Changes are kept on top of the check's result and logged in the audit log.{% endif %}</p>
+  {% if error %}<p class="field-error" role="alert">{{ error }}</p>{% endif %}
+  <label class="field">Title<input type="text" name="title" value="{{ form.title }}" maxlength="200" required></label>
+  <div class="field-row">
+    <label class="field">Severity
+      <select name="severity">{% for value, label in severities %}<option value="{{ value }}"{% if form.severity == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </label>
+    {% if view.mode == "add" or item.manual %}
+    <label class="field">Category
+      <select name="check_id"><option value="">Engineer finding</option>{% for check in found.checks %}<option value="{{ check.id }}"{% if form.check_id == check.id %} selected{% endif %}>{{ check.title }}</option>{% endfor %}</select>
+    </label>
+    {% endif %}
+  </div>
+  {% if view.mode == "edit" and not item.manual %}
+  <label class="field">Why is the severity different from the check's ({{ item.check_severity }})?
+    <textarea name="severity_reason" rows="2">{{ form.severity_reason }}</textarea>
+    <span class="hint">Required if you change it. Shown in the audit log and as a note in the report.</span>
+  </label>
+  {% else %}
+  <fieldset class="field device-picker"><legend>Affected devices</legend>
+    {% for pk, device in found.devices.items %}
+    <label class="mono"><input type="checkbox" name="devices" value="{{ pk }}"{% if pk in form.devices %} checked{% endif %}> {{ device.name }}</label>
+    {% empty %}<span class="hint">This engagement has no devices yet.</span>{% endfor %}
+  </fieldset>
+  <label class="field">Evidence<textarea name="evidence" rows="4" class="mono">{{ form.evidence }}</textarea>
+    <span class="hint">Masked values only. Don't paste secrets.</span></label>
+  {% endif %}
+  <label class="field">Recommendation<textarea name="recommendation" rows="3" required>{{ form.recommendation }}</textarea></label>
+  <label class="field">Suggested config<textarea name="suggested_config" rows="4" class="mono">{{ form.suggested_config }}</textarea>
+    <span class="hint">Optional. Text only; Cartio never pushes it.</span></label>
+  <label class="check-label"><input type="checkbox" name="include_in_report"{% if form.include_in_report %} checked{% endif %}> Include in report</label>
+  <div class="confirm-buttons">
+    <a class="btn" href="{{ here }}{% if view.mode == 'edit' %}?finding={{ item.key }}{% endif %}">Cancel</a>
+    <button class="btn primary" type="submit">{% if view.mode == "edit" %}Save changes{% else %}Add finding{% endif %}</button>
+  </div>
+</form>
+{% endwith %}
