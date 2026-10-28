@@ -57,7 +57,7 @@
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         select(p, current(p) + (event.key === "ArrowDown" ? 1 : -1));
-      } else if (event.key === "Enter") {
+      } else if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
         event.preventDefault();
         const chosen = options(p)[current(p)];
         if (chosen) chosen.click();

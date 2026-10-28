@@ -228,3 +228,37 @@ def test_on_site_devices_are_never_queried(client, engineer):
 
 def test_search_needs_a_signed_in_engineer(client):
     assert client.get("/search", {"q": "fw"}).status_code == 302
+
+
+def test_short_words_in_a_customer_name_dont_match_all_its_devices(client, engineer):
+    customer, engagement = _customer("Acme Corp")
+    _device(customer, engagement, "fw-01", model="FortiGate 60F")
+    assert "fw-01" not in _titles(_search(client, "co"))
+    assert "fw-01" in _titles(_search(client, "acme fw"))
+
+
+def test_the_best_device_match_wins_whatever_its_customer_holds(client, engineer):
+    customer, engagement = _customer("Acme")
+    for n in range(40):
+        _device(customer, engagement, f"a-sw-{n:02}")
+    _device(customer, engagement, "sw-core")
+    page = _search(client, "sw")
+    assert _titles(page)[0] == "sw-core"
+    assert "8 of 41" in page
+
+
+def test_queries_grow_slowly_with_customers(client, engineer):
+    def queries_for(customers):
+        for _ in range(customers):
+            customer, engagement = _customer(f"Customer {Customer.objects.count()}")
+            _device(customer, engagement, "fw-01")
+            Collector.objects.for_customer(customer).create(name="vm-01")
+        with CaptureQueriesContext(connection) as queries:
+            _search(client, "fw")
+            _search(client)
+        return len(queries)
+
+    few = queries_for(2)
+    many = queries_for(8) - few
+    # Engagements, collectors and devices: about three queries per customer, not per record.
+    assert many <= 8 * 4

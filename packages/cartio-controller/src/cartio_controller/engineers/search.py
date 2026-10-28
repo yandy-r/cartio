@@ -9,7 +9,7 @@ Findings and integrations join the search when those features exist (YAN-1738, Y
 
 from urllib.parse import urlencode
 
-from django.db.models import Q
+from django.db.models import Case, Q, When
 from django.urls import reverse
 
 from cartio_controller.collectors.models import Customer, Device
@@ -62,6 +62,7 @@ class Search:
         self.current_engagement = current_engagement
         self.only_current = only_current and current is not None
         self.customers = self._customers()
+        self._engagements_by_customer = {}
         self.groups = []
         self.notes = []
         if self.terms:
@@ -78,45 +79,55 @@ class Search:
             return [self.current]
         return list(Customer.objects.filter(archived_at__isnull=True).order_by("name"))
 
-    def _group(self, key, name, results):
-        if results:
-            limit = LIMITS[key]
-            more = f"{limit} of {len(results)}" if len(results) > limit else ""
-            self.groups.append({"key": key, "name": name, "results": results[:limit], "more": more})
+    def _engagements_of(self, customer) -> list:
+        """The customer's open engagements, current first. One query per customer at most."""
+        if customer.pk not in self._engagements_by_customer:
+            self._engagements_by_customer[customer.pk] = shell.engagements_of(customer)
+        return self._engagements_by_customer[customer.pk]
+
+    def _group(self, key, name, items, build=None, total=None):
+        """Add a group of the first few items. `build` turns each shown item into a result."""
+        if not items:
+            return
+        limit = LIMITS[key]
+        total = max(total or 0, len(items))
+        shown = [build(item) if build else item for item in items[:limit]]
+        more = f"{limit} of {total}" if total > limit else ""
+        self.groups.append({"key": key, "name": name, "results": shown, "more": more})
 
     # Without a query: screens to jump to, and customers.
 
     def _jump_to(self):
         self._group("screens", "Jump to", self._screens())
-        self._group("customers", "Customers", [self._customer(c) for c in self.customers])
+        self._group("customers", "Customers", self.customers, self._customer)
 
     def _search(self):
         terms = self.terms
-        self._group(
-            "customers",
-            "Customers",
-            [self._customer(c) for c in self.customers if _hit(terms, c.name, _mode(c))],
-        )
+        matching = [c for c in self.customers if _hit(terms, c.name, _mode(c))]
+        self._group("customers", "Customers", matching, self._customer)
         devices = []
+        total = 0
         for customer in self.customers:
-            devices += self._devices(customer)
+            rows, count = self._devices(customer)
+            devices += rows
+            total += count
         # Host names that start with the first word first, then by name.
         devices.sort(key=lambda r: (not r["title"].casefold().startswith(terms[0]), r["sort"]))
-        self._group("devices", "Devices", devices)
+        self._group("devices", "Devices", devices, total=total)
         collectors = []
         engagements = []
         for customer in self.customers:
             collectors += self._collectors(customer)
             engagements += self._engagements(customer)
-        self._group("collectors", "Collectors", collectors)
-        self._group("engagements", "Engagements", engagements)
+        self._group("collectors", "Collectors", collectors, self._collector)
+        self._group("engagements", "Engagements", engagements, self._engagement)
         self._group(
             "screens", "Screens", [s for s in self._screens() if _hit(terms, s["title"], s["sub"])]
         )
         self._data_mode_notes()
 
     def _customer(self, customer):
-        engagements = shell.engagements_of(customer)
+        engagements = self._engagements_of(customer)
         return {
             "title": customer.name,
             "sub": _mode(customer),
@@ -125,17 +136,19 @@ class Search:
             "target": "Overview",
         }
 
-    def _devices(self, customer) -> list:
+    def _devices(self, customer) -> tuple[list, int]:
+        """The customer's best device matches (as many as the group shows), and how many match."""
         # On site customers keep their network data off the controller (ADR-0002, ADR-0005).
         if customer.is_on_site:
-            return []
-        # Words in the customer's name match every one of its devices.
-        terms = [t for t in self.terms if t not in customer.name.casefold()]
-        rows = (
-            Device.objects.for_customer(customer)
-            .filter(engagement__archived_at__isnull=True)
-            .select_related("engagement", "site")
-        )
+            return [], 0
+        # Whole words of three letters or more from the customer's name match all its devices,
+        # so "northwind core" finds Northwind's core switches. Shorter ones would match nearly
+        # every customer.
+        name_words = customer.name.casefold().split()
+        terms = [
+            t for t in self.terms if not (len(t) >= 3 and any(w.startswith(t) for w in name_words))
+        ]
+        rows = Device.objects.for_customer(customer).filter(engagement__archived_at__isnull=True)
         for term in terms:
             rows = rows.filter(
                 Q(name__icontains=term)
@@ -145,8 +158,13 @@ class Search:
                 | Q(model__icontains=term)
                 | Q(site__name__icontains=term)
             )
+        # The same order the group shows: host names starting with the first word, then by name.
+        prefix = Case(When(name__istartswith=self.terms[0], then=0), default=1)
+        limit = LIMITS["devices"]
+        shown = list(rows.select_related("engagement", "site").order_by(prefix, "name")[:limit])
+        count = rows.count() if len(shown) == limit else len(shown)
         results = []
-        for device in rows.order_by("name")[: LIMITS["devices"] * 4]:
+        for device in shown:
             model = " ".join(v for v in (device.manufacturer, device.model) if v)
             sub = [customer.name, device.site.name if device.site else "", model]
             sub += [str(device.management_ip or ""), f"SN {device.serial}" if device.serial else ""]
@@ -163,51 +181,54 @@ class Search:
                     "target": "Inventory",
                 }
             )
-        return results
+        return results, count
 
     def _collectors(self, customer) -> list:
-        results = []
-        engagement = self._engagement_for(customer)
+        """The customer's collectors that match, as (customer, collector, site, tag)."""
+        matches = []
         for collector in _collectors(customer, revoked=True):
             site = collector.site.name if collector.site else ""
             tag = HEALTH_TAGS.get(collector.health, "")
             if _hit(self.terms, collector.name, collector.hostname, site, tag, customer.name):
-                results.append(
-                    {
-                        "title": collector.name,
-                        "sub": " · ".join(v for v in (customer.name, site) if v),
-                        "tag": tag,
-                        "tag_class": collector.health.replace(" ", "-"),
-                        "url": shell.screen_url("collectors", customer, engagement),
-                        "icon": "collector",
-                        "mono": True,
-                        "target": "Collectors",
-                    }
-                )
-        return results
+                matches.append((customer, collector, site, tag))
+        return matches
+
+    def _collector(self, match):
+        customer, collector, site, tag = match
+        return {
+            "title": collector.name,
+            "sub": " · ".join(v for v in (customer.name, site) if v),
+            "tag": tag,
+            "tag_class": collector.health.replace(" ", "-"),
+            "url": shell.screen_url("collectors", customer, self._engagement_for(customer)),
+            "icon": "collector",
+            "mono": True,
+            "target": "Collectors",
+        }
 
     def _engagements(self, customer) -> list:
-        results = []
-        for engagement in shell.engagements_of(customer):
-            status = engagement.get_status_display()
-            if _hit(self.terms, engagement.name, status, customer.name):
-                results.append(
-                    {
-                        "title": engagement.name,
-                        "sub": f"{customer.name} · {status}",
-                        "url": shell.screen_url("customer", customer, engagement),
-                        "icon": "engagement",
-                        "target": "Overview",
-                    }
-                )
-        return results
+        return [
+            (customer, engagement)
+            for engagement in self._engagements_of(customer)
+            if _hit(self.terms, engagement.name, engagement.get_status_display(), customer.name)
+        ]
+
+    def _engagement(self, match):
+        customer, engagement = match
+        return {
+            "title": engagement.name,
+            "sub": f"{customer.name} · {engagement.get_status_display()}",
+            "url": shell.screen_url("customer", customer, engagement),
+            "icon": "engagement",
+            "target": "Overview",
+        }
 
     def _engagement_for(self, customer):
         """The current engagement for the page's customer, else the customer's current one."""
         if self.current is not None and customer.pk == self.current.pk:
             if self.current_engagement is not None:
                 return self.current_engagement
-        engagements = shell.engagements_of(customer)
+        engagements = self._engagements_of(customer)
         return engagements[0] if engagements else None
 
     def _screens(self) -> list:
