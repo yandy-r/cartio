@@ -41,7 +41,7 @@ class CustomerScopedSerializer(serializers.ModelSerializer):
         return self.instance.customer if self.instance is not None else self.context["customer"]
 
     def validate_name(self, value):
-        others = self.Meta.model.objects.filter(customer=self._customer(), name=value)
+        others = self.Meta.model.objects.for_customer(self._customer()).filter(name=value)
         if self.instance is not None:
             others = others.exclude(pk=self.instance.pk)
         if others.exists():
