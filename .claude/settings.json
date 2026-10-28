@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "ycc": {
+      "source": {
+        "source": "github",
+        "repo": "yandy-r/ystack"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ycc@ycc": true
+  }
+}
