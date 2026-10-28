@@ -1,0 +1,9 @@
+Model name: FortiGate-60F
+ASIC version: SOC4
+CPU: ARMv8
+Number of CPUs: 4
+RAM: 1838 MB
+EMMC: 3662 MB(MLC) mmcblk0
+Hard disk: not available
+USB Flash: not available
+Network Card chipset: FortiASIC NP6XLITE Adapter (rev.)

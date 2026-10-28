@@ -1,9 +1,13 @@
 [project]
 name = "cartio-core"
 version = "0.1.0"
-description = "Shared code for the Cartio collector and controller: the wire protocol and secret masking, and later parsers and checks."
+description = "Shared code for the Cartio collector and controller: the wire protocol, secret masking, the read-only allow-list and the output parsers."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "ntc-templates>=9.3",
+    "textfsm>=2.1",
+    "ttp>=0.10",
+]
 
 [build-system]
 requires = ["hatchling"]

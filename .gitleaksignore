@@ -1,0 +1,7 @@
+# False positives: a lab host name next to an interface name in a test's expected links, read
+# by the generic-api-key rule. The host was renamed in the next commit; history still has these.
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:72
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:73
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:75
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:76
+83137e76bcacc94a3c7088bad5f96cb2664b019a:.gitleaksignore:generic-api-key:1

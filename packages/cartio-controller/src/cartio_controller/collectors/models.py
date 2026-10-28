@@ -38,6 +38,10 @@ class CrossCustomerError(ValueError):
     """A record that would link two customers' data."""
 
 
+class OnSiteDataError(RuntimeError):
+    """Network data for an On site customer, which the controller never stores (ADR-0002)."""
+
+
 class AppendOnlyError(RuntimeError):
     """A change to a record that may only ever be added, such as an audit event."""
 
@@ -198,6 +202,10 @@ class CustomerOwned(models.Model):
     # Audit records: added once, never changed or deleted.
     append_only = False
 
+    # Network data (devices, outputs, configs). An On site customer keeps it in their own store,
+    # so the controller refuses to save it for them (ADR-0002, ADR-0005).
+    network_data = False
+
     # Declared first, so Django's own machinery (admin, related managers) uses it.
     all_customers = models.Manager.from_queryset(CustomerOwnedQuerySet)()
     objects = CustomerScopedManager()
@@ -266,6 +274,17 @@ class CustomerOwned(models.Model):
             elif parent.customer_id != self.customer_id:
                 raise CrossCustomerError(
                     f"{field.verbose_name} belongs to another customer than this record."
+                )
+        if self.network_data and self.customer_id is not None:
+            data_mode = (
+                Customer.objects.filter(pk=self.customer_id)
+                .values_list("data_mode", flat=True)
+                .first()
+            )
+            if data_mode == Customer.DataMode.ON_SITE:
+                raise OnSiteDataError(
+                    f"This customer is On site: its {self._meta.verbose_name_plural} stay in "
+                    "the customer's own store, not on the controller."
                 )
 
 
@@ -555,6 +574,8 @@ class AuditEvent(CustomerOwned):
         RUN_FINISHED = "run.finished", "Collection run finished"
         AUDIT_EXPORTED = "audit.exported", "Audit log exported"
         MASTER_KEY_ROTATED = "master_key.rotated", "Data key rewrapped by a new master key"
+        OUTPUTS_STORED = "outputs.stored", "Device outputs stored and parsed"
+        SOURCE_REPARSED = "source.reparsed", "Source outputs parsed again"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -671,6 +692,7 @@ class Source(CustomerOwned):
     """
 
     append_only = True
+    network_data = True
 
     class Kind(models.TextChoices):
         LIVE_RUN = "live_run", "Live collection run"
@@ -715,6 +737,8 @@ class Source(CustomerOwned):
 
 class Device(CustomerOwned):
     """A network device as found in one engagement."""
+
+    network_data = True
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     engagement = models.ForeignKey(Engagement, on_delete=models.PROTECT, related_name="devices")
@@ -765,6 +789,8 @@ class Device(CustomerOwned):
 class Interface(CustomerOwned):
     """A port or logical interface of a device."""
 
+    network_data = True
+
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="interfaces")
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=255, blank=True)
@@ -792,6 +818,8 @@ class Link(CustomerOwned):
     A neighbor that isn't in the inventory (out of scope, or not reached yet) has no `b_interface`
     and keeps the names it announced instead.
     """
+
+    network_data = True
 
     class Protocol(models.TextChoices):
         LLDP = "lldp", "LLDP"
@@ -842,6 +870,7 @@ class RawOutput(CustomerOwned):
     """
 
     append_only = True
+    network_data = True
 
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="raw_outputs")
     # Null when an upload's device isn't known until it's parsed.
@@ -883,6 +912,7 @@ class ConfigSnapshot(CustomerOwned):
     """
 
     append_only = True
+    network_data = True
 
     device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="config_snapshots")
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="config_snapshots")
