@@ -146,16 +146,26 @@ def today() -> date:
 
 def _milestones(what: str, entry: lifecycle.Lifecycle, now: date) -> tuple[list[str], list[str]]:
     """Evidence that a milestone has passed, and evidence about the ones still to come."""
+    # Each date is the last day of what it names, so it has passed only the day after.
     past, notes = [], []
-    if entry.last_date_of_support and entry.last_date_of_support <= now:
+    if entry.last_date_of_support and entry.last_date_of_support < now:
         past.append(f"{what} reached end of support on {entry.last_date_of_support}.")
-    elif entry.end_of_security_fixes and entry.end_of_security_fixes <= now:
+    elif entry.end_of_security_fixes and entry.end_of_security_fixes < now:
         past.append(f"{what} stopped getting security fixes on {entry.end_of_security_fixes}.")
-    elif entry.last_date_of_support:
-        sale = f"sold until {entry.end_of_sale}, " if entry.end_of_sale else ""
-        notes.append(f"{what} is {sale}supported until {entry.last_date_of_support}.")
     else:
-        notes.append(f"No end of life announced for {what} (checked {entry.checked}).")
+        dates = [
+            f"{label} {day}"
+            for label, day in (
+                ("sold until", entry.end_of_sale),
+                ("getting security fixes until", entry.end_of_security_fixes),
+                ("supported until", entry.last_date_of_support),
+            )
+            if day
+        ]
+        if dates:
+            notes.append(f"{what} is {', '.join(dates)}.")
+        else:
+            notes.append(f"No end of life announced for {what} (checked {entry.checked}).")
     return past, notes
 
 
@@ -191,7 +201,8 @@ def _eol_eos(device: DeviceFacts, engagement: Sequence[DeviceFacts]) -> Outcome:
 
 
 def _facts(device: DeviceFacts) -> ConfigFacts | None:
-    if device.config is None or not device.platform:
+    # An empty collection is no evidence of a clean device.
+    if device.config is None or not device.config.strip() or not device.platform:
         return None
     return read_config(device.platform, device.config)
 

@@ -11,6 +11,7 @@ by `_forti_blocks`.
 
 from __future__ import annotations
 
+import ipaddress
 import re
 import shlex
 from collections.abc import Iterator
@@ -90,13 +91,17 @@ def _ios_blocks(config: str) -> Iterator[tuple[str, list[str]]]:
         yield header, children
 
 
-_COMMUNITY = re.compile(r"^snmp-server community (?:[08] )?(\S+)(?P<rest>.*)$", re.I)
+_COMMUNITY = re.compile(r"^snmp-server\s+community\s+(?:[08] )?(\S+)(?P<rest>.*)$", re.I)
 _ACCESS = re.compile(
     r"^(?:view \S+ )?(?:(?P<mode>ro|rw)\b)?\s*(?:ipv6 \S+\s*)?(?P<acl>\S+)?$", re.I
 )
 _NTP = re.compile(r"^ntp server (?:vrf \S+ )?(?:ip |ipv6 )?(\S+)", re.I)
-_LOGGING = re.compile(r"^logging (?:host (?:ipv6 )?)?(\S+)", re.I)
-_IP = re.compile(r"^[0-9a-f.:]+$", re.I)
+_LOGGING_HOST = re.compile(r"^logging host (?:ipv6 )?(?:vrf \S+ )?(\S+)", re.I)
+_LOGGING_BARE = re.compile(r"^logging (\S+)$", re.I)
+# IOS sends notifications as SNMPv1 when the host line gives no version.
+_TRAP_HOST = re.compile(
+    r"^snmp-server host (\S+)(?: vrf \S+)?(?: (?:traps|informs))?(?: version (1|2c|3))?", re.I
+)
 _V3_GROUP = re.compile(r"^snmp-server group (\S+) v3 (noauth|auth|priv)\b", re.I)
 _OLD_GROUP = re.compile(r"^snmp-server group (\S+) (v1|v2c)\b", re.I)
 
@@ -105,9 +110,11 @@ def _read_ios(config: str) -> ConfigFacts:
     telnet, http, communities, undetermined = [], [], [], []
     ntp, syslog = set(), set()
     v1_v2c, v3_without_auth, v3 = [], [], []
+    vty_seen = False
     for header, children in _ios_blocks(config):
         lower = header.lower()
         if lower.startswith("line vty"):
+            vty_seen = True
             transports = [
                 c.split()[2:] for c in children if c.lower().startswith("transport input")
             ]
@@ -127,10 +134,13 @@ def _read_ios(config: str) -> ConfigFacts:
                 communities.append("An SNMPv1/v2c community has no access list.")
         elif match := _NTP.match(header):
             ntp.add(match[1].lower())
-        elif (match := _LOGGING.match(header)) and (
-            lower.startswith("logging host") or _IP.match(match[1])
-        ):
+        elif match := _LOGGING_HOST.match(header):
             syslog.add(match[1].lower())
+        elif (match := _LOGGING_BARE.match(header)) and _is_address(match[1]):
+            syslog.add(match[1].lower())
+        elif match := _TRAP_HOST.match(header):
+            if (match[2] or "1") != "3":
+                v1_v2c.append(f"SNMP notifications to {match[1]} use v{match[2] or '1'}.")
         elif match := _V3_GROUP.match(header):
             if match[2].lower() == "noauth":
                 v3_without_auth.append(f"SNMPv3 group {match[1]} uses noauth.")
@@ -138,11 +148,21 @@ def _read_ios(config: str) -> ConfigFacts:
                 v3.append(f"SNMPv3 group {match[1]} uses {match[2].lower()}.")
         elif match := _OLD_GROUP.match(header):
             v1_v2c.append(f"SNMP group {match[1]} uses {match[2].lower()}.")
+    if not vty_seen:
+        undetermined.append("The config has no line vty settings.")
     return ConfigFacts(
         ManagementAccess(tuple(telnet), tuple(http), tuple(communities), tuple(undetermined)),
         TimeAndLogging(frozenset(ntp), frozenset(syslog)),
         Snmp(tuple(v1_v2c), tuple(v3_without_auth), tuple(v3)),
     )
+
+
+def _is_address(text: str) -> bool:
+    try:
+        ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    return True
 
 
 # --- FortiOS ----------------------------------------------------------------------------------
@@ -189,7 +209,9 @@ def _forti_blocks(config: str) -> list[_Block]:
                 if kind == want:
                     break
         elif keyword in ("set", "unset") and path:
-            key = (tuple(path), tuple(edits))
+            # Multi-VDOM configs wrap sections in `config global` and `config vdom` / `edit
+            # <vdom>`. The sections read the same either way.
+            key = (tuple(p for p in path if p not in ("global", "vdom")), tuple(edits))
             block = blocks.setdefault(key, _Block(*key))
             if keyword == "set" and len(words) > 1:
                 block.settings[words[1]] = words[2:]
@@ -206,8 +228,14 @@ def _setting(block: _Block, key: str, default: str = "") -> str:
 
 def _read_fortios(config: str) -> ConfigFacts:
     blocks = _forti_blocks(config)
-    telnet, http = [], []
-    for block in _blocks_at(blocks, "system interface"):
+    telnet, http, undetermined = [], [], []
+    interfaces = _blocks_at(blocks, "system interface")
+    if not interfaces:
+        undetermined.append("The config has no interface settings.")
+    for block in _blocks_at(blocks, "system global"):
+        if _setting(block, "admin-telnet") == "enable":
+            telnet.append("Telnet administration is on (admin-telnet).")
+    for block in interfaces:
         name = block.edits[-1] if block.edits else "An interface"
         access = _setting(block, "allowaccess").split()
         if "telnet" in access:
@@ -252,7 +280,7 @@ def _read_fortios(config: str) -> ConfigFacts:
         else:
             v3.append(f"SNMPv3 user {name} uses {level}.")
     return ConfigFacts(
-        ManagementAccess(tuple(telnet), tuple(http)),
+        ManagementAccess(tuple(telnet), tuple(http), (), tuple(undetermined)),
         TimeAndLogging(ntp, frozenset(syslog)),
         Snmp(tuple(v1_v2c), tuple(v3_without_auth), tuple(v3)),
     )

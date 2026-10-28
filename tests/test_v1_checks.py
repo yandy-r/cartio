@@ -225,3 +225,49 @@ def test_lifecycle_data_covers_the_lab_and_names_its_sources():
         assert entry.source and entry.checked
     for _, _, entry in data.software:
         assert entry.source and entry.checked
+
+
+def test_multi_vdom_fortios_configs_are_read():
+    wrapped = "config global\n" + EDGE_WEAK.config.split("\n", 2)[2] + "end\n"
+    device = DeviceFacts("fw", "fortios", config=wrapped)
+    for check_id in CONFIG_CHECKS:
+        assert CHECKS[check_id].run(device, [device]).status == Status.FAIL, check_id
+    vdom = 'config vdom\nedit root\nconfig system interface\nedit "port1"\n'
+    vdom += "set allowaccess ping telnet\nnext\nend\nnext\nend\n"
+    facts = read_config("fortios", vdom)
+    assert facts.management.telnet == ("port1 allows Telnet admin access.",)
+
+
+def test_an_empty_or_partial_config_is_unknown_not_pass():
+    for config in ("", "  \n", "hostname sw\nntp server 192.0.2.10\nlogging host 192.0.2.20\n"):
+        device = DeviceFacts("sw", "ios", config=config)
+        assert CHECKS["insecure-management"].run(device, [device]).status == Status.UNKNOWN
+    fw = DeviceFacts("fw", "fortios", config="config system global\nset hostname fw\nend\n")
+    assert CHECKS["insecure-management"].run(fw, [fw]).status == Status.UNKNOWN
+
+
+def test_fortios_admin_telnet_fails():
+    facts = read_config("fortios", "config system global\n    set admin-telnet enable\nend\n")
+    assert facts.management.telnet == ("Telnet administration is on (admin-telnet).",)
+
+
+def test_ios_trap_hosts_and_logging_variants():
+    facts = read_config(
+        "ios",
+        "snmp-server host 192.0.2.50 <masked:k1:0011223344556677>\n"
+        "snmp-server host 192.0.2.51 version 2c <masked:k1:0011223344556677>\n"
+        "snmp-server host 192.0.2.52 version 3 priv poller\n"
+        "logging host vrf Mgmt 192.0.2.20\n"
+        "logging 192.0.2.21\n"
+        "logging cef\n",
+    )
+    assert facts.snmp.v1_v2c == (
+        "SNMP notifications to 192.0.2.50 use v1.",
+        "SNMP notifications to 192.0.2.51 use v2c.",
+    )
+    assert facts.time_and_logging.syslog == {"192.0.2.20", "192.0.2.21"}
+
+
+def test_eol_dates_are_the_last_day(on):
+    on(date(2027, 10, 31))
+    assert CHECKS["eol-eos"].run(FLOOR, [FLOOR]).status == Status.PASS
