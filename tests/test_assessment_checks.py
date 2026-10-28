@@ -1,5 +1,7 @@
 """Assessment checks run on an engagement's stored data and keep results per device (YAN-1664)."""
 
+from datetime import date
+
 import pytest
 from cartio_controller.collectors.assessments import AssessmentNotAllowed, run_assessment
 from cartio_controller.collectors.inventory import store_outputs
@@ -18,6 +20,7 @@ from cartio_controller.collectors.models import (
     RawOutput,
     Source,
 )
+from cartio_core import checks as checks_module
 from cartio_core.checks import (
     CHECKS,
     Check,
@@ -33,7 +36,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
 from django.utils import timezone
 
-from tests.test_parsers import LAB, outputs
+from tests.test_parsers import FIXTURES, LAB, outputs
 
 DRIFT = CHECKS["firmware-drift"]
 
@@ -109,7 +112,9 @@ def test_every_check_is_complete():
 
 
 @pytest.fixture
-def acme(db):
+def acme(db, monkeypatch):
+    # End-of-life results depend on the date.
+    monkeypatch.setattr(checks_module, "today", lambda: date(2026, 10, 28))
     return Customer.objects.create(name="Acme")
 
 
@@ -125,6 +130,11 @@ def _lab(customer, engagement="Audit"):
     )
     for name, platform in LAB.items():
         store_outputs(source, platform.value, outputs(name))
+        config = (FIXTURES / platform.value / name / "config.cfg").read_text(encoding="utf-8")
+        device = Device.objects.for_customer(customer).get(engagement=engagement, name=name)
+        ConfigSnapshot.objects.for_customer(customer).create(
+            device=device, source=source, content=config
+        )
     return engagement
 
 
@@ -135,21 +145,34 @@ def _results(run):
     }
 
 
-def test_a_sample_check_runs_on_lab_data_and_stores_results_per_device(acme):
+def test_the_checks_run_on_lab_data_and_store_results_per_device(acme):
     engagement = _lab(acme)
 
     run = run_assessment(engagement, started_by="dana")
 
     assert run.check_ids == list(CHECKS)
-    # Three different models: nothing to drift from.
+    # core-sw1 and edge-fw1 are hardened; floor-sw1 is not. Three models: nothing to drift from.
     assert _results(run) == {
-        (name, "firmware-drift"): ("pass", "medium")
-        for name in ("core-sw1", "edge-fw1", "floor-sw1")
+        ("core-sw1", "firmware-drift"): ("pass", "medium"),
+        ("core-sw1", "eol-eos"): ("fail", "high"),
+        ("core-sw1", "insecure-management"): ("pass", "high"),
+        ("core-sw1", "ntp-syslog"): ("pass", "medium"),
+        ("core-sw1", "snmpv3"): ("pass", "medium"),
+        ("edge-fw1", "firmware-drift"): ("pass", "medium"),
+        ("edge-fw1", "eol-eos"): ("fail", "high"),
+        ("edge-fw1", "insecure-management"): ("pass", "high"),
+        ("edge-fw1", "ntp-syslog"): ("pass", "medium"),
+        ("edge-fw1", "snmpv3"): ("pass", "medium"),
+        ("floor-sw1", "firmware-drift"): ("pass", "medium"),
+        ("floor-sw1", "eol-eos"): ("pass", "high"),
+        ("floor-sw1", "insecure-management"): ("fail", "high"),
+        ("floor-sw1", "ntp-syslog"): ("fail", "medium"),
+        ("floor-sw1", "snmpv3"): ("fail", "medium"),
     }
     event = AuditEvent.objects.for_customer(acme).get(action="assessment.run")
     assert (event.actor, event.object_id, event.object_name) == ("dana", str(run.pk), "Audit")
     assert event.detail["device_count"] == 3
-    assert event.detail["results"] == {"pass": 3, "fail": 0, "not_applicable": 0, "unknown": 0}
+    assert event.detail["results"] == {"pass": 10, "fail": 5, "not_applicable": 0, "unknown": 0}
 
 
 def test_checks_rerun_on_stored_data_without_collecting_again(acme):
@@ -168,7 +191,8 @@ def test_checks_rerun_on_stored_data_without_collecting_again(acme):
     assert _results(second)[("core-sw1", "firmware-drift")][0] == "fail"
     assert _results(second)[("floor-sw1", "firmware-drift")][0] == "fail"
     # The first run's results stay as they were.
-    assert CheckResult.objects.for_customer(acme).filter(run=first, status="pass").count() == 3
+    drift = CheckResult.objects.for_customer(acme).filter(run=first, check_id="firmware-drift")
+    assert drift.filter(status="pass").count() == 3
 
 
 def test_results_are_scoped_to_one_customer_and_engagement(acme):
@@ -183,7 +207,7 @@ def test_results_are_scoped_to_one_customer_and_engagement(acme):
     run = run_assessment(engagement)
 
     # Only this engagement's one device, none from the other engagement or customer.
-    assert set(_results(run)) == {("sw9", "firmware-drift")}
+    assert set(_results(run)) == {("sw9", check_id) for check_id in CHECKS}
     assert not CheckResult.objects.for_customer(globex).exists()
     assert (
         not CheckResult.objects.for_customer(acme)
@@ -236,7 +260,7 @@ def test_run_checks_command(acme, capsys):
 
     call_command("run_checks", customer="acme", engagement="audit", user="dana")
 
-    assert "Results: 3 pass." in capsys.readouterr().out
+    assert "Results: 5 fail, 10 pass." in capsys.readouterr().out
     assert AssessmentRun.objects.for_customer(acme).get().started_by == "dana"
     with pytest.raises(CommandError, match="no engagement"):
         call_command("run_checks", customer="Acme", engagement="Nope", user="dana")
