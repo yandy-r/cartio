@@ -34,7 +34,19 @@ def _name(common_name):
 
 
 def _cert(subject, issuer, public_key, signer, *, ca, sans=()):
+    # Python 3.13 verifies strictly (VERIFY_X509_STRICT), so give the extensions a real CA would.
     now = datetime.datetime.now(datetime.UTC)
+    usage = dict.fromkeys(
+        [
+            "content_commitment",
+            "key_encipherment",
+            "data_encipherment",
+            "key_agreement",
+            "encipher_only",
+            "decipher_only",
+        ],
+        False,
+    )
     builder = (
         x509.CertificateBuilder()
         .subject_name(_name(subject))
@@ -44,7 +56,20 @@ def _cert(subject, issuer, public_key, signer, *, ca, sans=()):
         .not_valid_before(now - datetime.timedelta(minutes=5))
         .not_valid_after(now + datetime.timedelta(days=1))
         .add_extension(x509.BasicConstraints(ca=ca, path_length=None), critical=True)
+        .add_extension(
+            x509.KeyUsage(digital_signature=not ca, key_cert_sign=ca, crl_sign=ca, **usage),
+            critical=True,
+        )
+        .add_extension(x509.SubjectKeyIdentifier.from_public_key(public_key), critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(signer.public_key()),
+            critical=False,
+        )
     )
+    if not ca:
+        builder = builder.add_extension(
+            x509.ExtendedKeyUsage([x509.oid.ExtendedKeyUsageOID.SERVER_AUTH]), critical=False
+        )
     if sans:
         builder = builder.add_extension(x509.SubjectAlternativeName(list(sans)), critical=False)
     return builder.sign(signer, hashes.SHA256())
