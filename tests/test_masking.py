@@ -14,13 +14,14 @@ from cartio_core.masking import (
     UnmaskedSecretError,
     find_unmasked,
     mask_config,
+    weak_community,
 )
 
 SP = " "
 KEY = MaskingKey("k1", b"customer-a-masking-key-0123456789")
 OTHER_CUSTOMER = MaskingKey("k1", b"customer-b-masking-key-0123456789")
 ROTATED = MaskingKey("k2", b"customer-a-rotated-key-0123456789")
-PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]+:[0-9a-f]{16}>")
+PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]+:[0-9a-f]{16}(?::weak)?>")
 
 PEM_KEY = (
     "-----BEGIN RSA" + SP + "PRIVATE KEY-----\n"
@@ -464,3 +465,65 @@ def test_long_lines_stay_fast():
     start = time.perf_counter()
     mask_config(line + "\n", Platform.IOS, KEY)
     assert time.perf_counter() - start < 2
+
+
+# --- Weak SNMP communities (YAN-1744) ---------------------------------------------------------
+
+WEAK = re.compile(r"<masked:k1:[0-9a-f]{16}:weak>")
+LONG_COMMUNITY = "monitoring-pollers-ro"
+
+
+@pytest.mark.parametrize(
+    ("line", "value"),
+    [
+        ("snmp-server" + SP + "community public RO", "public"),
+        ("snmp-server" + SP + "community PRIVATE RW 10", "PRIVATE"),
+        ("snmp-server" + SP + "community 8 cisco RO", "cisco"),
+        ("snmp-server" + SP + "community Sh0rt RO SNMP-POLLERS", "Sh0rt"),
+        ("snmp-server host 192.0.2.50 version 2c public", "public"),
+    ],
+)
+def test_ios_weak_communities_are_marked_without_their_value(line, value):
+    result = mask_config(f"hostname r1\n{line}\nend\n", Platform.IOS_XE, KEY)
+    assert value not in result.text
+    assert WEAK.search(result.text)
+    assert not find_unmasked(result.text, Platform.IOS_XE)
+
+
+def test_strong_communities_and_other_secrets_are_not_marked():
+    config = (
+        "snmp-server" + SP + f"community {LONG_COMMUNITY} RO 10\n"
+        "username admin secret" + SP + "0 public\n"
+        "enable password" + SP + "cisco\n"
+    )
+    result = mask_config(config, Platform.IOS, KEY)
+    assert ":weak>" not in result.text
+    assert "public" not in result.text and "cisco" not in result.text
+
+
+@pytest.mark.parametrize("name", ["public", '"public"', '"Private"', "monitor"])
+def test_fortios_weak_community_is_marked(name):
+    config = "config system snmp community\n    edit 1\n        set name " + name + "\n"
+    config += "    next\nend\n"
+    result = mask_config(config, Platform.FORTIOS, KEY)
+    assert name.strip('"') not in result.text
+    assert WEAK.search(result.text)
+
+
+def test_fortios_strong_community_is_not_marked():
+    config = "config system snmp community\n    edit 1\n"
+    config += f"        set name {LONG_COMMUNITY}\n    next\nend\n"
+    assert ":weak>" not in mask_config(config, Platform.FORTIOS, KEY).text
+
+
+def test_marked_placeholders_are_kept_when_masked_again():
+    once = mask_config("snmp-server" + SP + "community public RO\n", Platform.IOS, KEY)
+    twice = mask_config(once.text, Platform.IOS, KEY)
+    assert twice.text == once.text and twice.secrets_masked == 0
+    assert WEAK.search(twice.text)
+
+
+def test_weak_community_rules():
+    assert weak_community("public") and weak_community("Public ")
+    assert weak_community("abc1234")  # under 8 characters
+    assert not weak_community(LONG_COMMUNITY)

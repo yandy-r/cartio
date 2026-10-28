@@ -217,7 +217,9 @@ def _insecure_management(device: DeviceFacts, engagement: Sequence[DeviceFacts])
         return failed(*problems, *access.undetermined)
     if access.undetermined:
         return unknown(*access.undetermined)
-    return passed("No Telnet, HTTP admin access or open SNMP write access found.")
+    return passed(
+        "No Telnet, HTTP admin access, open SNMP write access or weak SNMP community found."
+    )
 
 
 def _servers(kind: str, servers: frozenset[str]) -> str:
@@ -328,9 +330,11 @@ CHECKS: dict[str, Check] = {
             severity=Severity.HIGH,
             recommendation=(
                 "The device can be managed over protocols that send passwords and settings in "
-                "clear text, or lets SNMP change its settings from anywhere. Turn off Telnet and "
-                "HTTP administration and use SSH and HTTPS instead. Remove SNMP write access, and "
-                "limit SNMP to your monitoring servers with an access list."
+                "clear text, lets SNMP change its settings from anywhere, or uses an SNMP "
+                "community that is a default or easy to guess. Turn off Telnet and HTTP "
+                "administration and use SSH and HTTPS instead. Remove SNMP write access, replace "
+                "default or short communities with long random ones, and limit SNMP to your "
+                "monitoring servers with an access list."
             ),
             logic=_insecure_management,
             platforms=frozenset(Platform),
