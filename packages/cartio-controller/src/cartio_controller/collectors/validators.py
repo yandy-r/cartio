@@ -14,6 +14,8 @@ MIN_IPV6_PREFIX = 48
 # characters, "%" scope IDs or shell metacharacters, since hints end up in scanner arguments.
 _SEED_CHARS = re.compile(r"[0-9A-Za-z.:/-]{1,255}")
 _HOSTNAME_LABEL = re.compile(r"(?!-)[A-Za-z0-9-]{1,63}(?<!-)")
+# Resolvers that accept inet_aton forms read these as addresses ("0x7f000001" is 127.0.0.1).
+_NUMERIC_LABEL = re.compile(r"[0-9]+|0x[0-9a-f]*")
 
 
 def normalize_seed_hint(value: str) -> str:
@@ -45,11 +47,11 @@ def normalize_seed_hint(value: str) -> str:
 def _hostname(value: str) -> str:
     name = value.rstrip(".").lower()
     labels = name.split(".")
-    # An all-numeric last label is a mistyped address, not a host name.
+    # A numeric last label is an address in disguise, not a host name.
     if (
         len(name) > 253
         or not all(_HOSTNAME_LABEL.fullmatch(label) for label in labels)
-        or labels[-1].isdigit()
+        or _NUMERIC_LABEL.fullmatch(labels[-1])
         or name == "localhost"
     ):
         raise ValidationError(f"{value!r} is not an IP address, a CIDR network or a host name.")

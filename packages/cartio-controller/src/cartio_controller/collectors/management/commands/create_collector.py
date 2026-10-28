@@ -13,7 +13,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with transaction.atomic():
-            customer, _ = Customer.objects.get_or_create(name=options["customer"])
+            # Customer names are unique ignoring case, so look them up the same way.
+            customer = Customer.objects.filter(name__iexact=options["customer"]).first()
+            if customer is None:
+                customer = Customer.objects.create(name=options["customer"])
             if customer.is_archived:
                 raise CommandError(f"Customer {customer.name} is archived. Restore it first.")
             collector = Collector(customer=customer, name=options["name"])

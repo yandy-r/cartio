@@ -209,6 +209,8 @@ def test_site_seed_hints_are_normalized(api):
         "169.254.169.254",
         "0.0.0.0",  # noqa: S104
         "localhost",
+        "0x7f000001",
+        "metadata.0xa9fea9fe",
     ],
 )
 def test_site_rejects_bad_seed_hints(api, hint):
@@ -355,3 +357,20 @@ def test_admin_cannot_delete_or_store_bad_seed_hints(client):
     site.seed_hints = ["$(id)"]
     with pytest.raises(ValidationError):
         site.full_clean()
+
+
+@pytest.mark.parametrize(("perm", "allowed"), [("add", False), ("change", True)])
+def test_archive_needs_change_permission(client, perm, allowed):
+    acme = Customer.objects.create(name="Acme")
+    user = get_user_model().objects.create_user("clerk", is_staff=True)
+    user.user_permissions.set(Permission.objects.filter(codename=f"{perm}_customer"))
+    client.force_login(user)
+    status = _post(client, f"{CUSTOMERS}/{acme.pk}/archive").status_code
+    assert status == (200 if allowed else 403)
+
+
+def test_create_collector_reuses_a_customer_named_in_another_case(capsys):
+    Customer.objects.create(name="Acme")
+    call_command("create_collector", customer="acme", name="vm01")
+    assert Customer.objects.count() == 1
+    assert Customer.objects.get().collectors.count() == 1
