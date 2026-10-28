@@ -1,0 +1,81 @@
+{# One finding: what was found, the devices, evidence, recommendation, snippet and note. #}
+<div class="detail-head">
+  <span class="severity {{ item.severity }}">{{ item.severity_label }}</span>
+  <span class="muted">{{ item.check_title }}</span>
+  {% if item.manual %}<span class="tag manual">Added by engineer{% if item.edited_by %} · {{ item.edited_by }}{% endif %}</span>{% elif item.edited %}<span class="tag edited">Edited by engineer{% if item.edited_by %} · {{ item.edited_by }}{% endif %}</span>{% endif %}
+</div>
+<h2 class="detail-title">{{ item.title }}</h2>
+{% if item.severity_changed %}<p class="change-note">Severity changed from {{ item.check_severity }} to {{ item.severity }}: {{ item.severity_reason }}</p>{% endif %}
+{% if item.manual %}<p class="change-note">Engineer finding · not produced by an automated check</p>{% endif %}
+
+{% if editable %}
+<div class="detail-actions">
+  <form method="post" action="{{ here }}">{% csrf_token %}<input type="hidden" name="finding" value="{{ item.key }}">
+    <input type="hidden" name="action" value="{% if item.include_in_report %}exclude{% else %}include{% endif %}">
+    <button class="btn" type="submit" aria-pressed="{% if item.include_in_report %}true{% else %}false{% endif %}">
+      <span class="toggle{% if item.include_in_report %} on{% endif %}" aria-hidden="true"></span>Include in report</button></form>
+  <a class="btn" href="{{ here }}?finding={{ item.key }}&amp;mode=edit">Edit</a>
+  <a class="btn danger" href="{{ here }}?finding={{ item.key }}&amp;remove=1">{% if item.manual %}Delete{% else %}Dismiss{% endif %}</a>
+</div>
+{% if view.confirm_remove %}
+<form method="post" action="{{ here }}" class="confirm" role="alertdialog" aria-labelledby="remove-title">
+  {% csrf_token %}<input type="hidden" name="finding" value="{{ item.key }}"><input type="hidden" name="action" value="remove">
+  <p id="remove-title"><strong>{% if item.manual %}Delete this finding?{% else %}Dismiss this finding?{% endif %}</strong> It leaves the list and the report, and can be restored from the dismissed list.</p>
+  <label class="field">Reason (kept in the audit log)
+    <textarea name="reason" rows="2" required{% if error %} aria-invalid="true" aria-describedby="remove-error"{% endif %}>{{ form.reason }}</textarea>
+    {% if error %}<span class="field-error" id="remove-error">{{ error }}</span>{% endif %}
+  </label>
+  <div class="confirm-buttons"><a class="btn" href="{{ here }}?finding={{ item.key }}">Cancel</a>
+    <button class="btn danger-fill" type="submit">{% if item.manual %}Delete{% else %}Dismiss{% endif %}</button></div>
+</form>
+{% endif %}
+{% elif not item.include_in_report %}
+<p class="muted">Left out of the report.</p>
+{% endif %}
+
+<h3 class="label">Affected devices · hover for details</h3>
+<div class="device-chips">
+  {% for affected in item.devices %}
+  <div class="host-cell device-chip">
+    <button type="button" class="chip mono" aria-describedby="chip-{{ item.key }}-{{ affected.device.pk }}"><span class="dot {{ affected.status }}" aria-hidden="true"></span>{{ affected.device.name }}</button>
+    {# YAN-1739 builds Connect; the chip has it so the layout doesn't change when it lands. #}
+    <button type="button" class="chip-connect" disabled title="Connecting to a device isn't built yet" aria-label="Connect to {{ affected.device.name }}">Connect</button>
+    <div class="hover-card" role="tooltip" id="chip-{{ item.key }}-{{ affected.device.pk }}">
+      <div class="card-head"><span class="mono">{{ affected.device.name }}</span></div>
+      <div class="card-sub">{{ affected.device.manufacturer|default:"Unknown vendor" }} {{ affected.device.model }}{% if affected.device.site %} · {{ affected.device.site.name }}{% endif %}</div>
+      <dl>
+        <dt>OS</dt><dd>{{ affected.device.os_version|default:"–" }}</dd>
+        <dt>Mgmt IP</dt><dd class="mono">{{ affected.device.management_ip|default:"–" }}</dd>
+        <dt>Result</dt><dd>{% if item.manual %}Added by engineer{% else %}{{ affected.status|capfirst }}{% endif %}</dd>
+        {% if affected.evidence %}<dt>Evidence</dt><dd>{{ affected.evidence|join:"; " }}</dd>{% endif %}
+      </dl>
+    </div>
+  </div>
+  {% empty %}
+  <p class="muted">No devices.</p>
+  {% endfor %}
+</div>
+
+<h3 class="label">Evidence</h3>
+<pre class="evidence">{{ item.evidence|default:"(no evidence attached)" }}</pre>
+<p class="hint">{% if item.manual %}Added by an engineer{% else %}From the checks run {{ found.run.started_at|date:"Y-m-d H:i" }} UTC on masked, collected data{% endif %}</p>
+
+<h3 class="label">Recommendation</h3>
+<p class="recommendation">{{ item.recommendation|linebreaksbr }}</p>
+{% if item.suggested_config %}
+<div class="snippet-head"><h3 class="label">Suggested config · text only</h3>
+  <button class="btn" type="button" data-copy="snippet-{{ item.key }}">Copy</button></div>
+<pre class="snippet" id="snippet-{{ item.key }}">{{ item.suggested_config }}</pre>
+<p class="hint">Cartio is read-only in v1. Nothing is pushed to the device.</p>
+{% endif %}
+
+<h3 class="label">Engineer note for the report</h3>
+{% if editable %}
+<form method="post" action="{{ here }}" class="note-form">{% csrf_token %}<input type="hidden" name="finding" value="{{ item.key }}"><input type="hidden" name="action" value="note">
+  <label class="field"><span class="sr-only">Note</span><textarea name="note" rows="3">{{ item.note }}</textarea></label>
+  <span class="hint">Printed under the finding in the report.</span>
+  <button class="btn" type="submit">Save note</button>
+</form>
+{% else %}
+<p>{{ item.note|default:"No note."|linebreaksbr }}</p>
+{% endif %}

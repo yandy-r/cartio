@@ -28,9 +28,10 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
-from cartio_controller.collectors import audit
+from cartio_controller.collectors import assessments, audit
 from cartio_controller.collectors.models import CollectionRun, Customer, Site
 
+from . import findings as findings_screen
 from . import inventory as inventory_screen
 from . import onboarding, operations, overview, shell, totp
 from . import search as global_search
@@ -505,6 +506,145 @@ def inventory_export(request, customer, engagement):
     name = inventory_screen.filename(customer, engagement, fmt)
     response["Content-Disposition"] = f'attachment; filename="{name}"'
     return response
+
+
+FINDING_ACTIONS = {"add", "edit", "include", "exclude", "note", "remove", "restore", "run"}
+
+
+@require_http_methods(["GET", "POST"])
+@csrf_protect
+@never_cache
+@engineer_required
+def findings(request, customer, engagement=None):
+    """Findings (DESIGN.md section 7): the checks' results, and the engineer's edits to them."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    extra = {"severities": list(findings_screen.SEVERITY_LABELS.items())}
+    status = 200
+    data = None
+    if engagement is not None and not customer.inside_access_only:
+        found = findings_screen.Findings(customer, engagement)
+        here = shell.screen_url("findings", customer, engagement)
+        editable = findings_screen.editable(customer, engagement)
+        params = request.GET
+        if request.method == "POST":
+            response, params, error = _finding_post(request, customer, engagement, found, here)
+            if response is not None:
+                return response
+            # The form again, as the engineer filled it, with what to fix.
+            found = findings_screen.Findings(customer, engagement)
+            extra["error"] = error
+            data = request.POST
+            status = 400
+        screen = findings_screen.Screen(found, params)
+        extra.update(
+            {
+                "found": found,
+                "view": screen,
+                "here": here,
+                "editable": editable,
+                # Checks re-run on the stored model, completed engagements included (DESIGN.md).
+                "can_run": not customer.is_on_site,
+                "form": _finding_form(screen, data),
+            }
+        )
+    elif request.method == "POST":
+        raise Http404
+    response = render_screen(
+        request,
+        "findings",
+        "engineers/findings.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+        network_data=True,
+    )
+    response.status_code = status
+    return response
+
+
+def _finding_post(request, customer, engagement, found, here):
+    """Apply one change. Returns a redirect, or the params and error to show the form with."""
+    action = request.POST.get("action", "")
+    if action not in FINDING_ACTIONS:
+        return HttpResponseBadRequest("Unknown action."), None, ""
+    actor = request.user.get_username()
+    if action == "run":
+        try:
+            assessments.run_assessment(engagement, started_by=actor)
+        except (assessments.AssessmentNotAllowed, assessments.OnSiteDataError) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Checks ran · logged in the audit log")
+        return redirect(here), None, ""
+    if not findings_screen.editable(customer, engagement):
+        raise PermissionDenied
+    key = request.POST.get("finding", "")
+    item = None
+    if action != "add":
+        item = found.get(key)
+        if item is None:
+            raise Http404
+    try:
+        if action == "add":
+            row = findings_screen.add(found, request.POST, actor)
+            key, done = str(row.pk), "Finding added"
+        elif action == "edit":
+            changed = findings_screen.edit(found, item, request.POST, actor)
+            done = "Finding updated" if changed else ""
+        elif action in ("include", "exclude"):
+            findings_screen.set_included(found, item, action == "include", actor)
+            done = "Included in the report" if action == "include" else "Left out of the report"
+        elif action == "note":
+            changed = findings_screen.set_note(found, item, request.POST.get("note", ""), actor)
+            done = "Note saved" if changed else ""
+        elif action == "remove":
+            findings_screen.remove(found, item, request.POST.get("reason", ""), actor)
+            done = "Finding deleted" if item.manual else "Finding dismissed"
+            key = ""
+        else:
+            findings_screen.restore(found, item, actor)
+            done = "Finding restored"
+    except findings_screen.EditError as error:
+        params = {"finding": key}
+        params["mode" if action in ("add", "edit") else "remove"] = (
+            action if action in ("add", "edit") else "1"
+        )
+        return None, params, str(error)
+    if done:
+        messages.success(request, f"{done} · logged in the audit log")
+    return redirect(here + (f"?finding={key}" if key else "")), None, ""
+
+
+def _finding_form(screen, data) -> dict:
+    """The add or edit form's values: as posted, else the finding's, else blank."""
+    item = screen.selected if screen.mode == "edit" else None
+    if data is not None:
+        return {
+            "title": data.get("title", ""),
+            "severity": data.get("severity", ""),
+            "severity_reason": data.get("severity_reason", ""),
+            "check_id": data.get("check_id", ""),
+            "devices": set(data.getlist("devices")),
+            "evidence": data.get("evidence", ""),
+            "recommendation": data.get("recommendation", ""),
+            "suggested_config": data.get("suggested_config", ""),
+            "include_in_report": data.get("include_in_report") == "on",
+            "reason": data.get("reason", ""),
+        }
+    if item is None:
+        return {"severity": "medium", "devices": set(), "include_in_report": True}
+    return {
+        "title": item.title,
+        "severity": item.severity,
+        "severity_reason": item.severity_reason,
+        "check_id": item.check_id,
+        "devices": {str(a.device.pk) for a in item.devices},
+        "evidence": item.evidence,
+        "recommendation": item.recommendation,
+        "suggested_config": item.suggested_config,
+        "include_in_report": item.include_in_report,
+    }
 
 
 JOBS_SHOWN = 100

@@ -1,0 +1,86 @@
+{% extends "engineers/base.html" %}
+{% load static %}
+{% block title %}Findings · {{ customer.name }}{% endblock %}
+{% block page_title %}Findings{% if found %} <span class="title-count">{{ found.items|length }} open{% if found.removed %} · {{ found.removed|length }} dismissed{% endif %}</span>{% endif %}{% endblock %}
+{% block page_actions %}
+  {% if found %}
+  <span class="muted">{% if found.run %}Checks ran {{ found.run.started_at|date:"Y-m-d H:i" }} UTC on {{ found.devices|length }} device{{ found.devices|length|pluralize }}{% else %}Checks haven't run yet{% endif %}</span>
+  {% if editable %}<a class="btn" href="{{ here }}?mode=add">Add finding</a>{% endif %}
+  {% if can_run %}
+  <form method="post" action="{{ here }}">{% csrf_token %}<input type="hidden" name="action" value="run">
+    <button class="btn" type="submit">Re-run checks</button></form>
+  {% endif %}
+  {# The report is YAN-1666; it prints the edited set (`Findings.for_report`). #}
+  <button type="button" class="btn primary" disabled title="The report isn't built yet">Build report</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+{% if not engagement %}
+<p class="muted">{{ customer.name }} has no engagement yet, so there are no findings to show.</p>
+{% else %}
+{# Filters, selection and edits swap this region in place (htmx); each also works without it. #}
+<div id="findings" class="findings" hx-boost="true" hx-target="#findings" hx-select="#findings" hx-swap="outerHTML">
+  {% for message in messages %}<div class="toast" role="status">{{ message }}</div>{% endfor %}
+  {% if customer.is_on_site %}
+  <p class="banner live-view" role="note">Checks for {{ customer.name }} run on the on-site collector, next to the customer's own store. Their results and edits aren't kept on the controller.</p>
+  {% endif %}
+
+  <nav class="check-list" aria-label="Checks">
+    {% for check in found.checks %}
+    <a class="card check-card" href="{% if view.check == check.id %}{{ here }}{% else %}{{ here }}?check={{ check.id }}{% endif %}" aria-pressed="{% if view.check == check.id %}true{% else %}false{% endif %}">
+      <span class="check-head"><span class="mono muted">{{ check.id }}</span>{% if check.failed %}<span class="fail-count">{{ check.failed }} fail</span>{% endif %}</span>
+      <strong>{{ check.title }}</strong>
+      <span class="check-counts">{{ check.counts.pass }} pass · {{ check.counts.fail }} fail · {{ check.counts.unknown }} unknown · {{ check.counts.not_applicable }} n/a</span>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <section class="card finding-list" aria-labelledby="finding-list-title">
+    <div class="finding-list-head">
+      <h2 id="finding-list-title">{% if view.check %}{{ view.check_title }}{% else %}All findings{% endif %}</h2>
+      {% if view.check %}<a href="{{ here }}">Show all</a>{% endif %}
+    </div>
+    {% for item in view.visible %}
+    <a class="finding-row{% if not item.include_in_report %} left-out{% endif %}" href="{{ here }}?{% if view.check %}check={{ view.check }}&amp;{% endif %}finding={{ item.key }}"{% if view.selected.key == item.key %} aria-current="true"{% endif %}>
+      <span class="severity {{ item.severity }}">{{ item.severity_label }}</span>
+      <span class="finding-text"><span class="finding-title">{{ item.title }}</span>
+        <span class="muted">{{ item.check_title }} · {{ item.failing|length }} device{{ item.failing|length|pluralize }}{% if not item.include_in_report %} · left out of the report{% endif %}</span>
+        {% if item.manual %}<span class="tag manual">Added by engineer</span>{% elif item.edited %}<span class="tag edited">Edited by engineer</span>{% endif %}</span>
+    </a>
+    {% empty %}
+    <p class="empty-list">{% if not found.run and not found.items %}The checks haven't run on this engagement yet.{% elif view.check %}No open findings for this check.{% else %}No open findings.{% endif %}</p>
+    {% endfor %}
+    {% if found.removed %}
+    <details class="removed-list">
+      <summary>{{ found.removed|length }} dismissed or deleted</summary>
+      {% for item in found.removed %}
+      <div class="removed-row">
+        <span><strong>{{ item.title }}</strong><br><span class="muted">{{ item.removed_reason }}</span></span>
+        {% if editable %}
+        <form method="post" action="{{ here }}">{% csrf_token %}<input type="hidden" name="action" value="restore"><input type="hidden" name="finding" value="{{ item.key }}">
+          <button class="btn" type="submit">Restore</button></form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card finding-detail" aria-label="Finding detail">
+    {% if view.mode %}
+      {% include "engineers/_finding_form.html" %}
+    {% elif view.selected %}
+      {% include "engineers/_finding_detail.html" with item=view.selected %}
+    {% else %}
+    <div class="finding-empty">
+      <h2>{% if view.check %}Nothing to show for this check{% else %}No finding selected{% endif %}</h2>
+      <p class="muted">{% if found.run %}Pick a finding from the list, or add one the checks didn't catch.{% else %}Run the checks on the collected data, or add a finding by hand.{% endif %}</p>
+      {% if editable %}<a class="btn" href="{{ here }}?mode=add">Add finding</a>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+<script src="{% static 'engineers/js/hover-cards.js' %}" defer></script>
+<script src="{% static 'engineers/js/copy.js' %}" defer></script>
+{% endif %}
+{% endblock %}

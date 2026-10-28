@@ -19,6 +19,7 @@ from cartio_controller.collectors.models import (
     CustomerOwned,
     Device,
     Engagement,
+    Finding,
     Interface,
     Link,
     LoginEvent,
@@ -110,6 +111,9 @@ def _records(customer):
             severity="medium",
             status="pass",
         ),
+        Finding: Finding.objects.for_customer(customer).create(
+            engagement=engagement, kind="check", check_id="firmware-drift"
+        ),
     }
 
 
@@ -132,6 +136,7 @@ def test_every_table_carries_a_customer():
         "ConfigSnapshot",
         "AssessmentRun",
         "CheckResult",
+        "Finding",
     }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model

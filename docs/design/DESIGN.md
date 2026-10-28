@@ -323,6 +323,16 @@ The results of the five v1 checks (YAN-1665), which the engineer can correct bef
 * **Detail rule:** the detail shows a finding from the visible list only. With no findings it
   shows an empty state, not a stale finding.
 * **Arriving from global search:** the finding is selected and the check filter is cleared.
+  The finding's id goes in the URL (`?finding=<id>`); a check finding's id is its check id.
+* **As built (YAN-1738):** each check that fails on at least one device in the latest run is
+  one finding, with the failing devices as its affected devices. The prototype splits one
+  check into several findings (Telnet and SNMP write under insecure management, for example);
+  the v1 checks report per device, not per cause, so they can't yet. An engineer who wants them
+  apart edits the check finding and adds a manual one. Edits to a check finding are kept on top
+  of the check's result, so re-running the checks keeps them. Findings for On site customers
+  aren't kept on the controller, so the screen shows no edit controls for them until saving
+  through the collector exists. Findings CSV export and evidence from integrations aren't built
+  yet.
 
 ### 8. Compare
 

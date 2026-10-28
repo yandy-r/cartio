@@ -4,7 +4,8 @@ Each customer's records are searched in that customer's own scope (`for_customer
 result links to a URL with its customer and engagement. Words match in any order and in part:
 each word has to appear somewhere in the result, or in its customer's name.
 
-Findings and integrations join the search when those features exist (YAN-1738, YAN-1742).
+The Findings screen is a jump-to target; a finding opens with `?finding=<id>` in its URL, which
+selects it. Integrations join the search when they exist (YAN-1742).
 """
 
 from urllib.parse import urlencode
@@ -240,6 +241,7 @@ class Search:
             rows += [
                 ("Overview", "Sites and collectors", "customer"),
                 ("Inventory", "Every device, filter and export", "inventory"),
+                ("Findings", "Check results and engineer edits", "findings"),
                 ("Collectors & jobs", "Collector health, add and revoke", "collectors"),
             ]
             if self.user.has_perm("collectors.view_collectionrun"):

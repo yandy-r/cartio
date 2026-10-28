@@ -623,6 +623,10 @@ class AuditEvent(CustomerOwned):
         SOURCE_REPARSED = "source.reparsed", "Source outputs parsed again"
         INVENTORY_EXPORTED = "inventory.exported", "Inventory exported"
         ASSESSMENT_RUN = "assessment.run", "Assessment checks run"
+        FINDING_ADDED = "finding.added", "Finding added"
+        FINDING_UPDATED = "finding.updated", "Finding edited"
+        FINDING_REMOVED = "finding.removed", "Finding dismissed or deleted"
+        FINDING_RESTORED = "finding.restored", "Finding restored"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -1065,6 +1069,73 @@ class CheckResult(CustomerOwned):
         super().check_customer_links()
         if self.run_id is not None and self.device_id is not None:
             _check_same_engagement(self.run.engagement_id, self.device.engagement_id)
+
+
+class Finding(CustomerOwned):
+    """An engineer's changes to the findings of one engagement (YAN-1738, DESIGN.md section 7).
+
+    A check finding is a check that failed on at least one device in the latest run; it is
+    computed from the results, and this row only keeps what the engineer changed: blank fields
+    mean "as the check has it". A manual finding is all here. Removing either keeps the row, with
+    the reason, so it can be restored. Every change is audit-logged by `engineers.findings`.
+    """
+
+    network_data = True
+
+    class Kind(models.TextChoices):
+        CHECK = "check", "Check"
+        MANUAL = "manual", "Added by engineer"
+
+    class Severity(models.TextChoices):
+        CRITICAL = "critical", "Critical"
+        HIGH = "high", "High"
+        MEDIUM = "medium", "Medium"
+        LOW = "low", "Low"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    engagement = models.ForeignKey(Engagement, on_delete=models.PROTECT, related_name="findings")
+    kind = models.CharField(max_length=16, choices=Kind)
+    # The check a check finding belongs to. For a manual finding, the check it is filed under,
+    # or blank.
+    check_id = models.CharField(max_length=64, blank=True)
+    title = models.CharField(max_length=200, blank=True)
+    severity = models.CharField(max_length=16, choices=Severity, blank=True)
+    # Why a check finding's severity differs from the check's.
+    severity_reason = models.TextField(blank=True)
+    evidence = models.TextField(blank=True)
+    recommendation = models.TextField(blank=True)
+    # Text for the report only. Never sent to a device (ADR-0004).
+    suggested_config = models.TextField(blank=True)
+    # A manual finding's affected devices, as ids (text) of this engagement's devices.
+    device_ids = models.JSONField(default=list, blank=True)
+    note = models.TextField(blank=True)
+    include_in_report = models.BooleanField(default=True)
+    removed_at = models.DateTimeField(null=True, blank=True)
+    removed_reason = models.TextField(blank=True)
+    # Usernames, not foreign keys, so the record outlives the account.
+    created_by = models.CharField(max_length=150, blank=True)
+    updated_by = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["engagement", "check_id"],
+                condition=models.Q(kind="check"),
+                name="one_finding_per_check",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(kind__in=["check", "manual"]), name="finding_kind_valid"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(kind="check", check_id=""), name="check_finding_has_check"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.engagement} {self.title or self.check_id}"
 
 
 class AppendOnlyQuerySet(models.QuerySet):

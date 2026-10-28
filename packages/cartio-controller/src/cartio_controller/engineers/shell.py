@@ -15,6 +15,7 @@ from cartio_controller.collectors.models import Customer, Engagement
 SCREENS = {
     "customer": "Overview",
     "inventory": "Inventory",
+    "findings": "Findings",
     "collectors": "Collectors & jobs",
     "jobs": "Collectors & jobs",
     "audit": "Audit log",
