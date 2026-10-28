@@ -1,0 +1,15 @@
+<div><h2 id="step-title">Collectors</h2>
+  <p class="muted">A collector runs inside the customer's network and dials out to the controller on 443. Add one per site you can reach, or skip and add them later. Enrollment tokens are shown once, right after you create the customer.</p></div>
+{% for row in site_rows %}
+<fieldset class="collector-block">
+  <legend class="sr-only">Collector for {{ row.site.name }}</legend>
+  <label class="radio-row"><input type="checkbox" name="collector-{{ row.index }}"{% if row.site.collector %} checked{% endif %}>
+    <span><strong>Collector for {{ row.site.name }}</strong></span></label>
+  <div class="field">
+    <label for="collector-{{ row.index }}-name">Name</label>
+    <input id="collector-{{ row.index }}-name" class="mono" type="text" name="collector-{{ row.index }}-name" value="{{ row.site.collector_name }}" maxlength="200"{% if row.errors.collector_name %} aria-invalid="true" aria-describedby="collector-{{ row.index }}-name-error"{% endif %}>
+    {% if row.errors.collector_name %}<span id="collector-{{ row.index }}-name-error" class="hint field-error">{{ row.errors.collector_name }}</span>{% endif %}
+  </div>
+</fieldset>
+{% endfor %}
+{% if not summary.collectors %}<p class="muted">No collectors yet. You can still import show outputs, configs and CSV device lists for this customer.</p>{% endif %}

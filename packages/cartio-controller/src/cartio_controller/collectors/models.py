@@ -9,7 +9,7 @@ from django.db.models.functions import Length, Lower
 from django.db.models.lookups import Exact
 from django.views.decorators.debug import sensitive_variables
 
-from .validators import validate_seed_hints
+from .validators import validate_compliance, validate_seed_hints
 
 
 def _hash(value: str) -> str:
@@ -166,11 +166,19 @@ class Customer(Archivable):
         HOSTED = "hosted", "Hosted"
         ON_SITE = "on_site", "On site"
 
+    class Compliance(models.TextChoices):
+        # Requirements the customer works under. They suggest a data mode at onboarding.
+        HIPAA = "hipaa", "HIPAA"
+        PCI = "pci", "PCI"
+        SOC2 = "soc2", "SOC 2"
+
     name = models.CharField(max_length=200, unique=True)
     data_mode = models.CharField(max_length=16, choices=DataMode, default=DataMode.HOSTED)
     # ADR-0005: whether engineers may see an On site customer's data relayed through the
     # controller. Off until the customer chooses it at onboarding; it means nothing for Hosted.
     live_view_allowed = models.BooleanField(default=False)
+    # `Compliance` values, such as ["hipaa"]. Shown as tags on the customer list.
+    compliance = models.JSONField(default=list, blank=True, validators=[validate_compliance])
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -195,6 +203,10 @@ class Customer(Archivable):
     def inside_access_only(self) -> bool:
         """On site without live view: the controller shows only customer and collector health."""
         return self.is_on_site and not self.live_view_allowed
+
+    def get_compliance_display(self) -> list[str]:
+        labels = dict(self.Compliance.choices)
+        return [labels.get(value, value) for value in self.compliance]
 
 
 class CustomerOwned(models.Model):

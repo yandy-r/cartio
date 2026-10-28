@@ -6,6 +6,7 @@ app_name = "engineers"
 
 urlpatterns = [
     path("", views.customers, name="customers"),
+    path("customers/new", views.onboard, name="onboard"),
     # Per-customer screens, with or without the engagement. Without it, the current one shows.
     path("customers/<int:customer>", views.customer_detail, name="customer"),
     path(

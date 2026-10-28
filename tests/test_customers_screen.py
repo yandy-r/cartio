@@ -187,11 +187,12 @@ def test_empty_state_offers_new_customer(client, engineer):
     assert "Ask an admin to add customers." in page
 
     engineer.user_permissions.add(
-        Permission.objects.get(codename="add_customer"),
-        Permission.objects.get(codename="add_engagement"),
+        *Permission.objects.filter(
+            codename__in=["add_customer", "add_site", "add_engagement", "add_collector"]
+        )
     )
     page = _page(client)
-    assert 'href="/admin/collectors/customer/add/"' in page
+    assert 'href="/customers/new"' in page
 
 
 def test_new_customer_and_new_engagement_go_to_their_flows(client, engineer):
@@ -200,10 +201,11 @@ def test_new_customer_and_new_engagement_go_to_their_flows(client, engineer):
     assert "New customer" not in page and "+ New engagement" not in page
 
     engineer.user_permissions.add(
-        Permission.objects.get(codename="add_customer"),
-        Permission.objects.get(codename="add_engagement"),
+        *Permission.objects.filter(
+            codename__in=["add_customer", "add_site", "add_engagement", "add_collector"]
+        )
     )
     page = _page(client)
-    assert 'href="/admin/collectors/customer/add/"' in page
+    assert 'href="/customers/new"' in page
     assert 'href="/admin/collectors/engagement/add/"' in page
     assert f'href="/admin/collectors/engagement/add/?customer={acme.pk}"' in page

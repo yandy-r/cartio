@@ -1,0 +1,55 @@
+{% extends "engineers/base.html" %}
+{% load static %}
+{% block title %}{{ created.name }} is set up{% endblock %}
+{% block page_context %}<a href="{% url 'engineers:customers' %}">All customers</a> / New customer{% endblock %}
+{% block page_title %}Onboard a customer{% endblock %}
+{% block page_actions %}<span class="small muted">Created · logged in the audit log</span>{% endblock %}
+{% block content %}
+<div class="wizard">
+<section class="card wizard-step" aria-labelledby="done-title">
+  <div><h2 id="done-title">{{ created.name }} is set up</h2>
+    <p class="muted">{{ summary.mode }} · {{ summary.sites }} · {{ summary.engagement|default:"No engagement yet" }}</p></div>
+
+  {% if tokens %}
+  <div>
+    <h3>Enrollment tokens</h3>
+    <p class="banner inside-access" role="note">Shown once, on this page only. Each token enrolls one collector, and only its hash is stored. Copy them now; if one is lost, create the collector again.</p>
+    <ul class="tokens">
+    {% for token in tokens %}
+      <li>
+        <div class="token-head"><span><strong class="mono">{{ token.name }}</strong> <span class="muted">· {{ token.site }}</span></span>
+          <button class="btn" type="button" data-copy="enroll-{{ forloop.counter }}">Copy command</button></div>
+        <code class="command" id="enroll-{{ forloop.counter }}">{{ token.command }}</code>
+      </li>
+    {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div>
+    <h3>Send the onboarding checklist</h3>
+    <ul class="guarantees">
+      <li>A VM or jump host for the collector, with outbound HTTPS to the controller</li>
+      <li>Reachability from the collector to device management IPs</li>
+      <li>Read-only accounts: FortiGate read-only admin profile and API user, Cisco show-only privilege level, SNMPv3 authPriv read view</li>
+      {% if created.is_on_site %}<li>An on-site store the collector can write to</li>{% endif %}
+      <li>The data mode in plain words: {% if created.is_on_site %}your network data stays on your network{% else %}data is stored on our controller, separated from other customers{% endif %}</li>
+    </ul>
+  </div>
+</section>
+
+<aside class="wizard-side">
+  <section class="card side-card">
+    <h2>Next</h2>
+    <ul class="next-steps">
+      <li><a href="{{ overview_url }}">Watch for first check-ins</a></li>
+      <li><span class="muted">Set up scope and credentials <small>Soon</small></span></li>
+      <li><a href="{% url 'engineers:onboard' %}">Onboard another customer</a></li>
+      <li><span class="muted">Import files instead <small>Soon</small></span></li>
+      <li><a href="{% url 'engineers:customers' %}">Back to all customers</a></li>
+    </ul>
+  </section>
+</aside>
+</div>
+<script src="{% static 'engineers/js/copy.js' %}" defer></script>
+{% endblock %}

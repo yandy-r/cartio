@@ -1,0 +1,22 @@
+<div><h2 id="step-title">Who is the customer?</h2>
+  <p class="muted">Everything Cartio stores is scoped to one customer: data, collectors and credentials never cross between customers.</p></div>
+<div class="field">
+  <label for="name">Customer name</label>
+  <input id="name" type="text" name="name" value="{{ state.name }}" maxlength="200" placeholder="Organization name" autocomplete="off"
+         aria-describedby="name-hint"{% if errors.name %} aria-invalid="true"{% endif %}>
+  <span id="name-hint" class="hint{% if errors.name %} field-error{% endif %}">{{ errors.name|default:"Must be unique across all customers." }}</span>
+</div>
+<fieldset class="field">
+  <legend>Compliance requirements</legend>
+  <div class="chips">
+    {% for value, label in compliance_choices %}
+      <label class="chip-toggle"><input type="checkbox" name="compliance" value="{{ value }}"{% if value in state.compliance %} checked{% endif %}>{{ label }}</label>
+    {% endfor %}
+  </div>
+  <span class="hint">Used to suggest the right data mode. Shown on the customer list.</span>
+</fieldset>
+<div class="field">
+  <label for="notes">Notes <span class="hint">Optional. Contacts, access windows, change freeze dates.</span></label>
+  <textarea id="notes" name="notes" rows="3" maxlength="5000" placeholder="Primary contact, how access is granted, anything the next engineer should know"{% if errors.notes %} aria-invalid="true" aria-describedby="notes-error"{% endif %}>{{ state.notes }}</textarea>
+  {% if errors.notes %}<span id="notes-error" class="hint field-error">{{ errors.notes }}</span>{% endif %}
+</div>

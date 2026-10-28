@@ -1,0 +1,12 @@
+<div><h2 id="step-title">Review and create</h2>
+  <p class="muted">Creating the customer is logged in the audit log. Nothing is ever deleted: records can be archived and restored.</p></div>
+<dl class="review">
+  <div><dt>Customer</dt><dd>{{ summary.customer }}</dd><dd><button class="text-button" type="submit" name="action" value="goto:1">Edit<span class="sr-only"> customer</span></button></dd></div>
+  <div><dt>Data mode</dt><dd>{{ summary.mode }}</dd><dd><button class="text-button" type="submit" name="action" value="goto:2">Edit<span class="sr-only"> data mode</span></button></dd></div>
+  <div><dt>Sites</dt><dd>{{ summary.site_list }}</dd><dd><button class="text-button" type="submit" name="action" value="goto:3">Edit<span class="sr-only"> sites</span></button></dd></div>
+  <div><dt>Engagement</dt><dd>{{ summary.engagement|default:"None yet" }}</dd><dd><button class="text-button" type="submit" name="action" value="goto:4">Edit<span class="sr-only"> engagement</span></button></dd></div>
+  <div><dt>Collectors</dt><dd class="mono">{{ summary.collectors|join:", "|default:"None yet" }}</dd><dd><button class="text-button" type="submit" name="action" value="goto:5">Edit<span class="sr-only"> collectors</span></button></dd></div>
+</dl>
+{% if state.data_mode == "on_site" %}
+<div class="banner inside-access">What we tell the customer: "Your network data is stored only in your network, and credentials never leave it.{% if state.live_view == "yes" %} With live view on, data passes through our controller in memory and is never stored there.{% endif %}"</div>
+{% endif %}

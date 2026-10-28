@@ -1,0 +1,35 @@
+<div><h2 id="step-title">First engagement</h2>
+  <p class="muted">The assessment you are about to run. Later assessments of the same customer can be compared with this one.</p></div>
+<div class="field-row">
+  <div class="field">
+    <label for="engagement_name">Name</label>
+    <input id="engagement_name" type="text" name="engagement_name" value="{{ state.engagement.name }}" maxlength="200"{% if errors.engagement_name %} aria-invalid="true" aria-describedby="engagement_name-error"{% endif %}>
+    {% if errors.engagement_name %}<span id="engagement_name-error" class="hint field-error">{{ errors.engagement_name }}</span>{% endif %}
+  </div>
+  <div class="field">
+    <label for="engagement_status">Status</label>
+    <select id="engagement_status" name="engagement_status">
+      <option value="planned"{% if state.engagement.status == "planned" %} selected{% endif %}>Planned</option>
+      <option value="active"{% if state.engagement.status == "active" %} selected{% endif %}>Active</option>
+    </select>
+  </div>
+</div>
+<div class="field-row">
+  <div class="field">
+    <label for="start_date">Start date</label>
+    <input id="start_date" type="date" name="start_date" value="{{ state.engagement.start_date }}"{% if errors.start_date %} aria-invalid="true" aria-describedby="start_date-error"{% endif %}>
+    {% if errors.start_date %}<span id="start_date-error" class="hint field-error">{{ errors.start_date }}</span>{% endif %}
+  </div>
+  <div class="field">
+    <label for="end_date">End date</label>
+    <input id="end_date" type="date" name="end_date" value="{{ state.engagement.end_date }}" aria-describedby="end_date-hint"{% if errors.end_date %} aria-invalid="true"{% endif %}>
+    <span id="end_date-hint" class="hint{% if errors.end_date %} field-error{% endif %}">{{ errors.end_date|default:"Must be on or after the start date." }}</span>
+  </div>
+</div>
+<div class="field">
+  <label for="assessment">What this assessment covers</label>
+  <textarea id="assessment" name="assessment" rows="3" maxlength="5000"{% if errors.assessment %} aria-invalid="true" aria-describedby="assessment-error"{% endif %}>{{ state.engagement.assessment }}</textarea>
+  {% if errors.assessment %}<span id="assessment-error" class="hint field-error">{{ errors.assessment }}</span>{% endif %}
+</div>
+<label class="radio-row"><input type="checkbox" name="skip_engagement"{% if state.skip_engagement %} checked{% endif %}>
+  <span>Skip for now. I'll create the engagement later.</span></label>

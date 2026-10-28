@@ -25,9 +25,10 @@ MAX_QUERY = 200
 
 
 def _tags(customer) -> list[str]:
-    if not customer.is_on_site:
-        return []
-    return ["Live view on" if customer.live_view_allowed else "Inside access only"]
+    tags = customer.get_compliance_display()
+    if customer.is_on_site:
+        tags.append("Live view on" if customer.live_view_allowed else "Inside access only")
+    return tags
 
 
 def _row(customer, now):
