@@ -321,3 +321,22 @@ def test_on_site_customers(client, engineer):
     assert "Export .diff" not in page
     response = client.post(_url(annual, "/export"), {"baseline": older.pk, "device": "x"})
     assert response.status_code == 404
+
+
+def test_findings_are_not_compared_without_a_run(client, engineer, acme, pair):
+    q2, _ = pair
+    q1 = _engagement(acme, "Q1 review", (2026, 1, 10))
+    _devices(q1, [("core-sw-01", "17.6.5"), ("core-sw-02", "17.9.4a")])
+    found = Comparison(acme, q1, q2)
+    assert found.not_assessed == [q1]
+    assert not found.groups["fixed"] and not found.groups["new"] and not found.groups["open"]
+    page = client.get(_url(q2, f"?baseline={q1.pk}")).content.decode()
+    assert "The checks haven&#x27;t run on Q1 review yet" in page or (
+        "The checks haven't run on Q1 review yet" in page
+    )
+
+
+def test_a_later_baseline_says_so(client, engineer, pair):
+    q2, q4 = pair
+    page = client.get(_url(q2, f"?baseline={q4.pk}")).content.decode()
+    assert "The baseline is later than the current engagement" in page

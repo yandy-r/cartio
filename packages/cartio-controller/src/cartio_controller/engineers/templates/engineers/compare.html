@@ -36,6 +36,12 @@
   {% elif view.same %}
   <p class="banner" role="note">Pick two different engagements to compare.</p>
   {% else %}
+  {% if view.reversed %}
+  <p class="banner" role="note">The baseline is later than the current engagement, so fixed and new read the other way round.</p>
+  {% endif %}
+  {% for e in view.comparison.not_assessed %}
+  <p class="banner" role="note">The checks haven't run on {{ e.name }} yet, so findings fixed, new and still open aren't compared.</p>
+  {% endfor %}
   <section class="compare-tiles" aria-label="Changes since the baseline">
     {% for tile in view.tiles %}
     <a class="card compare-tile {{ tile.key }}" href="{{ tile.url }}" aria-pressed="{% if tile.key == view.group %}true{% else %}false{% endif %}">

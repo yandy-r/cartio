@@ -143,17 +143,26 @@ def diff_lines(base: str, current: str) -> tuple[list, int, int]:
 
 def _latest_configs(customer, devices) -> dict:
     """Each device's latest snapshot, by device id."""
+    rows = ConfigSnapshot.objects.for_customer(customer)
+    # Snapshots are append-only, so read the content of the latest ones only.
     latest = {}
-    rows = ConfigSnapshot.objects.for_customer(customer).filter(device__in=devices)
-    for snapshot in rows.order_by("-collected_at", "-pk"):
-        latest.setdefault(snapshot.device_id, snapshot)
-    return latest
+    for pk, device_id in (
+        rows.filter(device__in=devices).order_by("-collected_at", "-pk").values_list("pk", "device")
+    ):
+        latest.setdefault(device_id, pk)
+    return {s.device_id: s for s in rows.filter(pk__in=latest.values())}
 
 
-def _finding_rows(customer, engagement) -> dict:
-    """Open findings, one per affected device, keyed so they match across engagements."""
+def _finding_rows(customer, engagement) -> dict | None:
+    """Open findings, one per affected device, keyed so they match across engagements.
+
+    None when the checks haven't run on the engagement: its findings aren't known yet.
+    """
+    found = Findings(customer, engagement)
+    if found.run is None:
+        return None
     rows = {}
-    for item in Findings(customer, engagement).items:
+    for item in found.items:
         devices = item.failing if not item.manual else item.devices
         name = item.check_id if not item.manual else item.title.casefold()
         for affected in devices or [None]:
@@ -192,6 +201,12 @@ class Comparison:
                 groups["removed"].append(Change("removed", device.name, text, _site(device)))
         old_findings = _finding_rows(customer, baseline)
         new_findings = _finding_rows(customer, current)
+        # Without a run on both sides, fixed and new would only say which side wasn't assessed.
+        self.not_assessed = [
+            e for e, rows in ((baseline, old_findings), (current, new_findings)) if rows is None
+        ]
+        if self.not_assessed:
+            old_findings = new_findings = {}
         for key, (host, title, site) in new_findings.items():
             group = "open" if key in old_findings else "new"
             groups[group].append(Change(group, host, title, site))
@@ -261,6 +276,9 @@ class Screen:
         else:
             self.baseline = None if self.single else default_baseline(self.engagements, current)
         self.same = self.baseline is not None and self.baseline.pk == current.pk
+        self.reversed = self.baseline is not None and self.engagements.index(
+            self.baseline
+        ) > self.engagements.index(current)
         self.comparison = None
         if self.baseline is not None and not self.same:
             self.comparison = Comparison(customer, self.baseline, current)
@@ -329,17 +347,23 @@ def filename(customer, current, host: str, at=None) -> str:
     return f"{safe}.diff"
 
 
+def _one_line(text: str) -> str:
+    return " ".join(text.splitlines())
+
+
 def diff_text(comparison, diff, at=None) -> str:
     """One device's diff as a unified diff of the whole file. Masked values only."""
     at = at or timezone.now()
     base, current = comparison.baseline, comparison.current
+    customer, host = _one_line(comparison.customer.name), _one_line(diff.host)
+    base_name, current_name = _one_line(base.name), _one_line(current.name)
     out = [
-        f"# Cartio config diff · {comparison.customer.name} · {diff.host}",
-        f"# Baseline: {base.name} · collected {diff.base.collected_at:%Y-%m-%d %H:%M} UTC",
-        f"# Current: {current.name} · collected {diff.current.collected_at:%Y-%m-%d %H:%M} UTC",
+        f"# Cartio config diff · {customer} · {host}",
+        f"# Baseline: {base_name} · collected {diff.base.collected_at:%Y-%m-%d %H:%M} UTC",
+        f"# Current: {current_name} · collected {diff.current.collected_at:%Y-%m-%d %H:%M} UTC",
         f"# Exported {at:%Y-%m-%d %H:%M} UTC · secrets are masked, values never shown",
-        f"--- {base.name}/{diff.host}",
-        f"+++ {current.name}/{diff.host}",
+        f"--- {base_name}/{host}",
+        f"+++ {current_name}/{host}",
         f"@@ -{_range(diff.lines, 'a')} +{_range(diff.lines, 'b')} @@",
     ]
     out += [f"{line.sig or ' '}{line.text}" for line in diff.lines]

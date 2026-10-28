@@ -343,7 +343,9 @@ Two engagements of the same customer side by side (YAN-1667).
   changes.
 * **Findings:** fixed, new and still open match by check and device (an engineer's finding by
   its title). A finding on a device that is no longer seen isn't counted as fixed; the device
-  shows as removed instead.
+  shows as removed instead. When the checks haven't run on one of the two engagements, findings
+  aren't compared and a note says so. Renaming an engineer's finding between engagements shows it
+  as one fixed and one new.
 * **Config diff:** per device, unified, with both line numbers, as the prototype shows it, and a
   "Changes only" toggle. Masked secrets compare by digest, so a changed secret shows as changed
   without its value. Digests made with different masking key versions can't be compared, so a
