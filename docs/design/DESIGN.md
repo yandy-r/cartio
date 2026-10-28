@@ -341,10 +341,23 @@ Two engagements of the same customer side by side (YAN-1667).
 * **Engagements:** pickers for the earlier and the later engagement.
 * **Summary:** devices added, removed and changed; findings new, fixed and still open; and OS
   changes.
-* **Config diff:** per device, side by side or unified. Masked secrets compare by digest, so a
-  changed secret shows as changed without its value.
+* **Findings:** fixed, new and still open match by check and device (an engineer's finding by
+  its title). A finding on a device that is no longer seen isn't counted as fixed; the device
+  shows as removed instead. When the checks haven't run on one of the two engagements, findings
+  aren't compared and a note says so. Renaming an engineer's finding between engagements shows it
+  as one fixed and one new.
+* **Config diff:** per device, unified, with both line numbers, as the prototype shows it, and a
+  "Changes only" toggle. Masked secrets compare by digest, so a changed secret shows as changed
+  without its value. Digests made with different masking key versions can't be compared, so a
+  line whose only difference is the key version shows as "key rotated" and isn't counted. A
+  side-by-side view isn't built in v1; the unified view already shows both sides' line numbers.
+* **Export .diff:** one device's diff with the customer, engagements and time in its header,
+  audit-logged (`compare.exported`). On site customers' configs aren't on the controller, so
+  there is nothing to export there yet.
 * **One engagement only:** a customer with a single engagement gets an empty state explaining
   that Compare needs two.
+* **Add to report:** the report's "Changes since the last assessment" page is YAN-1745, so the
+  prototype's "Add to report" button comes with it.
 
 ### 9. Report and export
 

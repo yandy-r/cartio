@@ -1,0 +1,116 @@
+{% extends "engineers/base.html" %}
+{% block title %}Compare · {{ customer.name }}{% endblock %}
+{% block page_context %}{{ customer.name }} · comparisons stay within one customer{% endblock %}
+{% block page_title %}Compare engagements{% endblock %}
+{% block content %}
+{% if not engagement %}
+<p class="muted">{{ customer.name }} has no engagement yet, so there is nothing to compare.</p>
+{% elif view.single %}
+<section class="card empty-state compare-empty">
+  <h2>Nothing to compare yet</h2>
+  <p class="muted">{{ customer.name }} has one engagement, {{ engagement.name }}. Run another assessment and Cartio shows devices added or removed, OS changes, findings fixed and new, and a config diff for every device.</p>
+</section>
+{% else %}
+<div id="compare" class="compare" hx-boost="true" hx-target="#compare" hx-select="#compare" hx-swap="outerHTML">
+  {% if customer.is_on_site %}
+  <p class="banner live-view" role="note">{{ customer.name }}'s configs stay in its on-site store. Comparing them runs on the on-site collector, which can't do it yet, so only what the controller holds shows here.</p>
+  {% endif %}
+
+  <form class="card compare-pickers" method="get" action="">
+    <label class="field"><span class="label">Baseline</span>
+      <select name="baseline">
+        {% for e in view.engagements %}<option value="{{ e.pk }}"{% if e == view.baseline %} selected{% endif %}>{{ e.name }}{% if e.start_date %} · {{ e.start_date|date:"M j, Y" }}{% endif %}</option>{% endfor %}
+      </select>
+    </label>
+    <span class="compare-arrow" aria-hidden="true">→</span>
+    <label class="field"><span class="label">Current</span>
+      <select name="current">
+        {% for e in view.engagements %}<option value="{{ e.pk }}"{% if e == engagement %} selected{% endif %}>{{ e.name }}{% if e.start_date %} · {{ e.start_date|date:"M j, Y" }}{% endif %}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn" type="submit">Compare</button>
+  </form>
+
+  {% if not view.baseline %}
+  <p class="banner" role="note">{{ engagement.name }} is {{ customer.name }}'s first engagement. Pick another one to compare against it.</p>
+  {% elif view.same %}
+  <p class="banner" role="note">Pick two different engagements to compare.</p>
+  {% else %}
+  {% if view.reversed %}
+  <p class="banner" role="note">The baseline is later than the current engagement, so fixed and new read the other way round.</p>
+  {% endif %}
+  {% for e in view.comparison.not_assessed %}
+  <p class="banner" role="note">The checks haven't run on {{ e.name }} yet, so findings fixed, new and still open aren't compared.</p>
+  {% endfor %}
+  <section class="compare-tiles" aria-label="Changes since the baseline">
+    {% for tile in view.tiles %}
+    <a class="card compare-tile {{ tile.key }}" href="{{ tile.url }}" aria-pressed="{% if tile.key == view.group %}true{% else %}false{% endif %}">
+      <span class="muted">{{ tile.label }}</span>
+      <span class="compare-count">{{ tile.count }}</span>
+    </a>
+    {% endfor %}
+  </section>
+
+  <section class="card compare-list" aria-labelledby="compare-list-title">
+    <h2 id="compare-list-title">{{ view.group_title }}</h2>
+    {% for change in view.changes %}
+    <div class="compare-row">
+      <span class="change-tag {{ change.group }}">{{ change.tag }}</span>
+      <span class="mono compare-host">{{ change.host|default:"No device" }}</span>
+      <span class="compare-text">{{ change.text }}</span>
+      <span class="muted compare-site">{{ change.site }}</span>
+    </div>
+    {% empty %}
+    <p class="empty-list">None.</p>
+    {% endfor %}
+  </section>
+
+  <section class="card config-diff" aria-label="Config diff">
+    <nav class="diff-devices" aria-label="Changed configs">
+      <div class="label">Changed configs · {{ view.comparison.diffs|length }}</div>
+      {% for diff, url in view.diff_links %}
+      <a class="diff-device" href="{{ url }}"{% if diff == view.diff %} aria-current="true"{% endif %}><span class="mono">{{ diff.host }}</span>
+        <span class="mono diff-counts"><span class="diff-add">+{{ diff.added }}</span> <span class="diff-del">−{{ diff.removed }}</span></span></a>
+      {% empty %}
+      <p class="muted diff-none">No config changed between these engagements, or a device has a config in only one of them.</p>
+      {% endfor %}
+    </nav>
+    {% if view.diff %}
+    <div class="diff-main">
+      <div class="diff-head">
+        <span class="mono diff-host">{{ view.diff.host }}</span>
+        <span class="muted">sha256 {{ view.diff.base.sha256|slice:":4" }}…{{ view.diff.base.sha256|slice:"-4:" }} → {{ view.diff.current.sha256|slice:":4" }}…{{ view.diff.current.sha256|slice:"-4:" }}</span>
+        <span class="diff-spacer"></span>
+        <a class="btn" href="{{ view.toggle_url }}" aria-pressed="{% if view.changes_only %}true{% else %}false{% endif %}"><span class="toggle{% if view.changes_only %} on{% endif %}" aria-hidden="true"></span>Changes only</a>
+        {% if not customer.is_on_site %}
+        <form method="post" action="{% url 'engineers:compare-export' customer=customer.pk engagement=engagement.pk %}" hx-boost="false">{% csrf_token %}
+          <input type="hidden" name="baseline" value="{{ view.baseline.pk }}">
+          <input type="hidden" name="device" value="{{ view.diff.host }}">
+          <button class="btn" type="submit">Export .diff</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="diff-scroll">
+        <table class="diff-lines">
+          <caption class="sr-only">Config of {{ view.diff.host }}: {{ view.baseline.name }} against {{ engagement.name }}</caption>
+          {% for line in view.lines %}
+          <tr class="{% if line.sig == '+' %}line-add{% elif line.sig == '-' %}line-del{% elif line.flag %}line-{{ line.flag }}{% endif %}">
+            <td class="ln">{{ line.a|default_if_none:"" }}</td>
+            <td class="ln">{{ line.b|default_if_none:"" }}</td>
+            <td class="sig">{% if line.sig == '+' %}+<span class="sr-only"> added</span>{% elif line.sig == '-' %}−<span class="sr-only"> removed</span>{% endif %}</td>
+            <td class="text">{{ line.text }}{% if line.flag == "secret" %}<span class="badge secret">secret changed</span>{% elif line.flag == "rotated" %}<span class="badge rotated">key rotated</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      <div class="diff-legend">
+        <span><span class="badge secret">secret changed</span> digest differs, value never shown</span>
+        <span><span class="badge rotated">key rotated</span> masking key version moved, so the secret can't be compared; not counted as a change</span>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

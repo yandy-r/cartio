@@ -31,6 +31,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from cartio_controller.collectors import assessments, audit
 from cartio_controller.collectors.models import CollectionRun, Customer, Site
 
+from . import compare as compare_screen
 from . import findings as findings_screen
 from . import inventory as inventory_screen
 from . import onboarding, operations, overview, shell, totp
@@ -562,6 +563,57 @@ def findings(request, customer, engagement=None):
         network_data=True,
     )
     response.status_code = status
+    return response
+
+
+@never_cache
+@engineer_required
+def compare(request, customer, engagement=None):
+    """Compare (DESIGN.md section 8): two engagements of this customer, and config diffs."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    extra = {}
+    if engagement is not None and not customer.inside_access_only:
+        # The pickers name the current engagement; it goes in the path like everywhere else.
+        current = request.GET.get("current", "")
+        if current:
+            picked = next((e for e in engagements if str(e.pk) == current), None)
+            if picked is None:
+                raise Http404
+            query = request.GET.copy()
+            del query["current"]
+            url = shell.screen_url("compare", customer, picked)
+            return redirect(f"{url}?{query.urlencode()}" if query else url)
+        extra["view"] = compare_screen.Screen(customer, engagements, engagement, request.GET)
+    return render_screen(
+        request,
+        "compare",
+        "engineers/compare.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+        network_data=True,
+    )
+
+
+@require_POST
+@csrf_protect
+@never_cache
+@engineer_required
+def compare_export(request, customer, engagement):
+    """One device's config diff as a .diff file, audit-logged. Masked values only."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    # On site configs stay in the customer's store (ADR-0002); the controller has none to export.
+    if customer.is_on_site:
+        raise Http404
+    view = compare_screen.Screen(customer, engagements, engagement, request.POST)
+    diff = view.comparison.diff_for(request.POST.get("device", "")) if view.comparison else None
+    if diff is None:
+        return HttpResponseBadRequest("Pick a device whose config changed.")
+    with transaction.atomic():
+        content, name = compare_screen.export(view.comparison, diff, request.user.get_username())
+    response = HttpResponse(content, content_type="text/x-diff; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
     return response
 
 

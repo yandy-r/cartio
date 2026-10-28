@@ -31,6 +31,17 @@ urlpatterns = [
         views.findings,
         name="findings",
     ),
+    path("customers/<int:customer>/compare", views.compare, name="compare"),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/compare",
+        views.compare,
+        name="compare",
+    ),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/compare/export",
+        views.compare_export,
+        name="compare-export",
+    ),
     path("customers/<int:customer>/report", views.report, name="report"),
     path(
         "customers/<int:customer>/engagements/<int:engagement>/report",
