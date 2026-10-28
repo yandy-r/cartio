@@ -4,10 +4,13 @@ import json
 
 import pytest
 from cartio_controller.collectors.models import (
+    AuditEvent,
     CheckIn,
     Collector,
+    Credential,
     CrossCustomerError,
     Customer,
+    CustomerDataKey,
     CustomerOwned,
     Engagement,
     Site,
@@ -41,6 +44,9 @@ def _collector(customer, name="vm01"):
 def _records(customer):
     """One record of every customer-owned kind for `customer`."""
     collector, _ = _collector(customer)
+    credential = Credential(customer=customer, name="snmp", kind="snmp_v2c")
+    credential.set_secret({"community": "c" * 12})
+    credential.save()
     return {
         Engagement: Engagement.objects.for_customer(customer).create(name="Audit"),
         Site: Site.objects.for_customer(customer).create(name="HQ"),
@@ -48,11 +54,25 @@ def _records(customer):
         CheckIn: CheckIn.objects.for_customer(customer).create(
             collector=collector, hostname="vm01", version="1", platform="linux"
         ),
+        Credential: credential,
+        # Created by the credential's encryption.
+        CustomerDataKey: CustomerDataKey.objects.for_customer(customer).get(),
+        AuditEvent: AuditEvent.objects.for_customer(customer).create(
+            action="credential.used", collector=collector, object_type="credential", object_id="1"
+        ),
     }
 
 
 def test_every_table_carries_a_customer():
-    assert {model.__name__ for model in OWNED} == {"Engagement", "Site", "Collector", "CheckIn"}
+    assert {model.__name__ for model in OWNED} == {
+        "Engagement",
+        "Site",
+        "Collector",
+        "CheckIn",
+        "CustomerDataKey",
+        "Credential",
+        "AuditEvent",
+    }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model
         field = model._meta.get_field("customer")
@@ -83,7 +103,8 @@ def test_a_customer_scope_never_shows_another_customers_rows(model, acme, globex
     assert not model.objects.for_customer(acme).filter(pk=theirs.pk).exists()
     # Chained querysets keep the scope.
     assert not model.objects.for_customer(acme).exclude(pk=mine.pk).filter(pk=theirs.pk)
-    assert model.objects.for_customer(acme).filter(pk=theirs.pk).delete()[0] == 0
+    if not model.append_only:
+        assert model.objects.for_customer(acme).filter(pk=theirs.pk).delete()[0] == 0
     # The explicit admin path sees both.
     assert set(model.all_customers.all()) == {mine, theirs}
 

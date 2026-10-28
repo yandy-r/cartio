@@ -6,6 +6,10 @@ Everything that differs per environment comes from environment variables:
 - CARTIO_DEBUG: "1" for local development.
 - CARTIO_ALLOWED_HOSTS: comma-separated host names.
 - DATABASE_URL: PostgreSQL in any shared environment. Defaults to a local SQLite file.
+- CARTIO_MASTER_KEY_FILE: a file holding the base64 32-byte master key that wraps each customer's
+  credential key (ADR-0003). Keep it out of the database and its backups, and back it up on its
+  own: losing it means re-entering every credential. CARTIO_MASTER_KEY can hold the key instead.
+  Generate one with `openssl rand -base64 32`.
 """
 
 import os
