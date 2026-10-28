@@ -9,14 +9,20 @@ from cartio_controller.collectors.models import (
     CollectionRun,
     CollectionRunResult,
     Collector,
+    ConfigSnapshot,
     Credential,
     CrossCustomerError,
     Customer,
     CustomerDataKey,
     CustomerOwned,
+    Device,
     Engagement,
+    Interface,
+    Link,
     LoginEvent,
+    RawOutput,
     Site,
+    Source,
     UnscopedQueryError,
 )
 from cartio_core.protocol import CHECKIN_PATH, bearer
@@ -56,9 +62,17 @@ def _records(customer):
     run = CollectionRun.objects.for_customer(customer).create(
         job_type="discovery", engagement=engagement, collector=collector
     )
+    site = Site.objects.for_customer(customer).create(name="HQ")
+    source = Source.objects.for_customer(customer).create(
+        engagement=engagement, kind="live_run", run=run
+    )
+    device = Device.objects.for_customer(customer).create(
+        engagement=engagement, site=site, source=source, name="core-sw1", platform="ios"
+    )
+    interface = Interface.objects.for_customer(customer).create(device=device, name="Gi1/0/1")
     return {
         Engagement: engagement,
-        Site: Site.objects.for_customer(customer).create(name="HQ"),
+        Site: site,
         Collector: collector,
         CheckIn: CheckIn.objects.for_customer(customer).create(
             collector=collector, hostname="vm01", version="1", platform="linux"
@@ -72,6 +86,18 @@ def _records(customer):
         CollectionRun: run,
         CollectionRunResult: CollectionRunResult.objects.for_customer(customer).create(
             run=run, outcome="succeeded", device_count=3
+        ),
+        Source: source,
+        Device: device,
+        Interface: interface,
+        Link: Link.objects.for_customer(customer).create(
+            a_interface=interface, b_device_name="edge-fw1", b_interface_name="port1"
+        ),
+        RawOutput: RawOutput.objects.for_customer(customer).create(
+            source=source, device=device, command="show version", output="Cisco IOS XE"
+        ),
+        ConfigSnapshot: ConfigSnapshot.objects.for_customer(customer).create(
+            device=device, source=source, content="hostname core-sw1"
         ),
     }
 
@@ -87,6 +113,12 @@ def test_every_table_carries_a_customer():
         "AuditEvent",
         "CollectionRun",
         "CollectionRunResult",
+        "Source",
+        "Device",
+        "Interface",
+        "Link",
+        "RawOutput",
+        "ConfigSnapshot",
     }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model

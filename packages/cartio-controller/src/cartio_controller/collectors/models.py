@@ -5,7 +5,8 @@ import secrets
 import uuid
 
 from django.db import IntegrityError, models, transaction
-from django.db.models.functions import Lower
+from django.db.models.functions import Length, Lower
+from django.db.models.lookups import Exact
 from django.views.decorators.debug import sensitive_variables
 
 from .validators import validate_seed_hints
@@ -88,6 +89,7 @@ class CustomerOwnedQuerySet(models.QuerySet):
         self._refuse_bulk_relink(kwargs.get("update_fields") or ())
         for obj in objs:
             obj.check_customer_links()
+            obj.set_derived_fields()
         return super().bulk_create(objs, *args, **kwargs)
 
     def _refuse_bulk_relink(self, fields) -> None:
@@ -220,6 +222,7 @@ class CustomerOwned(models.Model):
         update_fields = kwargs.get("update_fields")
         if update_fields is None or _link_fields(type(self)) & set(update_fields):
             self.check_customer_links()
+        self.set_derived_fields()
         super().save(*args, **kwargs)
         if update_fields is None or {"customer", "customer_id"} & set(update_fields):
             self._saved_customer_id = self.customer_id
@@ -241,6 +244,9 @@ class CustomerOwned(models.Model):
                 .first()
             )
         return saved
+
+    def set_derived_fields(self) -> None:
+        """Fill fields computed from others, such as a digest. Runs on save and bulk create."""
 
     def check_customer_links(self) -> None:
         """Take the customer from a parent record, and refuse a parent of another customer."""
@@ -314,6 +320,7 @@ class Site(Archivable, CustomerOwned):
         ordering = ["customer__name", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_site_name"),
+            models.UniqueConstraint(fields=["id", "customer"], name="site_id_customer"),
         ]
 
     def __str__(self) -> str:
@@ -634,6 +641,275 @@ class CollectionRunResult(CustomerOwned):
 
     def __str__(self) -> str:
         return f"{self.run}: {self.outcome}"
+
+
+# The normalized device model (YAN-1656, ADR-0008). Every record belongs to one engagement, so
+# each assessment keeps its own copy of the network as it was found, and the next engagement's
+# diff compares two copies. Field names follow NetBox where one fits, for a later export.
+#
+# Device output and configs arrive masked (ADR-0003, `cartio_core.masking`): the collector masks
+# them before upload. Nothing here holds a secret in clear text.
+
+
+class CrossEngagementError(ValueError):
+    """A record that would mix two engagements' data."""
+
+
+def _check_same_engagement(*engagement_ids) -> None:
+    if len({pk for pk in engagement_ids if pk is not None}) > 1:
+        raise CrossEngagementError("These records belong to different engagements.")
+
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+class Source(CustomerOwned):
+    """How a batch of data arrived for an engagement: a live run, an upload or a tool export.
+
+    Append-only, so every device, output and config can always be traced to where it came from.
+    """
+
+    append_only = True
+
+    class Kind(models.TextChoices):
+        LIVE_RUN = "live_run", "Live collection run"
+        UPLOAD = "upload", "Uploaded file"
+        TOOL_EXPORT = "tool_export", "Customer tool export"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    engagement = models.ForeignKey(Engagement, on_delete=models.PROTECT, related_name="sources")
+    kind = models.CharField(max_length=16, choices=Kind)
+    # Set for live runs.
+    run = models.ForeignKey(
+        CollectionRun, null=True, blank=True, on_delete=models.PROTECT, related_name="sources"
+    )
+    # A file name or a short label for people. Never device output.
+    name = models.CharField(max_length=255, blank=True)
+    # A username, not a foreign key, so the record outlives the account.
+    added_by = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["id", "customer"], name="source_id_customer"),
+            models.CheckConstraint(
+                condition=models.Q(kind__in=["live_run", "upload", "tool_export"]),
+                name="source_kind_valid",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(kind="live_run") | models.Q(run__isnull=False),
+                name="source_live_run_has_run",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} {self.name}".strip()
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.run_id is not None and self.run.engagement_id != self.engagement_id:
+            raise CrossEngagementError("A live run's source belongs to the run's engagement.")
+
+
+class Device(CustomerOwned):
+    """A network device as found in one engagement."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    engagement = models.ForeignKey(Engagement, on_delete=models.PROTECT, related_name="devices")
+    site = models.ForeignKey(
+        Site, null=True, blank=True, on_delete=models.PROTECT, related_name="devices"
+    )
+    # Where the device was first found in this engagement.
+    source = models.ForeignKey(
+        Source, null=True, blank=True, on_delete=models.PROTECT, related_name="devices"
+    )
+    # The host name, unique within the engagement.
+    name = models.CharField(max_length=255)
+    # A `cartio_core.masking.Platform` value, such as "ios" or "fortios". Blank until known.
+    platform = models.CharField(max_length=32, blank=True)
+    manufacturer = models.CharField(max_length=100, blank=True)
+    model = models.CharField(max_length=100, blank=True)
+    serial = models.CharField(max_length=100, blank=True)
+    os_version = models.CharField(max_length=100, blank=True)
+    management_ip = models.GenericIPAddressField(null=True, blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["engagement", "name"], name="unique_device_name"),
+            models.UniqueConstraint(fields=["id", "customer"], name="device_id_customer"),
+        ]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.source_id is not None:
+            _check_same_engagement(self.engagement_id, self.source.engagement_id)
+        if self.pk is not None and not self._state.adding:
+            saved = (
+                Device.all_customers.filter(pk=self.pk)
+                .values_list("engagement_id", flat=True)
+                .first()
+            )
+            # Its interfaces, outputs and configs stay with the engagement they were found in.
+            if saved is not None and saved != self.engagement_id:
+                raise CrossEngagementError("A device can't move to another engagement.")
+
+
+class Interface(CustomerOwned):
+    """A port or logical interface of a device."""
+
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="interfaces")
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=255, blank=True)
+    # Unknown until parsed: null rather than a guess.
+    enabled = models.BooleanField(null=True, blank=True)
+    mac_address = models.CharField(max_length=17, blank=True)
+    mtu = models.PositiveIntegerField(null=True, blank=True)
+    # In kbit/s, as NetBox stores it.
+    speed = models.PositiveBigIntegerField(null=True, blank=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["device__name", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["device", "name"], name="unique_interface_name"),
+            models.UniqueConstraint(fields=["id", "customer"], name="interface_id_customer"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.device} {self.name}"
+
+
+class Link(CustomerOwned):
+    """A neighbor relation for the map: interface A to interface B, or to a device not in scope.
+
+    A neighbor that isn't in the inventory (out of scope, or not reached yet) has no `b_interface`
+    and keeps the names it announced instead.
+    """
+
+    class Protocol(models.TextChoices):
+        LLDP = "lldp", "LLDP"
+        CDP = "cdp", "CDP"
+        OTHER = "other", "Other"
+
+    a_interface = models.ForeignKey(Interface, on_delete=models.CASCADE, related_name="links_a")
+    b_interface = models.ForeignKey(
+        Interface, null=True, blank=True, on_delete=models.CASCADE, related_name="links_b"
+    )
+    b_device_name = models.CharField(max_length=255, blank=True)
+    b_interface_name = models.CharField(max_length=64, blank=True)
+    protocol = models.CharField(max_length=8, choices=Protocol, default=Protocol.OTHER)
+    source = models.ForeignKey(
+        Source, null=True, blank=True, on_delete=models.PROTECT, related_name="links"
+    )
+
+    class Meta(CustomerOwned.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(a_interface=models.F("b_interface")),
+                name="link_not_to_itself",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(protocol__in=["lldp", "cdp", "other"]),
+                name="link_protocol_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        far = self.b_interface or f"{self.b_device_name} {self.b_interface_name}".strip()
+        return f"{self.a_interface} - {far}"
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.a_interface_id is not None:
+            _check_same_engagement(
+                self.a_interface.device.engagement_id,
+                self.b_interface.device.engagement_id if self.b_interface_id else None,
+                self.source.engagement_id if self.source_id else None,
+            )
+
+
+class RawOutput(CustomerOwned):
+    """One command's output as collected or uploaded, kept so parsers can be re-run.
+
+    Append-only. Masked before it leaves the collector, like configs.
+    """
+
+    append_only = True
+
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="raw_outputs")
+    # Null when an upload's device isn't known until it's parsed.
+    device = models.ForeignKey(
+        Device, null=True, blank=True, on_delete=models.PROTECT, related_name="raw_outputs"
+    )
+    platform = models.CharField(max_length=32, blank=True)
+    # The allow-listed command, or for an upload the command the file says it holds.
+    command = models.CharField(max_length=255)
+    output = models.TextField()
+    sha256 = models.CharField(max_length=64, editable=False)
+    collected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["collected_at"]
+        constraints = [
+            # Set by set_derived_fields(). Raw SQL that skips it fails here.
+            models.CheckConstraint(
+                condition=Exact(Length("sha256"), 64), name="raw_output_has_digest"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.command
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.device_id is not None and self.source_id is not None:
+            _check_same_engagement(self.source.engagement_id, self.device.engagement_id)
+
+    def set_derived_fields(self) -> None:
+        self.sha256 = _sha256(self.output)
+
+
+class ConfigSnapshot(CustomerOwned):
+    """A device's masked configuration as collected in one engagement.
+
+    Append-only: a re-collection adds a snapshot, and the latest one is the device's config.
+    """
+
+    append_only = True
+
+    device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="config_snapshots")
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="config_snapshots")
+    content = models.TextField()
+    # Of the masked content, so an unchanged config is easy to spot.
+    sha256 = models.CharField(max_length=64, editable=False)
+    collected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-collected_at"]
+        get_latest_by = "collected_at"
+        constraints = [
+            models.CheckConstraint(
+                condition=Exact(Length("sha256"), 64), name="config_snapshot_has_digest"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.device} {self.collected_at:%Y-%m-%d %H:%M}"
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.device_id is not None and self.source_id is not None:
+            _check_same_engagement(self.device.engagement_id, self.source.engagement_id)
+
+    def set_derived_fields(self) -> None:
+        self.sha256 = _sha256(self.content)
 
 
 class AppendOnlyQuerySet(models.QuerySet):
