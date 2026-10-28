@@ -72,6 +72,45 @@ http://127.0.0.1:8000/admin/ uses the same sign-in. Sessions end after `CARTIO_S
 (8 by default) or when the browser closes. Engineers are staff accounts; run
 `enroll_engineer --reset <username>` to replace a lost authenticator.
 
+## Try it with Docker Compose
+
+[compose.yaml](compose.yaml) runs PostgreSQL and the controller with the sanitized lab loaded, so
+every screen has data. It's for local testing only: development settings, plain http on
+127.0.0.1 and default passwords (override them with `CARTIO_APP_PASSWORD`,
+`CARTIO_OWNER_PASSWORD`, `POSTGRES_PASSWORD` and `CARTIO_ENGINEER_PASSWORD`).
+
+```sh
+docker compose up -d --build
+docker compose exec controller cartio-controller enroll_engineer engineer
+```
+
+Startup follows the [database roles](docs/deploy/database.md): `db` creates `cartio_owner` and
+`cartio_app`, `migrate` runs as the owner, and `seed` and the controller run as the app role. The
+master key is generated into the `keys` volume on first start. `seed` creates the staff account
+`engineer` (password `cartio-local`) and runs `load_lab`, which stores the fixtures in
+`tests/fixtures/sanitized` as uploads for a customer called Lab and runs the checks. It makes
+two engagements: Q2 review (completed; core-sw1, and edge-fw1 on its weak config) and Q4 review
+(active; all three devices, edge-fw1 hardened). `load_lab` only runs with `CARTIO_DEBUG=1`.
+
+Sign in at http://127.0.0.1:8000/ as `engineer` with the enrollment code, then add the key to an
+authenticator app. Things to try:
+
+- All customers, then Lab: the Site map (HQ and Floor 2, L2 and L3), Inventory with filters and
+  CSV/XLSX export, and Findings from the check results (edit, add a note, dismiss).
+- Compare Q4 review with Q2 review: floor-sw1 is new and edge-fw1's config changed. Add the
+  changes to the report, then preview it and export PDF or DOCX.
+- New customer: the onboarding wizard. The Audit log shows everything above.
+
+A collector can enroll and check in, so the Collectors screen shows it online. It gets no jobs
+yet (the job channel is YAN-1651), so it collects nothing:
+
+```sh
+token=$(docker compose exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)
+CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
+```
+
+`docker compose down -v` removes everything, including the database and the master key.
+
 ## Engineer API
 
 Customers, engagements and sites are managed through a JSON API under `/api/v1/`. It accepts a
