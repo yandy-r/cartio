@@ -11,8 +11,9 @@ controller (ADR-0006).
 
 `.claude/settings.json` enables the `ycc` Claude Code plugin from
 [yandy-r/ystack](https://github.com/yandy-r/ystack) for local sessions, which gives skills such as
-`/ycc:release-model` and `/ycc:backport`. Cloud sessions ignore plugins declared there; in a
-Claude Code project, add the plugin under Project settings > Plugins instead.
+`/ycc:release-model` and `/ycc:backport`. Cloud sessions ignore plugins declared there. For
+cloud threads, the project's cloud environment installs the plugin in its setup script with
+`claude plugin marketplace add yandy-r/ystack && claude plugin install ycc@ycc --scope user`.
 
 ## Layout
 
