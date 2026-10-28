@@ -19,7 +19,7 @@ from django.views.decorators.debug import sensitive_variables
 from cartio_controller.engineers.models import EngineerMFA
 
 from . import audit, vault
-from .models import AuditEvent, CustomerDataKey
+from .models import AuditEvent, Customer, CustomerDataKey
 
 
 class RotationError(Exception):
@@ -65,7 +65,9 @@ def _rewrap(old: vault.MasterKey, new: vault.MasterKey, wrapped: bytes, context:
     try:
         data_key = old.unwrap(wrapped, context)
     except vault.VaultError as exc:
-        raise RotationError("A key doesn't open with the previous master key.") from exc
+        raise RotationError(
+            f"The key for {context.decode()} doesn't open with the previous master key."
+        ) from exc
     rewrapped = new.wrap(data_key, context)
     if new.unwrap(rewrapped, context) != data_key:
         raise RotationError("A rewrapped key didn't open with the new master key.")
@@ -74,10 +76,9 @@ def _rewrap(old: vault.MasterKey, new: vault.MasterKey, wrapped: bytes, context:
 
 def _rotate_data_key(old, new, pk, actor: str) -> bool:
     with transaction.atomic():
-        record = (
-            CustomerDataKey.all_customers.select_for_update().select_related("customer").get(pk=pk)
-        )
-        if record.master_key_id != old.key_id:
+        # Lock only this row, not the customer's.
+        record = CustomerDataKey.all_customers.select_for_update(of=("self",)).filter(pk=pk).first()
+        if record is None or record.master_key_id != old.key_id:
             return False  # Another run got here first.
         context = CustomerDataKey._context(record.customer_id)
         record.wrapped_key = _rewrap(old, new, record.wrapped_key, context)
@@ -89,7 +90,7 @@ def _rotate_data_key(old, new, pk, actor: str) -> bool:
             actor=actor,
             object_type="customer",
             object_id=record.customer_id,
-            object_name=record.customer.name,
+            object_name=Customer.objects.values_list("name", flat=True).get(pk=record.customer_id),
             old_master_key_id=old.key_id,
             new_master_key_id=new.key_id,
         )
@@ -98,8 +99,9 @@ def _rotate_data_key(old, new, pk, actor: str) -> bool:
 
 def _rotate_engineer_key(old, new, pk) -> bool:
     with transaction.atomic():
-        mfa = EngineerMFA.objects.select_for_update().get(pk=pk)
-        if mfa.master_key_id != old.key_id:
+        mfa = EngineerMFA.objects.select_for_update().filter(pk=pk).first()
+        # Gone, or re-enrolled with the new key meanwhile.
+        if mfa is None or mfa.master_key_id != old.key_id:
             return False
         mfa.secret_encrypted = _rewrap(old, new, mfa.secret_encrypted, mfa._context())
         mfa.master_key_id = new.key_id

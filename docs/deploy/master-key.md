@@ -39,7 +39,9 @@ nobody re-enrolls, and the controller keeps working throughout.
    export CARTIO_PREVIOUS_MASTER_KEY_FILE=/etc/cartio/master-key
    ```
 
-   Set them the same way for every controller process, cron jobs included.
+   Set them the same way for every controller process, cron jobs and one-off commands included,
+   and make sure no process still runs with only the old key before you go on. A process left on
+   the old key alone keeps wrapping new secrets with it.
 
 4. Run the rotation with the same settings, as the app role:
 
@@ -53,9 +55,11 @@ nobody re-enrolls, and the controller keeps working throughout.
    stays rewrapped, and the controller opens both kinds meanwhile. It refuses to start if any key
    is wrapped by neither master key, so a missing third key can't go unnoticed.
 
-5. When it reports that every key is on the new master key, unset
-   `CARTIO_PREVIOUS_MASTER_KEY_FILE` everywhere and restart the controller. From then on the old
-   key opens nothing in the live database.
+5. When it reports that every key is on the new master key, and every process has run with
+   both keys since before the rotation started, unset `CARTIO_PREVIOUS_MASTER_KEY_FILE`
+   everywhere and restart the controller. If you're unsure whether an old process wrote
+   anything, run `rotate_master_key` once more first: it rewraps any stragglers and confirms
+   nothing is left. From then on the old key opens nothing in the live database.
 6. Keep the old key's backup until every database backup made before the rotation has expired,
    then destroy it.
 
