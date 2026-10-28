@@ -1,4 +1,4 @@
-# An example production deployment of the controller: PostgreSQL, the controller under gunicorn
+# An example production deployment of the controller: PostgreSQL, the controller under uvicorn
 # and Caddy for TLS and static files. No source mounts and no lab data. See the README.
 # Set the variables below in .env and put the master key in secrets/master.key first.
 #   docker compose up -d --build

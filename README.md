@@ -148,10 +148,11 @@ CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
 
 ### Production example
 
-compose.yml runs PostgreSQL, the controller under gunicorn and [Caddy](https://caddyserver.com/)
-in front of it for TLS and the static files. It builds the image without the source mounts, the
-lab or `load_lab`, and nothing has a default password. It is a starting point, not a hardened
-deployment: add backups of the database and the master key, and monitoring, to suit your site.
+compose.yml runs PostgreSQL, the controller under uvicorn (ASGI, so collectors' job long-polls
+don't each hold a worker) and [Caddy](https://caddyserver.com/) in front of it for TLS and the
+static files. It builds the image without the source mounts, the lab or `load_lab`, and nothing
+has a default password. It is a starting point, not a hardened deployment: add backups of the
+database and the master key, and monitoring, to suit your site.
 
 1. Put the master key in `secrets/master.key`, readable by uid 1000 (the controller's user), and
    back it up on its own ([master key](docs/deploy/master-key.md)). `secrets/` is ignored by git.
