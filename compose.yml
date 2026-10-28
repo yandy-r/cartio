@@ -1,0 +1,90 @@
+# An example production deployment of the controller: PostgreSQL, the controller under gunicorn
+# and Caddy for TLS and static files. No source mounts and no lab data. See the README.
+# Set the variables below in .env and put the master key in secrets/master.key first.
+#   docker compose up -d --build
+
+name: cartio-prod
+
+x-cartio: &cartio
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+    target: production
+  image: cartio
+  restart: unless-stopped
+  secrets:
+    - master_key
+
+x-env: &env
+  CARTIO_SECRET_KEY: ${CARTIO_SECRET_KEY:?set CARTIO_SECRET_KEY}
+  CARTIO_ALLOWED_HOSTS: ${CARTIO_DOMAIN:?set CARTIO_DOMAIN}
+  CARTIO_TLS_PROXY: "1"
+  CARTIO_DB_APP_ROLE: cartio_app
+  CARTIO_MASTER_KEY_FILE: /run/secrets/master_key
+  # The controller and its commands run as the app role (docs/deploy/database.md).
+  DATABASE_URL: postgres://cartio_app:${CARTIO_APP_PASSWORD:?set CARTIO_APP_PASSWORD}@db/cartio
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      CARTIO_OWNER_PASSWORD: ${CARTIO_OWNER_PASSWORD:?set CARTIO_OWNER_PASSWORD}
+      CARTIO_APP_PASSWORD: ${CARTIO_APP_PASSWORD:?set CARTIO_APP_PASSWORD}
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./docker/initdb.sh:/docker-entrypoint-initdb.d/cartio.sh:ro
+    healthcheck:
+      # Over TCP, so it waits for the init scripts to finish.
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "postgres", "-d", "cartio"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # Migrations run as the owner role, which then grants the app role row access only.
+  migrate:
+    <<: *cartio
+    restart: "no"
+    command: ["cartio-controller", "migrate", "--noinput"]
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://cartio_owner:${CARTIO_OWNER_PASSWORD}@db/cartio
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Collects the static files into the static volume for Caddy, then serves on port 8000, which
+  # only Caddy can reach.
+  controller:
+    <<: *cartio
+    environment: *env
+    volumes:
+      - static:/app/static
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      CARTIO_DOMAIN: ${CARTIO_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - static:/srv/static:ro
+      - caddy:/data
+    depends_on:
+      - controller
+
+secrets:
+  master_key:
+    file: ./secrets/master.key
+
+volumes:
+  db:
+  static:
+  caddy:

@@ -24,6 +24,9 @@ Everything that differs per environment comes from environment variables:
   a reverse proxy every sign-in comes from the proxy's address, so this limit then covers all
   engineers together. 0 turns either limit off.
 - CARTIO_LOGIN_LOG_DAYS: how long `purge_login_events` keeps the sign-in log, 365 days by default.
+- CARTIO_TLS_PROXY: "1" when a reverse proxy terminates TLS in front of the controller and sets
+  X-Forwarded-Proto. Only set it if the proxy overwrites that header, and nothing else can reach
+  the controller directly.
 """
 
 import os
@@ -128,6 +131,8 @@ ENROLLMENT_TOKEN_HOURS = float(os.environ.get("CARTIO_ENROLLMENT_TOKEN_HOURS", "
 TLS_PINS = [p.strip() for p in os.environ.get("CARTIO_TLS_PINS", "").split(",") if p.strip()]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+if os.environ.get("CARTIO_TLS_PROXY") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # The engineer API. Engineers sign in to the controller and need the matching model permissions
 # to make changes. Collectors use their own endpoints and never reach this API.

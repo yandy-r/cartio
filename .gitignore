@@ -9,3 +9,4 @@ build/
 db.sqlite3
 *.sqlite3
 .env
+secrets/
