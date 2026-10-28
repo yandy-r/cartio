@@ -1,4 +1,4 @@
-"""load_lab gives a local controller the sanitized lab to look at (compose setup)."""
+"""load_lab gives a local controller the sanitized lab to look at (compose.dev.yml)."""
 
 import pytest
 from cartio_controller.collectors.models import (

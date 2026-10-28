@@ -1,0 +1,11 @@
+# TLS in front of the controller for compose.yml. With CARTIO_DOMAIN=localhost Caddy uses its own
+# local certificate authority; with a public name it gets a certificate from Let's Encrypt.
+{$CARTIO_DOMAIN} {
+	handle_path /static/* {
+		root * /srv/static
+		file_server
+	}
+	handle {
+		reverse_proxy controller:8000
+	}
+}
