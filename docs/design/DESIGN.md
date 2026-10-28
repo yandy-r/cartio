@@ -367,6 +367,13 @@ Actions:
 * **Export PDF** and **Export DOCX**, plus **CSV** of findings.
 * For On site customers the report is built and saved on site, and the screen shows saved, or
   not saved yet with the reason (ADR-0005).
+* **As built (YAN-1666):** the screen previews the pages next to the choices (optional
+  sections, lowest severity) and exports PDF, DOCX and findings CSV from the same content, each
+  audit-logged; previous exports come from the audit log. Pages 4 (Topology) and 6 (Changes)
+  wait for the Site map (YAN-1663) and Compare (YAN-1667), and page 7 (Capacity) for monitoring
+  integrations, so they aren't in the report yet. Instead it has an inventory summary and a
+  device appendix (the issue's scope). For On site customers export is off with the reason,
+  until the on-site collector can build and save reports.
 
 ### 10. Connect to device
 

@@ -1,0 +1,84 @@
+{% extends "engineers/base.html" %}
+{% block title %}Report · {{ customer.name }}{% endblock %}
+{% block page_title %}Assessment report{% endblock %}
+{% block page_actions %}
+  {% if report %}<a class="btn" href="{{ findings_url }}">Edit findings</a>{% endif %}
+{% endblock %}
+{% block content %}
+{% if not engagement %}
+<p class="muted">{{ customer.name }} has no engagement yet, so there is no report to build.</p>
+{% else %}
+<div id="report" class="report" hx-boost="true" hx-target="#report" hx-select="#report" hx-swap="outerHTML">
+  {% if customer.is_on_site %}
+  <p class="banner live-view" role="note">On site reports are built and saved on site, next to {{ customer.name }}'s own store. Not saved yet: the on-site collector can't build reports yet, so export is off for this customer.</p>
+  {% endif %}
+
+  <div class="report-controls">
+    <form class="card report-card" method="get" action="">
+      <input type="hidden" name="set" value="1">
+      <fieldset class="field">
+        <legend class="label">Sections</legend>
+        <p class="report-fixed muted">Cover, summary and findings are always in.</p>
+        {% for key, section in optional.items %}
+        <label class="report-section"><input type="checkbox" name="sections" value="{{ key }}"{% if key in report.sections %} checked{% endif %}>
+          <span><strong>{{ section.0 }}</strong><br><span class="muted">{{ section.1 }}</span></span></label>
+        {% endfor %}
+        <p class="report-fixed muted">Topology maps come with the Site map, and Changes since the last assessment with Compare.</p>
+      </fieldset>
+      <label class="field"><span class="label">Lowest severity to include</span>
+        <select name="min">
+          {% for value, label in severities.items %}<option value="{{ value }}"{% if value == report.min_severity %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn" type="submit">Update preview</button>
+      <p class="muted report-count">{{ report.findings|length }} finding{{ report.findings|length|pluralize }} included{% if report.edited_count or report.manual_count %} (with your edits{% if report.manual_count %}, {{ report.manual_count }} added by an engineer{% endif %}){% endif %}{% if report.below_cut %} · {{ report.below_cut }} below the severity cut{% endif %}{% if report.left_out %} · {{ report.left_out }} left out on the Findings screen{% endif %} · <a href="{{ findings_url }}">Edit findings</a></p>
+    </form>
+
+    <form class="card report-card" method="post" action="{% url 'engineers:report-export' customer=customer.pk engagement=engagement.pk %}" hx-boost="false">{% csrf_token %}
+      <input type="hidden" name="set" value="1">
+      {% for key in report.sections %}<input type="hidden" name="sections" value="{{ key }}">{% endfor %}
+      <input type="hidden" name="min" value="{{ report.min_severity }}">
+      <h2 class="label">Export</h2>
+      <div class="report-formats">
+        <button class="btn primary" type="submit" name="format" value="pdf"{% if customer.is_on_site %} disabled{% endif %}>Export PDF<small>Ready to send</small></button>
+        <button class="btn" type="submit" name="format" value="docx"{% if customer.is_on_site %} disabled{% endif %}>Export DOCX<small>Edit before sending</small></button>
+        <button class="btn" type="submit" name="format" value="csv"{% if customer.is_on_site %} disabled{% endif %}>Findings CSV</button>
+      </div>
+      <p class="muted">Each export is logged in the audit log.</p>
+    </form>
+
+    <section class="card report-card" aria-labelledby="report-history">
+      <h2 id="report-history" class="label">Previous exports</h2>
+      {% for event in history %}
+      <p class="report-history-row"><span class="mono">{{ event.detail.file }}</span><br><span class="muted">{{ event.at|date:"Y-m-d H:i" }} UTC · {{ event.actor }}</span></p>
+      {% empty %}
+      <p class="muted">None yet.</p>
+      {% endfor %}
+    </section>
+  </div>
+
+  <div class="report-pages" aria-label="Report preview">
+    {% for page in pages %}
+    <article class="report-page">
+      <header class="report-page-head"><span>IT Cloud Network</span><span>{{ customer.name }} · {{ engagement.name }}</span></header>
+      {% for block in page %}
+        {% if block.kind == "cover" %}
+        <div class="report-cover"><p class="report-brand">IT Cloud Network</p><h2>{{ block.text }}</h2>{% for line in block.items %}<p>{{ line }}</p>{% endfor %}</div>
+        {% elif block.kind == "h1" %}<h2 class="report-h1">{{ block.text }}</h2>
+        {% elif block.kind == "h2" %}<h4 class="report-h2">{{ block.text }}</h4>
+        {% elif block.kind == "finding" %}<h3 class="report-finding"><span class="severity {{ block.severity }}">{{ block.severity|capfirst }}</span> {{ block.text }}</h3>
+        {% elif block.kind == "p" %}<p>{{ block.text|linebreaksbr }}</p>
+        {% elif block.kind == "bullets" %}<ul>{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% elif block.kind == "code" %}<pre class="report-code">{{ block.text }}</pre>
+        {% elif block.kind == "table" %}
+        <div class="table-scroll"><table><thead><tr>{% for h in block.header %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in block.items %}<tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+        {% endif %}
+      {% endfor %}
+      <footer class="report-page-foot">Confidential · prepared for {{ customer.name }}</footer>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

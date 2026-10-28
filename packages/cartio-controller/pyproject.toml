@@ -10,6 +10,7 @@ dependencies = [
     "psycopg[binary]>=3.3",
     "djangorestframework>=3.18,<3.19",
     "cryptography>=46",
+    "reportlab>=4.4,<6",
 ]
 
 [project.scripts]
