@@ -13,6 +13,12 @@ router.register(r"customers/(?P<customer_pk>[0-9]+)/sites", api.SiteViewSet, bas
 router.register(
     r"customers/(?P<customer_pk>[0-9]+)/credentials", api.CredentialViewSet, basename="credential"
 )
+router.register(r"customers/(?P<customer_pk>[0-9]+)/runs", api.CollectionRunViewSet, basename="run")
+router.register(
+    r"customers/(?P<customer_pk>[0-9]+)/audit-events",
+    api.AuditEventViewSet,
+    basename="audit-event",
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

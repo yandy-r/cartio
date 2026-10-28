@@ -9,6 +9,7 @@ import uuid
 from django.db import transaction
 from django.views.decorators.debug import sensitive_variables
 
+from . import audit
 from .models import AuditEvent, Collector, Credential, Customer
 
 
@@ -17,14 +18,16 @@ class CredentialNotAvailable(Exception):
 
 
 def _audit(credential: Credential, action: str, actor: str = "", collector=None, **detail):
-    AuditEvent.objects.for_customer(credential.customer_id).create(
-        action=action,
+    audit.record(
+        credential.customer_id,
+        action,
         actor=actor,
         collector=collector,
         object_type="credential",
-        object_id=str(credential.pk),
+        object_id=credential.pk,
         object_name=credential.name,
-        detail={"kind": credential.kind, **detail},
+        kind=credential.kind,
+        **detail,
     )
 
 

@@ -6,6 +6,8 @@ import pytest
 from cartio_controller.collectors.models import (
     AuditEvent,
     CheckIn,
+    CollectionRun,
+    CollectionRunResult,
     Collector,
     Credential,
     CrossCustomerError,
@@ -13,6 +15,7 @@ from cartio_controller.collectors.models import (
     CustomerDataKey,
     CustomerOwned,
     Engagement,
+    LoginEvent,
     Site,
     UnscopedQueryError,
 )
@@ -21,7 +24,9 @@ from django.apps import apps
 
 pytestmark = pytest.mark.django_db
 
-OWNED = [model for model in apps.get_app_config("collectors").get_models() if model is not Customer]
+# Sign-ins belong to no customer, so the login log is the one other exception (YAN-1654).
+NOT_OWNED = {Customer, LoginEvent}
+OWNED = [m for m in apps.get_app_config("collectors").get_models() if m not in NOT_OWNED]
 
 
 @pytest.fixture
@@ -47,8 +52,12 @@ def _records(customer):
     credential = Credential(customer=customer, name="snmp", kind="snmp_v2c")
     credential.set_secret({"community": "c" * 12})
     credential.save()
+    engagement = Engagement.objects.for_customer(customer).create(name="Audit")
+    run = CollectionRun.objects.for_customer(customer).create(
+        job_type="discovery", engagement=engagement, collector=collector
+    )
     return {
-        Engagement: Engagement.objects.for_customer(customer).create(name="Audit"),
+        Engagement: engagement,
         Site: Site.objects.for_customer(customer).create(name="HQ"),
         Collector: collector,
         CheckIn: CheckIn.objects.for_customer(customer).create(
@@ -59,6 +68,10 @@ def _records(customer):
         CustomerDataKey: CustomerDataKey.objects.for_customer(customer).get(),
         AuditEvent: AuditEvent.objects.for_customer(customer).create(
             action="credential.used", collector=collector, object_type="credential", object_id="1"
+        ),
+        CollectionRun: run,
+        CollectionRunResult: CollectionRunResult.objects.for_customer(customer).create(
+            run=run, outcome="succeeded", device_count=3
         ),
     }
 
@@ -72,6 +85,8 @@ def test_every_table_carries_a_customer():
         "CustomerDataKey",
         "Credential",
         "AuditEvent",
+        "CollectionRun",
+        "CollectionRunResult",
     }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model

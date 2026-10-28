@@ -530,16 +530,24 @@ class Credential(CustomerOwned):
 class AuditEvent(CustomerOwned):
     """An append-only record of something done to a customer's data: who, what, when, where.
 
-    Collection runs and other admin events join this log with the audit log issue (YAN-1654).
+    This is the customer's audit log (YAN-1654): admin actions, credential use and collection
+    runs all write here, and `audit.export_events()` hands it out for compliance requests.
+    Sign-ins belong to no customer, so they go to `LoginEvent` instead.
     """
 
     append_only = True
 
     class Action(models.TextChoices):
+        CUSTOMER_CREATED = "customer.created", "Customer created"
+        COLLECTOR_CREATED = "collector.created", "Collector created"
+        COLLECTOR_ENROLLED = "collector.enrolled", "Collector enrolled"
         CREDENTIAL_CREATED = "credential.created", "Credential created"
         CREDENTIAL_UPDATED = "credential.updated", "Credential updated"
         CREDENTIAL_DELETED = "credential.deleted", "Credential deleted"
         CREDENTIAL_USED = "credential.used", "Credential delivered to a collector"
+        RUN_STARTED = "run.started", "Collection run started"
+        RUN_FINISHED = "run.finished", "Collection run finished"
+        AUDIT_EXPORTED = "audit.exported", "Audit log exported"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -559,3 +567,122 @@ class AuditEvent(CustomerOwned):
 
     def __str__(self) -> str:
         return f"{self.at:%Y-%m-%d %H:%M} {self.action} {self.object_name}"
+
+
+class CollectionRun(CustomerOwned):
+    """One job a collector ran for a customer: what, where, and who started it.
+
+    Append-only. The outcome is written once, as the run's `CollectionRunResult`, so a run's
+    record is never edited. A run without a result is still running (or was lost).
+    """
+
+    append_only = True
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # The kind of job, such as "discovery" or "config_collection". Named by the job channel.
+    job_type = models.CharField(max_length=64)
+    engagement = models.ForeignKey(
+        Engagement, null=True, blank=True, on_delete=models.PROTECT, related_name="runs"
+    )
+    collector = models.ForeignKey(Collector, on_delete=models.PROTECT, related_name="runs")
+    # A username, not a foreign key, so the record outlives the account. Blank for scheduled runs.
+    started_by = models.CharField(max_length=150, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.started_at:%Y-%m-%d %H:%M} {self.job_type} on {self.collector}"
+
+
+class CollectionRunResult(CustomerOwned):
+    """How a collection run ended. Added once per run, never changed."""
+
+    append_only = True
+
+    class Outcome(models.TextChoices):
+        SUCCEEDED = "succeeded", "Succeeded"
+        PARTIAL = "partial", "Partly succeeded"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    MAX_ERROR_SUMMARY = 2000
+
+    # The primary key, so the database itself refuses a second result for a run.
+    run = models.OneToOneField(
+        CollectionRun, primary_key=True, on_delete=models.PROTECT, related_name="result"
+    )
+    finished_at = models.DateTimeField(auto_now_add=True)
+    outcome = models.CharField(max_length=16, choices=Outcome)
+    device_count = models.PositiveIntegerField(default=0)
+    # A short reason for people reading the log. Never device output or a secret.
+    error_summary = models.CharField(max_length=MAX_ERROR_SUMMARY, blank=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-finished_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(outcome__in=["succeeded", "partial", "failed", "cancelled"]),
+                name="run_outcome_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.run}: {self.outcome}"
+
+
+class AppendOnlyQuerySet(models.QuerySet):
+    """Rows that are only ever added: no update or delete, in bulk or one by one."""
+
+    def _refuse(self, *args, **kwargs):
+        raise AppendOnlyError(f"{self.model.__name__} records can't be changed or deleted.")
+
+    update = delete = bulk_update = _refuse
+
+    def bulk_create(self, objs, *args, **kwargs):
+        if kwargs.get("update_conflicts"):
+            self._refuse()
+        return super().bulk_create(objs, *args, **kwargs)
+
+
+class LoginEvent(models.Model):
+    """An append-only record of a sign-in, sign-out or failed sign-in to the controller.
+
+    Sign-ins aren't tied to a customer, so unlike every other record this one isn't
+    customer-owned. It never holds a password, only the username that was tried.
+    """
+
+    class Kind(models.TextChoices):
+        LOGGED_IN = "logged_in", "Signed in"
+        LOGGED_OUT = "logged_out", "Signed out"
+        FAILED = "failed", "Sign-in failed"
+
+    at = models.DateTimeField(auto_now_add=True)
+    kind = models.CharField(max_length=16, choices=Kind)
+    username = models.CharField(max_length=150, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    objects = AppendOnlyQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-at"]
+        base_manager_name = "objects"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(kind__in=["logged_in", "logged_out", "failed"]),
+                name="login_event_kind_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.at:%Y-%m-%d %H:%M} {self.kind} {self.username}"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise AppendOnlyError("LoginEvent records can't be changed.")
+        kwargs["force_insert"] = True
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise AppendOnlyError("LoginEvent records can't be deleted.")

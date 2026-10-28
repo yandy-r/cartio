@@ -1,6 +1,17 @@
 from django.contrib import admin
 
-from .models import AuditEvent, CheckIn, Collector, Credential, Customer, Engagement, Site
+from .models import (
+    AuditEvent,
+    CheckIn,
+    CollectionRun,
+    CollectionRunResult,
+    Collector,
+    Credential,
+    Customer,
+    Engagement,
+    LoginEvent,
+    Site,
+)
 
 
 class CollectorInline(admin.TabularInline):
@@ -104,3 +115,49 @@ class AuditEventAdmin(ReadOnlyAdmin):
     list_display = ["at", "customer", "action", "object_name", "actor", "collector"]
     list_filter = ["customer", "action"]
     search_fields = ["object_name", "actor"]
+
+
+class CollectionRunResultInline(admin.StackedInline):
+    model = CollectionRunResult
+    fields = ["outcome", "finished_at", "device_count", "error_summary"]
+    readonly_fields = fields
+    can_delete = False
+
+
+@admin.register(CollectionRun)
+class CollectionRunAdmin(ReadOnlyAdmin):
+    """Runs are recorded by the job channel. Engineers filter them here (YAN-1654)."""
+
+    list_display = [
+        "started_at",
+        "customer",
+        "engagement",
+        "collector",
+        "job_type",
+        "started_by",
+        "outcome",
+        "device_count",
+    ]
+    list_filter = ["customer", "engagement", "collector", "job_type", "result__outcome"]
+    list_select_related = ["customer", "engagement", "collector", "result"]
+    search_fields = ["job_type", "started_by"]
+    date_hierarchy = "started_at"
+    inlines = [CollectionRunResultInline]
+
+    @admin.display(description="Outcome")
+    def outcome(self, run):
+        result = getattr(run, "result", None)
+        return result.get_outcome_display() if result else "Running"
+
+    @admin.display(description="Devices")
+    def device_count(self, run):
+        result = getattr(run, "result", None)
+        return result.device_count if result else None
+
+
+@admin.register(LoginEvent)
+class LoginEventAdmin(ReadOnlyAdmin):
+    list_display = ["at", "kind", "username", "ip_address"]
+    list_filter = ["kind"]
+    search_fields = ["username", "ip_address"]
+    date_hierarchy = "at"
