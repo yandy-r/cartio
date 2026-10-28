@@ -65,3 +65,13 @@ def validate_seed_hints(value) -> None:
         raise ValidationError(f"At most {MAX_SEED_HINTS} seed hints.")
     for hint in value:
         normalize_seed_hint(hint)
+
+
+COMPLIANCE = ("hipaa", "pci", "soc2")
+
+
+def validate_compliance(value) -> None:
+    if not isinstance(value, list) or not all(item in COMPLIANCE for item in value):
+        raise ValidationError(f"Compliance must be a list of {', '.join(COMPLIANCE)}.")
+    if len(set(value)) != len(value):
+        raise ValidationError("Each compliance requirement once.")

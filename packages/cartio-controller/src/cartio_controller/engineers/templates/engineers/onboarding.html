@@ -1,0 +1,80 @@
+{% extends "engineers/base.html" %}
+{% block title %}Onboard a customer{% endblock %}
+{% block page_context %}<a href="{% url 'engineers:customers' %}">All customers</a> / New customer{% endblock %}
+{% block page_title %}Onboard a customer{% endblock %}
+{% block page_actions %}
+  <span class="small muted">Step {{ step }} of {{ last }} · nothing is created until you confirm</span>
+  <form method="post" action="{% url 'engineers:onboard' %}">{% csrf_token %}
+    <button class="btn" type="submit" name="action" value="restart">Start a new customer</button>
+  </form>
+{% endblock %}
+{% block content %}
+<form class="wizard" id="wizard" method="post" action="{% url 'engineers:onboard' %}" novalidate>
+  {% csrf_token %}
+  {# Enter in a field continues, rather than pressing the first step in the list. #}
+  <button class="sr-only" type="submit" name="action" value="next" tabindex="-1" aria-hidden="true">Continue</button>
+
+  <ol class="wizard-steps" aria-label="Steps">
+    {% for each in steps %}
+    <li><button type="submit" name="action" value="goto:{{ each.number }}" class="step-button"
+                {% if each.number == step %}aria-current="step"{% endif %}{% if not each.open %} disabled{% endif %}>
+      <span class="step-mark{% if each.number == step %} current{% elif each.done %} done{% endif %}" aria-hidden="true">{% if each.done %}✓{% else %}{{ each.number }}{% endif %}</span>
+      <span><span class="step-label">{{ each.label }}{% if each.done %}<span class="sr-only"> (complete)</span>{% endif %}</span>
+        <span class="step-sub">{% spaceless %}
+          {% if each.number == 1 %}{{ state.name|default:"Name and compliance" }}
+          {% elif each.number == 2 %}{{ summary.mode|default:"Hosted or On site" }}
+          {% elif each.number == 3 %}{{ summary.sites }}
+          {% elif each.number == 4 %}{% if state.skip_engagement %}Skipped{% else %}{{ state.engagement.name|default:"Name, status and dates" }}{% endif %}
+          {% elif each.number == 5 %}{{ summary.collectors|length }} to enroll
+          {% else %}Create the customer{% endif %}
+        {% endspaceless %}</span></span>
+    </button></li>
+    {% endfor %}
+  </ol>
+
+  <section class="card wizard-step" aria-labelledby="step-title">
+    {% if errors %}<p class="field-error" role="alert">Check the fields marked below.</p>{% endif %}
+    {% if step == 1 %}{% include "engineers/onboarding/_customer.html" %}
+    {% elif step == 2 %}{% include "engineers/onboarding/_data_mode.html" %}
+    {% elif step == 3 %}{% include "engineers/onboarding/_sites.html" %}
+    {% elif step == 4 %}{% include "engineers/onboarding/_engagement.html" %}
+    {% elif step == 5 %}{% include "engineers/onboarding/_collectors.html" %}
+    {% else %}{% include "engineers/onboarding/_review.html" %}{% endif %}
+
+    <div class="wizard-footer">
+      {% if step > 1 %}<button class="btn" type="submit" name="action" value="back">Back</button>{% endif %}
+      <a class="btn" href="{% url 'engineers:customers' %}">Cancel</a>
+      <span class="grow"></span>
+      {% if step == last %}
+        <button class="btn primary" type="submit" name="action" value="create">Create customer</button>
+      {% elif step == 5 and not summary.collectors %}
+        <button class="btn primary" type="submit" name="action" value="next">Skip collectors</button>
+      {% else %}
+        <button class="btn primary" type="submit" name="action" value="next">Continue</button>
+      {% endif %}
+    </div>
+  </section>
+
+  <aside class="wizard-side">
+    <section class="card side-card">
+      <h2>Preview on the customer list</h2>
+      <div class="customer-link">{{ state.name|default:"New customer" }}</div>
+      <div class="customer-tags">
+        {% if state.data_mode %}<span class="mode{% if state.data_mode == 'on_site' %} on-site{% endif %}">{% if state.data_mode == 'on_site' %}On site{% else %}Hosted{% endif %}</span>{% else %}<span class="mode">Data mode not set</span>{% endif %}
+        {% for tag in summary.compliance %}<span class="small muted">{{ tag }}</span>{% endfor %}
+        {% if state.data_mode == 'on_site' and state.live_view %}<span class="small muted">{% if state.live_view == 'yes' %}Live view on{% else %}Inside access only{% endif %}</span>{% endif %}
+      </div>
+      <p class="small muted">{{ summary.sites }} · {{ summary.collectors|length }} collector{{ summary.collectors|length|pluralize }} to enroll<br>
+        {{ summary.engagement|default:"No engagement yet" }}</p>
+    </section>
+    <section class="card side-card">
+      <h2>What Cartio guarantees</h2>
+      <ul class="guarantees">
+        <li>Read-only: no device is ever changed.</li>
+        <li>Secrets are masked on the collector before anything leaves the customer's network.</li>
+        <li>No inbound firewall rules: collectors only dial out.</li>
+      </ul>
+    </section>
+  </aside>
+</form>
+{% endblock %}

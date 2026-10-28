@@ -15,7 +15,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -28,10 +28,10 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
 from cartio_controller.collectors import audit
-from cartio_controller.collectors.models import CollectionRun, Site
+from cartio_controller.collectors.models import CollectionRun, Customer, Site
 
 from . import inventory as inventory_screen
-from . import overview, shell, totp
+from . import onboarding, overview, shell, totp
 from .health import ONLINE_WITHIN
 from .health import collectors as _collectors
 from .models import EngineerMFA
@@ -251,7 +251,7 @@ def customers(request):
     view = overview.Overview(request.GET)
     context = {
         "view": view,
-        "can_add_customer": request.user.has_perm("collectors.add_customer"),
+        "can_onboard": onboarding.can_onboard(request.user),
         "can_add_engagement": request.user.has_perm("collectors.add_engagement"),
     }
     # htmx restoring history without a cached snapshot needs the whole page, not the list.
@@ -262,6 +262,133 @@ def customers(request):
         response = render(request, "engineers/customers.html", context)
     patch_vary_headers(response, ["HX-Request", "HX-History-Restore-Request"])
     return response
+
+
+def _onboarding_page(request, state, errors=None, status=200):
+    errors = errors or {}
+    step = state["step"]
+    context = {
+        "state": state,
+        "step": step,
+        "steps": [
+            {
+                "number": number,
+                "label": label,
+                "done": number != step
+                and number <= state["reached"]
+                and not onboarding.errors_for(state, number),
+                "open": onboarding.can_open(state, number),
+            }
+            for number, label in enumerate(onboarding.STEPS, start=1)
+        ],
+        "last": onboarding.LAST,
+        "errors": errors,
+        "summary": onboarding.summary(state),
+        "compliance_choices": Customer.Compliance.choices,
+        "suggest_on_site": {"hipaa", "pci"} & set(state["compliance"]),
+        "max_sites": onboarding.MAX_SITES,
+        "site_rows": [
+            {
+                "index": index,
+                "site": site,
+                "errors": {
+                    "name": errors.get(f"site-{index}-name"),
+                    "location": errors.get(f"site-{index}-location"),
+                    "seeds": errors.get(f"site-{index}-seeds"),
+                    "collector_name": errors.get(f"collector-{index}-name"),
+                },
+            }
+            for index, site in enumerate(state["sites"])
+        ],
+    }
+    return render(request, "engineers/onboarding.html", context, status=status)
+
+
+@require_http_methods(["GET", "POST"])
+@csrf_protect
+@never_cache
+@engineer_required
+def onboard(request):
+    """Onboard a customer (DESIGN.md section 2). State stays in the session until created."""
+    if not onboarding.can_onboard(request.user):
+        raise PermissionDenied
+    state = request.session.get(onboarding.SESSION_KEY) or onboarding.fresh()
+    if request.method == "GET":
+        request.session[onboarding.SESSION_KEY] = state
+        return _onboarding_page(request, state)
+
+    action = request.POST.get("action", "")
+    if action == "restart":
+        request.session[onboarding.SESSION_KEY] = onboarding.fresh()
+        return redirect("engineers:onboard")
+    if action == "create":
+        if state["step"] != onboarding.LAST:
+            # A reload of the done page, or a wizard started over in another tab.
+            return redirect("engineers:onboard")
+        return _create_customer(request, state)
+
+    onboarding.save_input(state, request.POST)
+    request.session[onboarding.SESSION_KEY] = state
+    request.session.modified = True
+    step = state["step"]
+    if action == "add_site" and step == 3:
+        onboarding.add_site(state)
+    elif action.startswith("remove_site:") and step == 3:
+        index = action.partition(":")[2]
+        if index.isdigit():
+            onboarding.remove_site(state, int(index))
+    elif action == "back":
+        onboarding.go_to(state, step - 1)
+    elif action.startswith("goto:") and action[5:].isdigit():
+        target = int(action[5:])
+        errors = onboarding.errors_for(state, step) if target > step else {}
+        if errors:
+            return _onboarding_page(request, state, errors, status=400)
+        if onboarding.can_open(state, target):
+            onboarding.go_to(state, target)
+    elif action == "next" and step < onboarding.LAST:
+        errors = onboarding.errors_for(state, step)
+        if errors:
+            return _onboarding_page(request, state, errors, status=400)
+        onboarding.go_to(state, step + 1)
+    return redirect("engineers:onboard")
+
+
+def _create_customer(request, state):
+    incomplete = onboarding.first_incomplete(state)
+    if incomplete is not None:
+        onboarding.go_to(state, incomplete)
+        request.session.modified = True
+        return _onboarding_page(
+            request, state, onboarding.errors_for(state, incomplete), status=400
+        )
+    try:
+        customer, tokens = onboarding.create(state, request.user.get_username())
+    except IntegrityError:
+        # Another engineer created a customer with this name meanwhile.
+        onboarding.go_to(state, 1)
+        request.session.modified = True
+        return _onboarding_page(request, state, onboarding.errors_for(state, 1), status=409)
+    # The wizard is done: the next visit, or "Onboard another customer", starts a fresh one.
+    request.session.pop(onboarding.SESSION_KEY, None)
+    controller = request.build_absolute_uri("/").rstrip("/")
+    for token in tokens:
+        token["command"] = (
+            f"uv run cartio-collector enroll --controller {controller} --token {token['token']}"
+        )
+    engagements = shell.engagements_of(customer)
+    return render(
+        request,
+        "engineers/onboarding_done.html",
+        {
+            "created": customer,
+            "summary": onboarding.summary(state),
+            "tokens": tokens,
+            "overview_url": shell.screen_url(
+                "customer", customer, engagements[0] if engagements else None
+            ),
+        },
+    )
 
 
 def _can_see_jobs(user) -> bool:

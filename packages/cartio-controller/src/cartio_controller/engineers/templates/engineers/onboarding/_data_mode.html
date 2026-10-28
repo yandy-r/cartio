@@ -1,0 +1,37 @@
+<div><h2 id="step-title">Where does their network data live?</h2>
+  <p class="muted">This is set when the customer is created. Changing it later is an audited admin action: data is exported and checksums are confirmed before anything is deleted.</p></div>
+{% if suggest_on_site %}
+<div class="banner inside-access">{% for tag in summary.compliance %}{% if tag == "HIPAA" or tag == "PCI" %}{{ tag }}{% if not forloop.last %} and {% endif %}{% endif %}{% endfor %} customers often require data to stay on their network. Confirm with them before choosing Hosted.</div>
+{% endif %}
+<fieldset class="mode-choice">
+  <legend class="sr-only">Data mode</legend>
+  {% if errors.data_mode %}<p class="hint field-error" id="mode-error">{{ errors.data_mode }}</p>{% endif %}
+  <div class="mode-cards">
+    <label class="choice-card">
+      <input type="radio" name="data_mode" value="hosted"{% if state.data_mode == "hosted" %} checked{% endif %}{% if errors.data_mode %} aria-describedby="mode-error"{% endif %}>
+      <span class="choice-title"><span class="mode">Hosted</span> Default</span>
+      <span>Inventory, masked configs, findings and reports are stored on our controller, separated per customer. Engineers see everything with one login.</span>
+      <span class="hint">Credentials: encrypted on the controller</span>
+    </label>
+    <label class="choice-card">
+      <input type="radio" name="data_mode" value="on_site" id="mode-on-site"{% if state.data_mode == "on_site" %} checked{% endif %}>
+      <span class="choice-title"><span class="mode on-site">On site</span> For HIPAA, PCI and similar</span>
+      <span>Network data is written to a store on the customer's network. Our controller keeps only collector health and job status.</span>
+      <span class="hint">Credentials: entered and stored on site</span>
+    </label>
+  </div>
+
+  {# Shown once On site is picked (CSS), and always checked on the server. #}
+  <fieldset class="live-view-choice field">
+    <legend>Live view through the controller <span class="hint">On site only</span></legend>
+    <span class="hint">Lets engineers see this customer's data from the controller. It passes through in memory and is never stored there. Choose explicitly: there is no default.</span>
+    {% if errors.live_view %}<p class="hint field-error" id="live-error">{{ errors.live_view }}</p>{% endif %}
+    <div class="mode-cards">
+      <label class="radio-row"><input type="radio" name="live_view" value="yes"{% if state.live_view == "yes" %} checked{% endif %}{% if errors.live_view %} aria-describedby="live-error"{% endif %}>
+        <span><strong>Allow live view</strong><br><span class="hint">Engineers can work from the controller; nothing is stored there</span></span></label>
+      <label class="radio-row"><input type="radio" name="live_view" value="no"{% if state.live_view == "no" %} checked{% endif %}>
+        <span><strong>Inside access only</strong><br><span class="hint">Engineers open data from inside the customer's network</span></span></label>
+    </div>
+    <span class="hint">The on-site store is set up with the on-site collector, and goes on the customer's onboarding checklist.</span>
+  </fieldset>
+</fieldset>

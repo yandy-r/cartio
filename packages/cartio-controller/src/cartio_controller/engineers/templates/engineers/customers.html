@@ -15,8 +15,8 @@
   {% if can_add_engagement %}
     <a class="btn" href="{% url 'admin:collectors_engagement_add' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7M17 15v6M14 18h6"></path></svg>New engagement</a>
   {% endif %}
-  {% if can_add_customer %}
-    <a class="btn primary" href="{% url 'admin:collectors_customer_add' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New customer</a>
+  {% if can_onboard %}
+    <a class="btn primary" href="{% url 'engineers:onboard' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New customer</a>
   {% endif %}
 {% endblock %}
 {% block content %}
@@ -24,8 +24,8 @@
 <section class="card empty-state">
   <h2>No customers yet</h2>
   <p class="muted">Add the first customer to start an engagement. Its collectors, sites and findings show here.</p>
-  {% if can_add_customer %}
-    <a class="btn primary" href="{% url 'admin:collectors_customer_add' %}">New customer</a>
+  {% if can_onboard %}
+    <a class="btn primary" href="{% url 'engineers:onboard' %}">New customer</a>
   {% else %}
     <p class="muted">Ask an admin to add customers.</p>
   {% endif %}

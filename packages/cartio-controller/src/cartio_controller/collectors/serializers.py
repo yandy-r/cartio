@@ -6,6 +6,10 @@ from .validators import MAX_SEED_HINTS, normalize_seed_hint
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    compliance = serializers.ListField(
+        child=serializers.ChoiceField(choices=Customer.Compliance.choices), required=False
+    )
+
     class Meta:
         model = Customer
         fields = [
@@ -13,6 +17,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "name",
             "data_mode",
             "live_view_allowed",
+            "compliance",
             "notes",
             "created_at",
             "archived_at",
@@ -26,6 +31,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         if others.exists():
             raise serializers.ValidationError("A customer with this name already exists.")
         return value
+
+    def validate_compliance(self, value):
+        # Keep the order, drop duplicates.
+        return list(dict.fromkeys(value))
 
     def validate_data_mode(self, value):
         # ADR-0002: changing mode moves or deletes network data, so it needs its own audited

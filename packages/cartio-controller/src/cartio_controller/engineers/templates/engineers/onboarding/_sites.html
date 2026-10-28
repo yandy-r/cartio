@@ -1,0 +1,30 @@
+<div><h2 id="step-title">Sites and where discovery starts</h2>
+  <p class="muted">A site is an office, a data center or a cloud region. Seed hints are IP addresses, networks no wider than /16 (IPv4) or /48 (IPv6), or host names.</p></div>
+{% for row in site_rows %}
+<fieldset class="site-block">
+  <legend>Site {{ forloop.counter }}</legend>
+  <div class="field-row">
+    <div class="field">
+      <label for="site-{{ row.index }}-name">Site name</label>
+      <input id="site-{{ row.index }}-name" type="text" name="site-{{ row.index }}-name" value="{{ row.site.name }}" maxlength="200" placeholder="Main office"{% if row.errors.name %} aria-invalid="true" aria-describedby="site-{{ row.index }}-name-error"{% endif %}>
+      {% if row.errors.name %}<span id="site-{{ row.index }}-name-error" class="hint field-error">{{ row.errors.name }}</span>{% endif %}
+    </div>
+    <div class="field">
+      <label for="site-{{ row.index }}-location">Location <span class="hint">Optional</span></label>
+      <input id="site-{{ row.index }}-location" type="text" name="site-{{ row.index }}-location" value="{{ row.site.location }}" maxlength="500" placeholder="City, building or region"{% if row.errors.location %} aria-invalid="true" aria-describedby="site-{{ row.index }}-location-error"{% endif %}>
+      {% if row.errors.location %}<span id="site-{{ row.index }}-location-error" class="hint field-error">{{ row.errors.location }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="field">
+    <label for="site-{{ row.index }}-seeds">Seed hints</label>
+    <textarea id="site-{{ row.index }}-seeds" class="mono" name="site-{{ row.index }}-seeds" rows="2" placeholder="192.0.2.1  192.0.2.0/24  core-sw1.example.net" aria-describedby="site-{{ row.index }}-seeds-hint"{% if row.errors.seeds %} aria-invalid="true"{% endif %}>{{ row.site.seeds }}</textarea>
+    {% if row.errors.seeds %}
+      <span id="site-{{ row.index }}-seeds-hint" class="hint field-error">{{ row.errors.seeds }}</span>
+    {% else %}
+      <span id="site-{{ row.index }}-seeds-hint" class="hint">Separate them with spaces, commas or new lines. At least one lets discovery start right away; you can add them later.</span>
+    {% endif %}
+  </div>
+  {% if site_rows|length > 1 %}<div><button class="btn" type="submit" name="action" value="remove_site:{{ row.index }}">Remove site</button></div>{% endif %}
+</fieldset>
+{% endfor %}
+{% if site_rows|length < max_sites %}<div><button class="btn" type="submit" name="action" value="add_site">Add another site</button></div>{% endif %}

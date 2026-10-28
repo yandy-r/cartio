@@ -385,3 +385,12 @@ def test_create_collector_reuses_a_customer_named_in_another_case(capsys):
     call_command("create_collector", customer="acme", name="vm01")
     assert Customer.objects.count() == 1
     assert Customer.objects.get().collectors.count() == 1
+
+
+def test_customer_compliance_is_a_list_of_known_requirements(api):
+    response = _post(api, CUSTOMERS, {"name": "Acme", "compliance": ["pci", "hipaa", "pci"]})
+    assert response.status_code == 201
+    assert response.json()["compliance"] == ["pci", "hipaa"]
+    response = _post(api, CUSTOMERS, {"name": "Beta", "compliance": ["gdpr"]})
+    assert response.status_code == 400
+    assert _post(api, CUSTOMERS, {"name": "Gamma"}).json()["compliance"] == []

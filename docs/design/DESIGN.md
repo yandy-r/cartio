@@ -166,12 +166,12 @@ Until the screens and data they lean on land, the controller's version (YAN-1733
 
 * A row opens the customer's Overview, with the engagement in the URL, until the Site map
   (YAN-1663) exists.
-* **New customer** and **New engagement** open the admin's add forms until the onboarding wizard
-  (YAN-1734) and engagement setup (YAN-1735) exist. Engineers without the add permission don't
-  see them.
+* **New customer** opens the onboarding wizard (YAN-1734). Engineers who can't add customers,
+  sites, engagements and collectors don't see it. **New engagement** opens the admin's add form
+  until engagement setup (YAN-1735) exists, and only for engineers who may add engagements.
 * Open findings say "No findings yet" until findings (YAN-1738) exist, and the summary has no
-  critical findings tile. Tags show live view on and inside access only. Customers have no
-  compliance tags (HIPAA, PCI) yet.
+  critical findings tile. Tags show compliance (HIPAA, PCI, SOC 2), live view on and inside
+  access only.
 * The collector hover card says "Not tracked yet" for the certificate and queue until client
   certificates (YAN-1650) and the job channel (YAN-1651) exist. Needs attention lists offline,
   never checked in and not yet enrolled collectors.
@@ -196,6 +196,24 @@ fresh one; it never reopens the last customer's final step.
    collectors, set credentials, start discovery.
 
 The step list on the left shows done, current and next. Going back keeps what was entered.
+
+The controller's version (YAN-1734) keeps the wizard's state in the engineer's session and
+creates nothing until **Create customer**, which writes everything and its audit events in one
+transaction. It differs from the prototype:
+
+* Step 1 asks for the name, compliance (HIPAA, PCI, SOC 2) and notes, as the prototype does.
+  There is no short name or industry field.
+* Step 2 doesn't ask for the on-site store (database or file share): that comes with the on-site
+  store itself (YAN-1670). The live view question shows once On site is picked, and is checked
+  on the server either way.
+* Seed hints are typed into one box per site, separated by spaces, commas or new lines, and
+  checked by the API's own validator on **Continue**, rather than added one chip at a time.
+* Step 4 has name, status (Planned or Active), dates and what the assessment covers. Engagements
+  have no type yet.
+* Collectors have a name but no "Runs on" choice, and their tokens don't expire yet. The tokens
+  are only in the done page's response; reloading it starts a fresh wizard.
+* The done page's checklist is text. Its PDF, DOCX and email exports, "Set up scope and
+  credentials" (YAN-1735) and "Import files instead" (YAN-1662) come later.
 
 ### 3. Engagement setup
 
