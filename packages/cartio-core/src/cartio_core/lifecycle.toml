@@ -1,0 +1,64 @@
+# End-of-life and end-of-support dates for the eol-eos check (YAN-1665).
+#
+# To update: change or add an entry, set `checked` to the day you read the source, and bump
+# `version` at the top. Every entry names where its dates came from. Prefer the vendor's own
+# notice; when only a third-party tracker had the dates, `source` says so, and the dates should
+# be confirmed against the vendor before a report relies on them.
+#
+# Dates:
+#   end_of_sale            last day to order. Shown in evidence only.
+#   end_of_security_fixes  no more vulnerability fixes after this. Past it, the check fails.
+#   last_date_of_support   no support of any kind after this. Past it, the check fails.
+# An entry with no dates means no end of life had been announced when it was checked.
+#
+# Hardware entries match the device's model, with * as a wildcard and case ignored. Software
+# entries match the platform and the release train: "17.9" for IOS-XE 17.9.4a or 17.09.04a,
+# "7.2" for FortiOS 7.2.8, and "15.2(7)E" for IOS 15.2(7)E8.
+
+version = "2026-10-28"
+
+[[hardware]]
+manufacturer = "Cisco"
+models = ["WS-C2960X-*"]
+end_of_sale = 2022-10-31
+last_date_of_support = 2027-10-31
+source = "https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-2960-x-series-switches/eos-eol-notice-c51-744432.html"
+checked = 2026-10-28
+
+[[hardware]]
+manufacturer = "Cisco"
+models = ["C9300-24P", "C9300-24T", "C9300-24U", "C9300-48P", "C9300-48T", "C9300-48U"]
+source = "Cisco end-of-life notices: none found for these models"
+checked = 2026-10-28
+
+[[hardware]]
+manufacturer = "Fortinet"
+models = ["FortiGate-60F", "FortiGate-61F"]
+end_of_sale = 2027-01-13
+last_date_of_support = 2032-01-13
+source = "Third-party tracker (endoflife.ai), from Fortinet's product life cycle list: confirm at https://support.fortinet.com/Information/ProductLifeCycle.aspx"
+checked = 2026-10-28
+
+[[software]]
+platform = "ios-xe"
+trains = ["17.9"]
+end_of_sale = 2024-03-30
+end_of_security_fixes = 2026-09-30
+last_date_of_support = 2027-03-31
+source = "https://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/ios-xe-17/ios-xe-17-9-x-eol.html"
+checked = 2026-10-28
+
+[[software]]
+# IOS 15.2E is supported for as long as the switches that run it, such as the Catalyst 2960-X.
+platform = "ios"
+trains = ["15.2(7)E"]
+last_date_of_support = 2027-10-31
+source = "https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-2960-x-series-switches/eos-eol-notice-c51-744432.html"
+checked = 2026-10-28
+
+[[software]]
+platform = "fortios"
+trains = ["7.2"]
+last_date_of_support = 2026-09-30
+source = "Fortinet community lifecycle table and endoflife.ai: confirm at https://support.fortinet.com/Information/ProductLifeCycle.aspx"
+checked = 2026-10-28
