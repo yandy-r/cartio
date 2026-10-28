@@ -4,8 +4,8 @@
   under them are proposed and the prototype can revise them.
 * **Date:** 2026-10-28
 * **Deciders:** Yandy
-* **Source:** spike [YAN-1640](https://linear.app/yandy-r/issue/YAN-1640/spike-outbound-transport-and-proxy-compatibility).
-  Options write-up: "Collector transport: options (YAN-1640)".
+* **Source:** [Linear](https://linear.app/yandy-r/document/adr-0009-collector-transport-https-long-poll-and-signed-requests-4d8eeed3b588)
+  (spike [YAN-1640](https://linear.app/yandy-r/issue/YAN-1640/spike-outbound-transport-and-proxy-compatibility))
 * **Updates:** [ADR-0001](0001-hub-and-spoke-outbound-collectors.md). Its transport and
   certificate bullets are replaced by this ADR.
 
@@ -90,7 +90,7 @@ the last acknowledged chunk.
 
 ## How it is proven
 
-* **In CI:** the prototype collector reaches the controller directly, through an explicit proxy,
+* **In CI, as part of YAN-1650 and YAN-1651:** the collector reaches the controller directly, through an explicit proxy,
   and through a TLS-inspecting proxy (mitmproxy in regular mode, and with its own CA). A
   reconnect test drops the connection mid-job and mid-upload and checks that the job runs once
   and the result is stored once.
