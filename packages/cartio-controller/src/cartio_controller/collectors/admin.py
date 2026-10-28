@@ -32,14 +32,15 @@ class ArchiveNotDeleteAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(ArchiveNotDeleteAdmin):
-    list_display = ["name", "data_mode", "created_at", "archived_at"]
-    list_filter = ["data_mode"]
+    list_display = ["name", "data_mode", "live_view_allowed", "created_at", "archived_at"]
+    list_filter = ["data_mode", "live_view_allowed"]
     search_fields = ["name"]
     inlines = [CollectorInline]
 
     def get_readonly_fields(self, request, obj=None):
-        # ADR-0002: data mode is chosen at creation; changing it needs its own audited action.
-        return ["data_mode"] if obj is not None else []
+        # ADR-0002 and ADR-0005: data mode and live view are chosen at creation; changing
+        # either needs its own audited action.
+        return ["data_mode", "live_view_allowed"] if obj is not None else []
 
 
 @admin.register(Engagement)

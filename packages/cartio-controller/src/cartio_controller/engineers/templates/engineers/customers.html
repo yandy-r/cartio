@@ -1,18 +1,20 @@
 {% extends "engineers/base.html" %}
 {% block title %}Customers{% endblock %}
+{% block page_context %}Connected once · every customer you assess{% endblock %}
+{% block page_title %}All customers{% endblock %}
+{% block page_actions %}
+  {% if show_archived %}<a class="btn" href="?">Hide archived customers</a>{% else %}<a class="btn" href="?archived=1">Show archived customers</a>{% endif %}
+{% endblock %}
 {% block content %}
-<h1>Customers</h1>
-<p class="muted">
-  {% if show_archived %}<a href="?">Hide archived customers</a>{% else %}<a href="?archived=1">Show archived customers</a>{% endif %}
-</p>
 <table>
   <thead><tr><th>Customer</th><th>Data mode</th><th>Collectors online</th></tr></thead>
   <tbody>
   {% for customer in customers %}
     <tr>
-      <td><a href="{% url 'engineers:customer' customer.pk %}">{{ customer.name }}</a>
+      <td><a href="{% url 'engineers:customer' customer=customer.pk %}">{{ customer.name }}</a>
           {% if customer.is_archived %}<span class="tag muted">archived</span>{% endif %}</td>
-      <td>{{ customer.get_data_mode_display }}</td>
+      <td><span class="mode{% if customer.is_on_site %} on-site{% endif %}">{{ customer.get_data_mode_display }}</span>
+          {% if customer.is_on_site %}<span class="muted">{% if customer.live_view_allowed %}Live view on{% else %}Inside access only{% endif %}</span>{% endif %}</td>
       <td>{% if customer.collector_count %}
             <span class="{% if customer.online_count == customer.collector_count %}online{% else %}offline{% endif %}">
               {{ customer.online_count }} of {{ customer.collector_count }}</span>

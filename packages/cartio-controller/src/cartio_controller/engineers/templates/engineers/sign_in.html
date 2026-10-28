@@ -1,7 +1,7 @@
 {% extends "engineers/base.html" %}
 {% block title %}Sign in{% endblock %}
-{% block content %}
-<div class="card">
+{% block signed_out %}
+<div class="sign-in">
   <h1>Sign in to Cartio</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   {% if form.non_field_errors %}<p class="error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
@@ -13,7 +13,7 @@
            value="{{ form.username.value|default_if_none:'' }}">
     <label for="id_password">Password</label>
     <input id="id_password" name="password" type="password" autocomplete="current-password" required>
-    <button type="submit">Continue</button>
+    <button class="btn primary" type="submit">Continue</button>
   </form>
 </div>
 {% endblock %}

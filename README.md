@@ -79,7 +79,7 @@ signed-in staff session (sign in at `/sign-in`, with the authenticator code), wr
 
 | Path | What it does |
 | -- | -- |
-| `customers` | List (add `?archived=true` to include archived) and create. `data_mode` is `hosted` (default) or `on_site` (ADR-0002) and can't be changed after creation. |
+| `customers` | List (add `?archived=true` to include archived) and create. `data_mode` is `hosted` (default) or `on_site` (ADR-0002). `live_view_allowed` (default false) lets engineers see an On site customer through the controller (ADR-0005). Neither can be changed after creation. |
 | `customers/<id>` | Read and update. |
 | `customers/<id>/engagements`, `customers/<id>/sites` | List and create, always within that customer. A site's `seed_hints` are IP addresses, networks no wider than /16 (IPv4) or /48 (IPv6), or host names. |
 | `.../<id>/archive`, `.../<id>/restore` | Archive or restore any of the above. Archived records, and everything under an archived customer, are read-only. Nothing is deleted, through the API or the admin. |

@@ -1,0 +1,11 @@
+<ul>
+{% for each in switcher_customers %}
+  <li><a href="{{ each.switch_url }}"{% if each.pk == customer.pk %} aria-current="true"{% endif %}>
+    <span class="grow"><span class="customer-name">{{ each.name }}</span>
+      <span class="mode{% if each.is_on_site %} on-site{% endif %}">{{ each.get_data_mode_display }}</span>
+      {% if each.is_on_site %}<span class="muted">{% if each.live_view_allowed %}Live view on{% else %}Inside access only{% endif %}</span>{% endif %}
+    </span></a></li>
+{% empty %}
+  <li class="empty">{% if query %}No customer matches “{{ query }}”.{% else %}No customers yet.{% endif %}</li>
+{% endfor %}
+</ul>

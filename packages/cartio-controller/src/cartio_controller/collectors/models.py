@@ -168,6 +168,9 @@ class Customer(Archivable):
 
     name = models.CharField(max_length=200, unique=True)
     data_mode = models.CharField(max_length=16, choices=DataMode, default=DataMode.HOSTED)
+    # ADR-0005: whether engineers may see an On site customer's data relayed through the
+    # controller. Off until the customer chooses it at onboarding; it means nothing for Hosted.
+    live_view_allowed = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -183,6 +186,15 @@ class Customer(Archivable):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def is_on_site(self) -> bool:
+        return self.data_mode == self.DataMode.ON_SITE
+
+    @property
+    def inside_access_only(self) -> bool:
+        """On site without live view: the controller shows only customer and collector health."""
+        return self.is_on_site and not self.live_view_allowed
 
 
 class CustomerOwned(models.Model):

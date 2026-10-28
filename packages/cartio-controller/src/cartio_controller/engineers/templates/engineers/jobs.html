@@ -1,9 +1,8 @@
 {% extends "engineers/base.html" %}
 {% block title %}Jobs · {{ customer.name }}{% endblock %}
+{% block page_title %}Jobs{% endblock %}
 {% block content %}
-<p><a href="{% url 'engineers:customers' %}">Customers</a> / <a href="{% url 'engineers:customer' customer.pk %}">{{ customer.name }}</a></p>
-<h1>Jobs</h1>
-<p class="muted">The newest {{ limit }} jobs run by this customer's collectors.</p>
+<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement.</p>
 <table>
   <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Outcome</th></tr></thead>
   <tbody>

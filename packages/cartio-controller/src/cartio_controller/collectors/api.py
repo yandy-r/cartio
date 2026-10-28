@@ -85,6 +85,7 @@ class ArchivableViewSet(
                 detail = {"fields": fields} if fields is not None else {}
                 if isinstance(record, Customer):
                     detail["data_mode"] = record.data_mode
+                    detail["live_view_allowed"] = record.live_view_allowed
                 self._audit(record, action, **detail)
         except IntegrityError as exc:
             if _is_unique_violation(exc):

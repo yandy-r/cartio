@@ -8,7 +8,15 @@ from .validators import MAX_SEED_HINTS, normalize_seed_hint
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ["id", "name", "data_mode", "notes", "created_at", "archived_at"]
+        fields = [
+            "id",
+            "name",
+            "data_mode",
+            "live_view_allowed",
+            "notes",
+            "created_at",
+            "archived_at",
+        ]
         read_only_fields = ["created_at", "archived_at"]
 
     def validate_name(self, value):
@@ -25,6 +33,15 @@ class CustomerSerializer(serializers.ModelSerializer):
         if self.instance is not None and value != self.instance.data_mode:
             raise serializers.ValidationError(
                 "Data mode is set when the customer is created and can't be changed here."
+            )
+        return value
+
+    def validate_live_view_allowed(self, value):
+        # ADR-0005: turning live view off has to end open live views, so like data mode it is
+        # chosen at creation (onboarding) and changes only through its own audited action.
+        if self.instance is not None and value != self.instance.live_view_allowed:
+            raise serializers.ValidationError(
+                "Live view is set when the customer is created and can't be changed here."
             )
         return value
 

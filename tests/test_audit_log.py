@@ -151,7 +151,8 @@ def test_admin_events_are_logged(client):
 
     assert _actions(acme) == ["record.created", "collector.created", "collector.enrolled"]
     created = AuditEvent.objects.for_customer(acme).get(action="record.created")
-    assert created.actor == "engineer" and created.detail == {"data_mode": "hosted"}
+    assert created.actor == "engineer"
+    assert created.detail == {"data_mode": "hosted", "live_view_allowed": False}
     assert client.post(f"{CUSTOMERS}/{acme.pk}/archive").status_code == 200
     assert _actions(acme)[-1] == "record.archived"
     initech = Customer.objects.get(name="Initech")

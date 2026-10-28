@@ -17,7 +17,8 @@ from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
-from django.shortcuts import get_object_or_404, redirect, render
+from django.http import HttpResponseBadRequest
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -31,11 +32,10 @@ from cartio_controller.collectors.models import (
     CollectionRun,
     Collector,
     Customer,
-    Engagement,
     Site,
 )
 
-from . import totp
+from . import shell, totp
 from .models import EngineerMFA
 
 PENDING = "cartio_pending_sign_in"
@@ -292,23 +292,40 @@ def _can_see_jobs(user) -> bool:
     return user.has_perm("collectors.view_collectionrun")
 
 
+def render_screen(
+    request, screen, template, extra, customer, engagements, engagement, *, network_data=False
+):
+    """Render a per-customer screen inside the shell.
+
+    A screen that shows network data (inventory, maps, configs, findings) shows the inside access
+    only notice instead for an On site customer without live view (ADR-0005). Customer and
+    collector health, which the controller keeps, still show.
+    """
+    context = shell.context(screen, customer, engagements, engagement)
+    context["can_see_jobs"] = _can_see_jobs(request.user)
+    if network_data and customer.inside_access_only:
+        context.update({"screen_title": shell.SCREENS[screen], "collectors": _collectors(customer)})
+        return render(request, "engineers/inside_access.html", context)
+    context.update(extra)
+    return render(request, template, context)
+
+
 @never_cache
 @engineer_required
-def customer_detail(request, pk):
-    customer = get_object_or_404(Customer, pk=pk)
-    return render(
+def customer_detail(request, customer, engagement=None):
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    return render_screen(
         request,
+        "customer",
         "engineers/customer_detail.html",
         {
-            "customer": customer,
-            "engagements": Engagement.objects.for_customer(customer).filter(
-                archived_at__isnull=True
-            ),
             "sites": Site.objects.for_customer(customer).filter(archived_at__isnull=True),
             "collectors": _collectors(customer),
-            "can_see_jobs": _can_see_jobs(request.user),
             "online_within_minutes": int(ONLINE_WITHIN.total_seconds() // 60),
         },
+        customer,
+        engagements,
+        engagement,
     )
 
 
@@ -317,18 +334,37 @@ JOBS_SHOWN = 100
 
 @never_cache
 @engineer_required
-def jobs(request, pk):
+def jobs(request, customer, engagement=None):
     # The same permission the runs API asks for.
     if not _can_see_jobs(request.user):
         raise PermissionDenied
-    customer = get_object_or_404(Customer, pk=pk)
+    customer, engagements, engagement = shell.resolve(customer, engagement)
     runs = (
         CollectionRun.objects.for_customer(customer)
         .select_related("collector", "engagement", "result")
         .order_by("-started_at")[:JOBS_SHOWN]
     )
+    return render_screen(
+        request,
+        "jobs",
+        "engineers/jobs.html",
+        {"runs": runs, "limit": JOBS_SHOWN},
+        customer,
+        engagements,
+        engagement,
+    )
+
+
+@never_cache
+@engineer_required
+def switcher(request):
+    """The switcher's customer list, filtered as the engineer types (an htmx partial)."""
+    screen = request.GET.get("screen", "")
+    if screen not in shell.SCREENS:
+        return HttpResponseBadRequest("Unknown screen.")
+    query = request.GET.get("q", "").strip()[:200]
     return render(
         request,
-        "engineers/jobs.html",
-        {"customer": customer, "runs": runs, "limit": JOBS_SHOWN},
+        "engineers/_switcher_customers.html",
+        {"switcher_customers": shell.switcher_customers(screen, query), "query": query},
     )
