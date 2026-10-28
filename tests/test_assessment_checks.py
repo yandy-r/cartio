@@ -8,11 +8,14 @@ from cartio_controller.collectors.models import (
     AssessmentRun,
     AuditEvent,
     CheckResult,
+    ConfigSnapshot,
+    CrossCustomerError,
     CrossEngagementError,
     Customer,
     Device,
     Engagement,
     OnSiteDataError,
+    RawOutput,
     Source,
 )
 from cartio_core.checks import (
@@ -237,3 +240,65 @@ def test_run_checks_command(acme, capsys):
     assert AssessmentRun.objects.for_customer(acme).get().started_by == "dana"
     with pytest.raises(CommandError, match="no engagement"):
         call_command("run_checks", customer="Acme", engagement="Nope", user="dana")
+
+
+def test_a_device_without_a_manufacturer_still_counts_for_drift():
+    outcomes = _drift(
+        DeviceFacts("sw1", "ios", "Cisco", "C9300-48P", "17.9.4"),
+        DeviceFacts("sw2", "ios", "", "C9300-48P", "17.6.1"),
+    )
+    assert {o.status for o in outcomes.values()} == {Status.FAIL}
+
+
+def test_a_check_returning_the_wrong_type_is_unknown_and_ids_run_once():
+    check = _check(lambda device, engagement: "pass")
+    assert check.run(DeviceFacts("sw1", "ios"), []).status == Status.UNKNOWN
+    with pytest.raises(ValueError, match="only once"):
+        run_checks([DeviceFacts("sw1")], [DRIFT, DRIFT])
+
+
+def test_checks_read_the_latest_config_and_output(acme):
+    engagement = _engagement(acme)
+    source = Source.objects.for_customer(acme).create(engagement=engagement, kind="upload")
+    device = Device.objects.for_customer(acme).create(engagement=engagement, name="sw1")
+    for text in ("hostname old", "hostname new"):
+        ConfigSnapshot.objects.for_customer(acme).create(device=device, source=source, content=text)
+        RawOutput.objects.for_customer(acme).create(
+            source=source, device=device, command="show version", output=text
+        )
+    seen = []
+
+    def spy(device, engagement):
+        seen.append((device.config, dict(device.outputs)))
+        return passed()
+
+    run_assessment(engagement, checks=[_check(spy)])
+
+    assert seen == [("hostname new", {"show version": "hostname new"})]
+
+
+def test_a_run_never_crosses_customers(acme):
+    globex = Customer.objects.create(name="Globex")
+    theirs = Device.objects.for_customer(globex).create(engagement=_engagement(globex), name="x")
+    run = run_assessment(_engagement(acme))
+    with pytest.raises(CrossCustomerError):
+        CheckResult.objects.for_customer(acme).create(
+            run=run, device=theirs, check_id="firmware-drift", severity="medium", status="pass"
+        )
+    with pytest.raises(CrossCustomerError):
+        CheckResult.objects.for_customer(globex).create(
+            run=run, device=theirs, check_id="firmware-drift", severity="medium", status="pass"
+        )
+    # A run on Globex's engagement only ever holds Globex's devices.
+    globex_run = run_assessment(theirs.engagement)
+    assert globex_run.customer == globex
+    assert {r.device for r in CheckResult.objects.for_customer(globex)} == {theirs}
+    assert not CheckResult.objects.for_customer(acme).exists()
+
+
+def test_archived_customers_dont_run(acme):
+    engagement = _engagement(acme)
+    acme.archived_at = timezone.now()
+    acme.save()
+    with pytest.raises(AssessmentNotAllowed):
+        run_assessment(engagement)

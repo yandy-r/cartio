@@ -103,13 +103,13 @@ class Check:
                 return not_applicable(f"Doesn't apply to {device.platform}.")
         try:
             outcome = self.logic(device, engagement)
+            if not isinstance(outcome, Outcome):
+                raise TypeError(f"Check {self.id} returned {outcome!r}, not an Outcome.")
+            return Outcome(Status(outcome.status), tuple(outcome.evidence[:MAX_EVIDENCE]))
         except Exception:
             # One broken check mustn't stop the others, and it mustn't pass a device either.
             logger.exception("Check %s failed on %s", self.id, device.name)
             return unknown("The check couldn't run on this device's data.")
-        if not isinstance(outcome, Outcome):
-            raise TypeError(f"Check {self.id} returned {outcome!r}, not an Outcome.")
-        return Outcome(Status(outcome.status), tuple(outcome.evidence[:MAX_EVIDENCE]))
 
 
 @dataclass(frozen=True)
@@ -124,6 +124,8 @@ def run_checks(
 ) -> list[Result]:
     """Run each check on each device of one engagement."""
     checks = list(CHECKS.values() if checks is None else checks)
+    if len({check.id for check in checks}) != len(checks):
+        raise ValueError("Each check may run only once.")
     return [
         Result(device.name, check, check.run(device, devices))
         for device in devices
@@ -139,11 +141,8 @@ def _firmware_drift(device: DeviceFacts, engagement: Sequence[DeviceFacts]) -> O
         return unknown("The device's model wasn't collected.")
     if not device.os_version:
         return unknown("The device's OS version wasn't collected.")
-    same_model = [
-        other
-        for other in engagement
-        if other.manufacturer == device.manufacturer and other.model == device.model
-    ]
+    # By model alone: a device whose manufacturer wasn't collected still counts.
+    same_model = [other for other in engagement if other.model == device.model]
     different = sorted(
         (other.name, other.os_version)
         for other in same_model

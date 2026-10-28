@@ -14,6 +14,7 @@ from collections.abc import Iterable
 
 from cartio_core.checks import CHECKS, Check, DeviceFacts, run_checks
 from django.db import transaction
+from django.db.models import Max
 
 from . import audit
 from .models import (
@@ -37,6 +38,8 @@ def run_assessment(
     engagement: Engagement, started_by: str = "", checks: Iterable[Check] | None = None
 ) -> AssessmentRun:
     checks = list(CHECKS.values() if checks is None else checks)
+    if len({check.id for check in checks}) != len(checks):
+        raise ValueError("Each check may run only once.")
     with transaction.atomic():
         # Lock both, so neither is archived or changes mode while the run is written.
         customer = Customer.objects.select_for_update().get(pk=engagement.customer_id)
@@ -90,14 +93,17 @@ def run_assessment(
 
 def _facts(customer: Customer, devices: list[Device]) -> list[DeviceFacts]:
     """Each device as the checks see it: its fields, latest config and latest outputs."""
-    configs: dict = {}
+    # Only the latest of each, chosen in the database: history grows with every collection.
     snapshots = ConfigSnapshot.objects.for_customer(customer).filter(device__in=devices)
-    for snapshot in snapshots.order_by("collected_at", "pk"):
-        configs[snapshot.device_id] = snapshot.content
-    outputs: dict = {}
+    latest = snapshots.values("device_id").annotate(latest=Max("pk")).values("latest")
+    configs = dict(snapshots.filter(pk__in=latest).values_list("device_id", "content"))
     raw = RawOutput.objects.for_customer(customer).filter(device__in=devices)
-    for output in raw.order_by("collected_at", "pk"):
-        outputs.setdefault(output.device_id, {})[output.command] = output.output
+    latest = raw.values("device_id", "command").annotate(latest=Max("pk")).values("latest")
+    outputs: dict = {}
+    for device_id, command, text in raw.filter(pk__in=latest).values_list(
+        "device_id", "command", "output"
+    ):
+        outputs.setdefault(device_id, {})[command] = text
     return [
         DeviceFacts(
             name=device.name,
