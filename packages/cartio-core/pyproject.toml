@@ -1,7 +1,7 @@
 [project]
 name = "cartio-core"
 version = "0.1.0"
-description = "Shared code for the Cartio collector and controller: the wire protocol, and later parsers, masking and checks."
+description = "Shared code for the Cartio collector and controller: the wire protocol and secret masking, and later parsers and checks."
 requires-python = ">=3.12"
 dependencies = []
 

@@ -19,7 +19,7 @@ cloud threads, the project's cloud environment installs the plugin in its setup 
 
 | Path | What it is |
 | -- | -- |
-| `packages/cartio-core` | Code shared by both sides. Today the collector-controller protocol; later parsers, secret masking and checks. |
+| `packages/cartio-core` | Code shared by both sides: the collector-controller protocol and secret masking; later parsers and checks. |
 | `packages/cartio-collector` | The collector. Runs on a customer VM, or an engineer's laptop as the fallback. Always connects out; never listens. |
 | `packages/cartio-controller` | The controller. Django with PostgreSQL. |
 | `tests` | Tests for all three, including an end-to-end collector check-in. |
@@ -86,11 +86,27 @@ The controller reads its settings from the environment:
 | `DATABASE_URL` | PostgreSQL URL. Defaults to a local SQLite file for development. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
 
+## Secret masking
+
+Configs are masked on the collector, before they leave it (ADR-0003), by
+`cartio_core.masking.mask_config(text, platform, key)` for `ios`, `ios-xe` and `fortios`. Each
+secret becomes `<masked:<key version>:<digest>>`, where the digest is a keyed HMAC-SHA256 under a
+per-customer key, so a changed secret shows up in a diff without its value. The content hash is
+taken over the masked text. If anything that looks like a secret survives masking, it raises
+`UnmaskedSecretError` instead of returning the config; `find_unmasked` runs the same scan on
+configs the controller receives.
+
+To support a new platform, add its rules to `_RULES` in `masking.py` and a test for every secret
+type it can hold in `tests/test_masking.py`. Build test configs at runtime, as that file does, so
+the commit hooks don't flag them.
+
 ## Not done yet
 
 - Collector authentication is a placeholder: a one-time enrollment token is exchanged for a
   bearer secret. Per-collector mTLS certificates replace it (ADR-0001, YAN-1640).
 - Check-in returns no jobs yet. Discovery and import arrive in M2.
+- Masking is not wired into collection yet: the collector has no drivers or masking key until
+  discovery (YAN-1656) and credential delivery (YAN-1653) land.
 - Packaging (container image for the VM, Windows build for the laptop) is YAN-1641.
 
 ## Rules from day one
