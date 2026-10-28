@@ -16,6 +16,7 @@ SCREENS = {
     "customer": "Overview",
     "inventory": "Inventory",
     "findings": "Findings",
+    "report": "Report",
     "collectors": "Collectors & jobs",
     "jobs": "Collectors & jobs",
     "audit": "Audit log",

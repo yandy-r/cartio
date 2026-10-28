@@ -34,6 +34,7 @@ from cartio_controller.collectors.models import CollectionRun, Customer, Site
 from . import findings as findings_screen
 from . import inventory as inventory_screen
 from . import onboarding, operations, overview, shell, totp
+from . import report as report_screen
 from . import search as global_search
 from .health import ONLINE_WITHIN, collector_health
 from .health import collectors as _collectors
@@ -561,6 +562,59 @@ def findings(request, customer, engagement=None):
         network_data=True,
     )
     response.status_code = status
+    return response
+
+
+@never_cache
+@engineer_required
+def report(request, customer, engagement=None):
+    """The assessment report (DESIGN.md section 9): a preview of its pages, and its export."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    extra = {"optional": report_screen.OPTIONAL, "severities": findings_screen.SEVERITY_LABELS}
+    if engagement is not None and not customer.inside_access_only:
+        built = report_screen.Report(customer, engagement, request.GET, _engineer_name(request))
+        extra.update(
+            {
+                "report": built,
+                "pages": report_screen.pages(built.blocks()),
+                "history": report_screen.history(customer, engagement),
+                "findings_url": shell.screen_url("findings", customer, engagement),
+            }
+        )
+    return render_screen(
+        request,
+        "report",
+        "engineers/report.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+        network_data=True,
+    )
+
+
+def _engineer_name(request) -> str:
+    return request.user.get_full_name() or request.user.get_username()
+
+
+@require_POST
+@csrf_protect
+@never_cache
+@engineer_required
+def report_export(request, customer, engagement):
+    """The report as PDF or DOCX, or its findings as CSV, audit-logged."""
+    customer, _, engagement = shell.resolve(customer, engagement)
+    # On site reports are built and saved on site (ADR-0005), which the collector can't do yet.
+    if customer.is_on_site:
+        raise Http404
+    fmt = request.POST.get("format", "")
+    if fmt not in report_screen.FORMATS:
+        return HttpResponseBadRequest("Export as pdf, docx or csv.")
+    built = report_screen.Report(customer, engagement, request.POST, _engineer_name(request))
+    with transaction.atomic():
+        content, name = report_screen.export(built, request.user.get_username(), fmt)
+    response = HttpResponse(content, content_type=report_screen.FORMATS[fmt])
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
     return response
 
 

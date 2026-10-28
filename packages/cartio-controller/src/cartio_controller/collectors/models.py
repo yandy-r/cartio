@@ -627,6 +627,7 @@ class AuditEvent(CustomerOwned):
         FINDING_UPDATED = "finding.updated", "Finding edited"
         FINDING_REMOVED = "finding.removed", "Finding dismissed or deleted"
         FINDING_RESTORED = "finding.restored", "Finding restored"
+        REPORT_EXPORTED = "report.exported", "Report exported"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)

@@ -31,6 +31,17 @@ urlpatterns = [
         views.findings,
         name="findings",
     ),
+    path("customers/<int:customer>/report", views.report, name="report"),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/report",
+        views.report,
+        name="report",
+    ),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/report/export",
+        views.report_export,
+        name="report-export",
+    ),
     path("customers/<int:customer>/collectors", views.collectors, name="collectors"),
     path(
         "customers/<int:customer>/engagements/<int:engagement>/collectors",

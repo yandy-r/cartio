@@ -587,3 +587,37 @@ code.command { display: block; margin-top: 10px; padding: 10px 12px; font-size: 
 .device-picker label, .check-label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; }
 .finding-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .finding-empty p { margin: 0; }
+
+/* Report (DESIGN.md section 9): choices on the left, the pages as they print on the right. */
+.report { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.report > .banner { grid-column: 1 / -1; }
+@media (max-width: 1000px) { .report { grid-template-columns: 1fr; } }
+.report-controls { display: flex; flex-direction: column; gap: 16px; }
+.report-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.report-card fieldset { border: 0; margin: 0; padding: 0; }
+.report-card h2 { margin: 0; }
+.report-section { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 8px 4px; font-weight: 400; }
+.report-section input { margin-top: 4px; }
+.report-fixed, .report-count { margin: 0; font-size: 12px; font-weight: 400; }
+.report-formats { display: flex; flex-direction: column; gap: 8px; }
+.report-formats .btn { justify-content: space-between; }
+.report-formats small { font-size: 12px; opacity: .8; }
+.report-history-row { margin: 0; font-size: 12px; word-break: break-all; }
+.report-pages { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.report-page { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border);
+               border-radius: 4px; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); padding: 32px clamp(20px, 4vw, 56px);
+               min-height: 480px; }
+.report-page-head, .report-page-foot { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); }
+.report-page-head { padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.report-page-foot { margin-top: auto; padding-top: 24px; }
+.report-cover { padding: 72px 0 24px; }
+.report-cover h2 { margin: 8px 0 16px; font-size: 32px; line-height: 1.2; }
+.report-cover p { margin: 4px 0; font-size: 16px; color: var(--text-2); }
+.report-cover .report-brand { color: var(--accent); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.report-h1 { margin: 20px 0 8px; font-size: 20px; color: var(--accent); }
+.report-h2 { margin: 12px 0 4px; font-size: 13px; color: var(--text-2); }
+.report-finding { display: flex; gap: 10px; align-items: baseline; margin: 24px 0 6px; padding-top: 16px;
+                  border-top: 1px solid var(--border); font-size: 16px; }
+.report-code { margin: 4px 0 12px; padding: 10px 12px; background: var(--page); border-radius: 8px; font: 12px/1.5 var(--mono);
+               white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-page table { margin-bottom: 12px; }

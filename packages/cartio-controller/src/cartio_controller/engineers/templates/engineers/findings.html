@@ -10,8 +10,8 @@
   <form method="post" action="{{ here }}">{% csrf_token %}<input type="hidden" name="action" value="run">
     <button class="btn" type="submit">Re-run checks</button></form>
   {% endif %}
-  {# The report is YAN-1666; it prints the edited set (`Findings.for_report`). #}
-  <button type="button" class="btn primary" disabled title="The report isn't built yet">Build report</button>
+  {# The report prints the edited set (`Findings.for_report`). #}
+  <a class="btn primary" href="{% url 'engineers:report' customer=customer.pk engagement=engagement.pk %}">Build report</a>
   {% endif %}
 {% endblock %}
 {% block content %}
