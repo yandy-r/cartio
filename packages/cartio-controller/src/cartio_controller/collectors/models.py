@@ -622,6 +622,7 @@ class AuditEvent(CustomerOwned):
         OUTPUTS_STORED = "outputs.stored", "Device outputs stored and parsed"
         SOURCE_REPARSED = "source.reparsed", "Source outputs parsed again"
         INVENTORY_EXPORTED = "inventory.exported", "Inventory exported"
+        ASSESSMENT_RUN = "assessment.run", "Assessment checks run"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -986,6 +987,84 @@ class ConfigSnapshot(CustomerOwned):
 
     def set_derived_fields(self) -> None:
         self.sha256 = _sha256(self.content)
+
+
+# Assessment checks (YAN-1664). The checks themselves are code in `cartio_core.checks`; these
+# keep what each run found. Results describe the network, so they are network data too.
+
+
+class AssessmentRun(CustomerOwned):
+    """One run of the assessment checks over an engagement's devices.
+
+    Append-only. Running the checks again, after new data or new checks, adds a run instead of
+    changing one, and the latest run is the engagement's current result.
+    """
+
+    append_only = True
+    network_data = True
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    engagement = models.ForeignKey(
+        Engagement, on_delete=models.PROTECT, related_name="assessment_runs"
+    )
+    # A username, not a foreign key, so the record outlives the account.
+    started_by = models.CharField(max_length=150, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    # The ids of the checks that ran, so a later reader knows what wasn't checked.
+    check_ids = models.JSONField(default=list)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-started_at"]
+        get_latest_by = "started_at"
+        constraints = [
+            models.UniqueConstraint(fields=["id", "customer"], name="assessment_run_id_customer"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.engagement} checks {self.started_at:%Y-%m-%d %H:%M}"
+
+
+class CheckResult(CustomerOwned):
+    """What one check found on one device in one assessment run."""
+
+    append_only = True
+    network_data = True
+
+    class Status(models.TextChoices):
+        PASS = "pass", "Pass"
+        FAIL = "fail", "Fail"
+        NOT_APPLICABLE = "not_applicable", "Not applicable"
+        UNKNOWN = "unknown", "Unknown"
+
+    run = models.ForeignKey(AssessmentRun, on_delete=models.PROTECT, related_name="results")
+    device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="check_results")
+    # A `cartio_core.checks.Check` id. Ids are never reused, so old results keep their meaning.
+    check_id = models.CharField(max_length=64)
+    # As the check had it when it ran.
+    severity = models.CharField(max_length=16)
+    status = models.CharField(max_length=16, choices=Status)
+    # Short lines for people: what the check saw. Masked like the data it came from.
+    evidence = models.JSONField(default=list, blank=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["device__name", "check_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["run", "device", "check_id"], name="unique_check_result"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["pass", "fail", "not_applicable", "unknown"]),
+                name="check_result_status_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.device} {self.check_id}: {self.status}"
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.run_id is not None and self.device_id is not None:
+            _check_same_engagement(self.run.engagement_id, self.device.engagement_id)
 
 
 class AppendOnlyQuerySet(models.QuerySet):

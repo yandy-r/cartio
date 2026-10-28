@@ -7,7 +7,9 @@ as the app role named by CARTIO_DB_APP_ROLE. Each half checks its own side.
 import pytest
 from cartio_controller.collectors import db_grants, db_guards
 from cartio_controller.collectors.models import (
+    AssessmentRun,
     AuditEvent,
+    CheckResult,
     CollectionRun,
     CollectionRunResult,
     ConfigSnapshot,
@@ -25,7 +27,16 @@ pytestmark = pytest.mark.django_db
 ROLE = settings.DB_APP_ROLE
 APPEND_ONLY = {
     m._meta.db_table
-    for m in (AuditEvent, CollectionRun, CollectionRunResult, Source, RawOutput, ConfigSnapshot)
+    for m in (
+        AuditEvent,
+        CollectionRun,
+        CollectionRunResult,
+        Source,
+        RawOutput,
+        ConfigSnapshot,
+        AssessmentRun,
+        CheckResult,
+    )
 }
 LOGIN_LOG = LoginEvent._meta.db_table
 

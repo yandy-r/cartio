@@ -116,6 +116,22 @@ To support a new platform, add its rules to `_RULES` in `masking.py` and a test 
 type it can hold in `tests/test_masking.py`. Build test configs at runtime, as that file does, so
 the commit hooks don't flag them.
 
+## Assessment checks
+
+Checks are code in `cartio_core.checks` (YAN-1664). Each one looks at a device, with the rest of
+its engagement for context, and returns pass, fail, not applicable or unknown, with evidence.
+Missing data is always unknown, never pass. To run them on an engagement's stored inventory,
+configs and outputs, without collecting again:
+
+```sh
+uv run cartio-controller run_checks --customer "Lab" --engagement "Audit" --user <username>
+```
+
+Each run adds an `AssessmentRun` with one `CheckResult` per device and check, and an
+`assessment.run` audit event. Results are append-only; the latest run is the current one. On site
+customers are refused, because their results belong in their own store. To add a check, write
+its function and add a `Check` to `CHECKS`; never reuse or rename a check id.
+
 ## Not done yet
 
 - Collector authentication is a placeholder: a one-time enrollment token is exchanged for a
