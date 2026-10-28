@@ -64,6 +64,17 @@ uv run cartio-collector enroll --controller http://127.0.0.1:8000 --token <token
 uv run cartio-collector checkin --once
 ```
 
+The token works once and expires after 24 hours (`CARTIO_ENROLLMENT_TOKEN_HOURS`). Enrolling makes
+an Ed25519 key pair on the collector host and sends only the public key; every request after that
+is signed with the private key, which stays in the collector's identity file (ADR-0009). Revoking
+the collector on the Collectors screen cuts it off at its next request.
+
+The collector trusts the operating system's certificate store (`--ca-file` replaces it) and uses
+`HTTPS_PROXY`, or `--proxy http://user:pass@host:port`; basic proxy auth works. It pins the
+controller's TLS key: the ones in the controller's `CARTIO_TLS_PINS` (base64 SHA-256 of each key's
+SubjectPublicKeyInfo), or else the key it saw when it enrolled. A different key on the path, such
+as a TLS-inspecting proxy's, is reported at check-in and shown as "Inspected"; it isn't blocked.
+
 Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
 enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every
 sign-in after that needs a code from the app. The customers list shows each collector's health
@@ -139,6 +150,8 @@ The controller reads its settings from the environment:
 | `CARTIO_MASTER_KEY_FILE` | File holding the base64 32-byte master key that wraps every credential key. Back it up on its own ([master key](docs/deploy/master-key.md)). `CARTIO_MASTER_KEY` can hold the key instead. |
 | `CARTIO_PREVIOUS_MASTER_KEY_FILE` | Set only while `rotate_master_key` replaces the master key: the old key, used to open what it wrapped. `CARTIO_PREVIOUS_MASTER_KEY` can hold it instead. |
 | `CARTIO_SESSION_HOURS` | How long an engineer stays signed in. Defaults to 8. Sessions also end when the browser closes. |
+| `CARTIO_ENROLLMENT_TOKEN_HOURS` | How long a new collector's one-time enrollment token works. Defaults to 24. |
+| `CARTIO_TLS_PINS` | Comma-separated pins of the controller's TLS keys (base64 SHA-256 of the SubjectPublicKeyInfo), handed to collectors at enrollment so they can report TLS inspection. Empty: each collector pins the key it sees when it enrolls. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
 
 ## Secret masking
@@ -178,8 +191,8 @@ its function and add a `Check` to `CHECKS`; never reuse or rename a check id.
 
 ## Not done yet
 
-- Collector authentication is a placeholder: a one-time enrollment token is exchanged for a
-  bearer secret. Requests signed with a per-collector key pair replace it (ADR-0009, YAN-1650).
+- Job credentials aren't sealed to the collector's public key yet, and there is no "Require
+  uninspected path" setting (ADR-0009). Both come with the job channel (YAN-1651).
 - Check-in returns no jobs yet. Discovery and import arrive in M2.
 - Masking is not wired into collection yet: the collector has no drivers or masking key until
   discovery (YAN-1656) and credential delivery (YAN-1653) land.

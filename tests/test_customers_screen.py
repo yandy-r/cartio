@@ -60,7 +60,7 @@ def test_one_row_per_customer_with_its_engagement_sites_collectors_and_devices(c
         "acme-vm",
         "0.4.0",
         "Last check-in",
-        "Certificate",
+        "TLS path",
         "Inside access only",
         "Live view on",
         "Live view is off for this customer.",

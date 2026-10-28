@@ -49,7 +49,7 @@
     </div>
   </form>
   {% else %}
-  <p class="banner inside-access" role="note">This token is shown once, on this page only, and works once. Only its hash is stored. If it's lost, revoke the collector and add a new one under another name.</p>
+  <p class="banner inside-access" role="note">This token is shown once, on this page only, and works once, within {{ token_hours }} hours. Only its hash is stored. If it's lost, revoke the collector and add a new one under another name.</p>
   <div class="token-head"><span><strong class="mono">{{ added.name }}</strong>{% if added.site %} <span class="muted">· {{ added.site.name }}</span>{% endif %}</span>
     <button class="btn" type="button" data-copy="enroll-command">Copy command</button></div>
   <code class="command" id="enroll-command">{{ command }}</code>
@@ -70,15 +70,19 @@
     <dl class="collector-facts">
       <dt>Last check-in</dt><dd>{% if collector.revoked_at %}Revoked {{ collector.revoked_at|date:"Y-m-d H:i" }} UTC{% elif collector.last_check_in %}<time datetime="{{ collector.last_check_in|date:'c' }}">{{ collector.last_check_in|timesince }} ago</time>{% else %}Never{% endif %}</dd>
       <dt>Version</dt><dd class="mono">{{ collector.version|default:"–" }}</dd>
-      {# Client certificates (YAN-1650) and the job queue (YAN-1651) aren't built yet. #}
-      <dt>Certificate</dt><dd>{% if collector.revoked_at %}Revoked{% else %}Not tracked yet{% endif %}</dd>
+      {% if not collector.enrolled_at and not collector.revoked_at %}
+      <dt>Token</dt><dd>{% if collector.enrollment_open %}Expires {{ collector.enrollment_expires_at|date:"Y-m-d H:i" }} UTC{% else %}Expired. Revoke and add a new one.{% endif %}</dd>
+      {% endif %}
+      {# Whether the collector's pin saw another TLS key on the path (ADR-0009). #}
+      <dt>TLS path</dt><dd>{% if collector.revoked_at %}Revoked{% elif not collector.last_check_in %}Not reported yet{% elif collector.tls_inspected %}<span class="tls-inspected">Inspected</span>{% else %}Direct{% endif %}</dd>
+      {# The job queue (YAN-1651) isn't built yet. #}
       <dt>Queue</dt><dd>Not tracked yet</dd>
     </dl>
     {% if confirm and confirm.pk == collector.pk and not collector.revoked_at %}
     <form method="post" action="{{ here }}" class="confirm" role="alertdialog" aria-labelledby="confirm-{{ collector.pk }}">
       {% csrf_token %}
       <input type="hidden" name="action" value="revoke"><input type="hidden" name="collector" value="{{ collector.pk }}">
-      <p id="confirm-{{ collector.pk }}">{% if collector.enrolled_at %}Revoke {{ collector.name }}? Its secret stops working at once, so it can't check in, fetch jobs or receive credentials again. Results it hasn't sent yet are lost.{% else %}Cancel {{ collector.name }}'s enrollment? Its one-time token stops working.{% endif %} This can't be undone.</p>
+      <p id="confirm-{{ collector.pk }}">{% if collector.enrolled_at %}Revoke {{ collector.name }}? Its key stops working at once, so it can't check in, fetch jobs or receive credentials again. Results it hasn't sent yet are lost.{% else %}Cancel {{ collector.name }}'s enrollment? Its one-time token stops working.{% endif %} This can't be undone.</p>
       <div class="confirm-buttons"><a class="btn" href="{{ here }}" autofocus>Keep</a><button class="btn danger-fill" type="submit">{% if collector.enrolled_at %}Revoke{% else %}Cancel enrollment{% endif %}</button></div>
     </form>
     {% elif can_revoke and not collector.revoked_at %}

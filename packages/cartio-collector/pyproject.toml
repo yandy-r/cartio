@@ -8,6 +8,7 @@ dependencies = [
     "httpx>=0.28",
     "platformdirs>=4.13",
     "scrapli[paramiko]>=2025.1.30,<2026",
+    "truststore>=0.10",
 ]
 
 [project.scripts]

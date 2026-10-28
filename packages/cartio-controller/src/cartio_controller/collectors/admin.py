@@ -85,8 +85,12 @@ class CollectorAdmin(admin.ModelAdmin):
         "version",
         "platform",
         "last_check_in",
+        "tls_inspected",
+        # Set by the collector at enrollment; changing it would hand the identity to another key.
+        "public_key",
+        "enrollment_expires_at",
     ]
-    exclude = ["enrollment_token_hash", "secret_hash"]
+    exclude = ["enrollment_token_hash"]
 
     def get_readonly_fields(self, request, obj=None):
         # A collector belongs to one customer for good (YAN-1649).

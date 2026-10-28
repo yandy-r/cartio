@@ -14,10 +14,12 @@ from cartio_controller.collectors.models import (
     Site,
 )
 from cartio_controller.collectors.runs import RunNotAllowed, start_run
-from cartio_core.protocol import CHECKIN_PATH, ENROLL_PATH, bearer
+from cartio_core import signing
+from cartio_core.protocol import CHECKIN_PATH, ENROLL_PATH
 from django.contrib.auth.models import Permission
 from django.utils import timezone
 
+from .signed import CHECKIN, signed_post
 from .test_engineer_ui import _engineer, _signed_in
 
 pytestmark = pytest.mark.django_db
@@ -49,6 +51,11 @@ def _post_json(client, path, body, **headers):
     return client.post(path, data=json.dumps(body), content_type="application/json", **headers)
 
 
+def _enroll_body(token, key=None):
+    public_key = signing.public_key_for(key or signing.new_private_key())
+    return {"token": token, "hostname": "vm01", "public_key": public_key}
+
+
 def _enrolled(customer, name="vm01"):
     collector = Collector(customer=customer, name=name)
     token = collector.issue_enrollment_token()
@@ -68,8 +75,14 @@ def test_collectors_tab_shows_each_collectors_state(client, engineer, acme):
         hostname="hq-host",
         version="0.4.0",
     )
-    collectors.create(name="acme-east-vm", enrolled_at=now, last_check_in=now - timedelta(days=2))
-    collectors.create(name="acme-west-vm")
+    collectors.create(
+        name="acme-east-vm",
+        enrolled_at=now,
+        last_check_in=now - timedelta(days=2),
+        tls_inspected=True,
+    )
+    _enrolled(acme, name="acme-west-vm")
+    collectors.create(name="acme-lost-vm")  # its token expired
     collectors.create(name="acme-old-vm", enrolled_at=now, revoked_at=now)
 
     page = client.get(f"/customers/{acme.pk}/collectors").content.decode()
@@ -83,7 +96,12 @@ def test_collectors_tab_shows_each_collectors_state(client, engineer, acme):
         "acme-east-vm is offline.",
         "Not enrolled",
         "Revoked",
-        "Certificate",
+        "TLS path",
+        "Direct",
+        '<span class="tls-inspected">Inspected</span>',
+        "Not reported yet",
+        "Expires ",
+        "Expired. Revoke and add a new one.",
         "Queue",
     ):
         assert text in page
@@ -115,7 +133,7 @@ def test_add_a_collector_shows_its_token_once(client, engineer, acme):
     assert token not in json.dumps(event.detail)
 
     # The token enrolls the collector, and the waiting panel says so.
-    assert _post_json(client, ENROLL_PATH, {"token": token, "hostname": "hq"}).status_code == 201
+    assert _post_json(client, ENROLL_PATH, _enroll_body(token)).status_code == 201
     status = client.get(f"{url}/{collector.pk}/status").content.decode()
     assert "acme-hq-vm enrolled" in status and "hx-trigger" not in status
 
@@ -155,15 +173,17 @@ def test_adding_and_revoking_need_permissions(client, acme):
 
 def test_revoke_asks_first_then_stops_the_collector(client, engineer, acme):
     collector, token = _enrolled(acme)
-    enrolled = _post_json(client, ENROLL_PATH, {"token": token, "hostname": "vm01"}).json()
-    auth = bearer(enrolled["collector_id"], enrolled["secret"])
-    checkin = {"hostname": "vm01", "version": "0.4.0", "platform": "linux"}
-    assert _post_json(client, CHECKIN_PATH, checkin, HTTP_AUTHORIZATION=auth).status_code == 200
+    key = signing.new_private_key()
+    enrolled = _post_json(client, ENROLL_PATH, _enroll_body(token, key)).json()
+    checkin = {**CHECKIN, "version": "0.4.0"}
+    assert (
+        signed_post(client, enrolled["collector_id"], key, CHECKIN_PATH, checkin).status_code == 200
+    )
 
     url = f"/customers/{acme.pk}/collectors"
     stale = Collector.objects.for_customer(acme).get(pk=collector.pk)
     page = client.get(f"{url}?revoke={collector.pk}").content.decode()
-    assert "Revoke vm01? Its secret stops working at once" in page
+    assert "Revoke vm01? Its key stops working at once" in page
     assert not AuditEvent.objects.for_customer(acme).filter(action="collector.revoked").exists()
 
     response = client.post(url, {"action": "revoke", "collector": str(collector.pk)})
@@ -177,7 +197,9 @@ def test_revoke_asks_first_then_stops_the_collector(client, engineer, acme):
     assert event.actor == engineer.get_username()
     assert event.collector == collector and event.detail == {"was_enrolled": True}
     # A revoked collector can't check in or start a run any more.
-    assert _post_json(client, CHECKIN_PATH, checkin, HTTP_AUTHORIZATION=auth).status_code == 401
+    assert (
+        signed_post(client, enrolled["collector_id"], key, CHECKIN_PATH, checkin).status_code == 401
+    )
     # Even through a collector object loaded before the revoke.
     with pytest.raises(RunNotAllowed):
         start_run(stale, "discovery")
@@ -195,7 +217,7 @@ def test_cancelling_an_enrollment_burns_the_token(client, engineer, acme):
     client.post(
         f"/customers/{acme.pk}/collectors", {"action": "revoke", "collector": str(collector.pk)}
     )
-    assert _post_json(client, ENROLL_PATH, {"token": token, "hostname": "vm01"}).status_code == 403
+    assert _post_json(client, ENROLL_PATH, _enroll_body(token)).status_code == 403
 
 
 def test_another_customers_collectors_are_out_of_reach(client, engineer, acme, globex):

@@ -10,33 +10,42 @@ from pathlib import Path
 import httpx
 
 from . import __version__
-from .client import ControllerError, check_in, enroll
-from .config import CollectorConfig, default_path
+from .client import ControllerError, Session, enroll
+from .config import CollectorConfig, ConfigError, default_path
 
 
 def _cmd_enroll(args: argparse.Namespace) -> int:
-    config = enroll(args.controller, args.token)
+    config = enroll(args.controller, args.token, proxy=args.proxy, ca_file=args.ca_file)
     config.save(args.config)
     print(f"Enrolled as collector {config.collector_id} for {config.customer}.")
-    print(f"Identity saved to {args.config}")
+    print(f"Identity and private key saved to {args.config}")
     return 0
 
 
 def _cmd_checkin(args: argparse.Namespace) -> int:
     config = CollectorConfig.load(args.config)
-    while True:
-        try:
-            result = check_in(config)
-        except httpx.TransportError as exc:
-            # A network blip shouldn't stop a running collector; a refusal still does.
-            if args.once:
-                raise
-            print(f"warning: check-in failed, retrying: {exc}", file=sys.stderr)
-        else:
-            print(f"Checked in: {result.status}, {len(result.jobs)} job(s) waiting.")
-            if args.once:
-                return 0
-        time.sleep(args.interval)
+    reported_inspection = False
+    with Session(config) as session:
+        while True:
+            try:
+                result = session.check_in()
+            except httpx.TransportError as exc:
+                # A network blip shouldn't stop a running collector; a refusal still does.
+                if args.once:
+                    raise
+                print(f"warning: check-in failed, retrying: {exc}", file=sys.stderr)
+            else:
+                if session.inspected and not reported_inspection:
+                    print(
+                        "warning: the controller's TLS key isn't the pinned one, so something "
+                        "on the path inspects TLS. Reported to the controller.",
+                        file=sys.stderr,
+                    )
+                reported_inspection = session.inspected
+                print(f"Checked in: {result.status}, {len(result.jobs)} job(s) waiting.")
+                if args.once:
+                    return 0
+            time.sleep(args.interval)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,6 +59,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_enroll = sub.add_parser("enroll", help="Enroll with the controller using a one-time token.")
     p_enroll.add_argument("--controller", required=True, help="Controller URL, e.g. https://...")
     p_enroll.add_argument("--token", required=True, help="One-time enrollment token.")
+    p_enroll.add_argument(
+        "--proxy",
+        default="",
+        help="Proxy URL, e.g. http://user:pass@proxy:3128. "
+        "Default: the HTTPS_PROXY environment variable.",
+    )
+    p_enroll.add_argument(
+        "--ca-file", default="", help="CA bundle to trust instead of the OS certificate store."
+    )
     p_enroll.set_defaults(func=_cmd_enroll)
 
     p_checkin = sub.add_parser("checkin", help="Check in with the controller.")
@@ -63,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except (ControllerError, httpx.HTTPError, FileNotFoundError) as exc:
+    except (ControllerError, ConfigError, httpx.HTTPError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

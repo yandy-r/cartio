@@ -17,6 +17,7 @@ from cartio_controller.collectors.models import (
     LoginEvent,
 )
 from cartio_controller.collectors.runs import RunNotAllowed, finish_run, start_run
+from cartio_core import signing
 from cartio_core.protocol import ENROLL_PATH
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -144,7 +145,11 @@ def test_admin_events_are_logged(client):
     collector.save()
     response = client.post(
         ENROLL_PATH,
-        data={"token": token, "hostname": "vm01"},
+        data={
+            "token": token,
+            "hostname": "vm01",
+            "public_key": signing.public_key_for(signing.new_private_key()),
+        },
         content_type="application/json",
     )
     assert response.status_code == 201
