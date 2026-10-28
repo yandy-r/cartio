@@ -3,6 +3,17 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+from cartio_controller.collectors import db_guards
+
+
+def tie(apps, schema_editor):
+    # A collector's site belongs to the collector's customer, in the database too.
+    db_guards.tie_to_parent(schema_editor, "collectors_collector", "site_id", "collectors_site")
+
+
+def untie(apps, schema_editor):
+    db_guards.untie(schema_editor, "collectors_collector", "site_id")
+
 
 class Migration(migrations.Migration):
 
@@ -54,4 +65,6 @@ class Migration(migrations.Migration):
                 max_length=64,
             ),
         ),
+        # PostgreSQL only: references the existing (id, customer) constraint on sites.
+        migrations.RunPython(tie, untie, elidable=False),
     ]
