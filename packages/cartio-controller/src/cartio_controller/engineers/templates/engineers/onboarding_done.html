@@ -13,7 +13,7 @@
   {% if tokens %}
   <div>
     <h3>Enrollment tokens</h3>
-    <p class="banner inside-access" role="note">Shown once, on this page only. Each token enrolls one collector, and only its hash is stored. Copy them now; if one is lost, create the collector again.</p>
+    <p class="banner inside-access" role="note">Shown once, on this page only. Each token enrolls one collector, within {{ token_hours }} hours, and only its hash is stored. Copy them now; if one is lost, create the collector again.</p>
     <ul class="tokens">
     {% for token in tokens %}
       <li>

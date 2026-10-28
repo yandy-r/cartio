@@ -107,6 +107,7 @@ dependencies = [
     { name = "httpx" },
     { name = "platformdirs" },
     { name = "scrapli", extra = ["paramiko"] },
+    { name = "truststore" },
 ]
 
 [package.metadata]
@@ -115,6 +116,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "platformdirs", specifier = ">=4.13" },
     { name = "scrapli", extras = ["paramiko"], specifier = ">=2025.1.30,<2026" },
+    { name = "truststore", specifier = ">=0.10" },
 ]
 
 [[package]]
@@ -151,6 +153,7 @@ name = "cartio-core"
 version = "0.1.0"
 source = { editable = "packages/cartio-core" }
 dependencies = [
+    { name = "cryptography" },
     { name = "ntc-templates" },
     { name = "textfsm" },
     { name = "ttp" },
@@ -158,6 +161,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=46" },
     { name = "ntc-templates", specifier = ">=9.3" },
     { name = "textfsm", specifier = ">=2.1" },
     { name = "ttp", specifier = ">=0.10" },
@@ -940,6 +944,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9e/87/2a93c2ced2a11fb26cfec3623894a9127b9b67ae3cfdd1778afa5cff576f/textfsm-2.1.0.tar.gz", hash = "sha256:45c18ff2b7c90163dfdff7e20d3f482514cc7aac26bc2547744e79dfa761e458", size = 55486, upload-time = "2025-04-17T04:55:46.392Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/82/1a/ab772f8479adedad1bdd12dd5c2bf6facf3fad8d04f35b4f4053201d202d/textfsm-2.1.0-py2.py3-none-any.whl", hash = "sha256:55886490474890fa09ade0e8c9555a913fd325724842293364dc44ea705b3616", size = 44345, upload-time = "2025-04-17T04:55:44.542Z" },
+]
+
+[[package]]
+name = "truststore"
+version = "0.10.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/9f/c5201d42a484c061e528825fc8e2d565f5abd50a4ced6fb7d29c4ec99b2b/truststore-0.10.5.tar.gz", hash = "sha256:30d36967ccaded5cbb38d602c433f53600036c79d502f4533a49b60a03bbefcd", size = 28091, upload-time = "2026-10-12T22:27:31.808Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/e9/3a7820be2bb0fe53b6bc9c3be26d3d1158004e4c3ab953aa6840b955b1e9/truststore-0.10.5-py3-none-any.whl", hash = "sha256:9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c", size = 19017, upload-time = "2026-10-12T22:27:30.377Z" },
 ]
 
 [[package]]

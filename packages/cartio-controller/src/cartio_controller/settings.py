@@ -122,6 +122,13 @@ SIGN_IN_MAX_FAILURES_PER_ADDRESS = int(
 )
 SIGN_IN_LOCKOUT_MINUTES = int(os.environ.get("CARTIO_SIGN_IN_LOCKOUT_MINUTES", "15"))
 LOGIN_LOG_DAYS = int(os.environ.get("CARTIO_LOGIN_LOG_DAYS", "365"))
+
+# Collectors (ADR-0009). A new collector's one-time enrollment token works for this long.
+ENROLLMENT_TOKEN_HOURS = float(os.environ.get("CARTIO_ENROLLMENT_TOKEN_HOURS", "24"))
+# Pins of the controller's TLS server keys, comma separated: base64 SHA-256 of each key's
+# SubjectPublicKeyInfo. Collectors get them at enrollment and report a different key on the path
+# as TLS inspection. Empty: each collector pins the key it sees when it enrolls.
+TLS_PINS = [p.strip() for p in os.environ.get("CARTIO_TLS_PINS", "").split(",") if p.strip()]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 if os.environ.get("CARTIO_TLS_PROXY") == "1":

@@ -29,7 +29,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
 from cartio_controller.collectors import assessments, audit
-from cartio_controller.collectors.models import CollectionRun, Customer, Site
+from cartio_controller.collectors.models import (
+    ENROLLMENT_TOKEN_LIFETIME,
+    CollectionRun,
+    Customer,
+    Site,
+)
 
 from . import compare as compare_screen
 from . import findings as findings_screen
@@ -48,6 +53,11 @@ PENDING_SECONDS = 300
 MAX_CODE_TRIES = 5
 
 TOO_MANY_FAILURES = "Too many failed sign-ins. Wait {minutes} minutes and try again."
+
+
+def _token_hours() -> str:
+    """How long a new enrollment token works, for the screens that show one."""
+    return f"{ENROLLMENT_TOKEN_LIFETIME.total_seconds() / 3600:g}"
 
 
 def _too_many_failures_error() -> str:
@@ -398,6 +408,7 @@ def _create_customer(request, state):
             "created": customer,
             "summary": onboarding.summary(state),
             "tokens": tokens,
+            "token_hours": _token_hours(),
             "overview_url": shell.screen_url(
                 "collectors", customer, engagements[0] if engagements else None
             ),
@@ -881,6 +892,7 @@ def collectors(request, customer, engagement=None):
             "offline": [c for c in rows if c.health == "offline"],
             "sites": operations.sites(customer),
             "online_within_minutes": int(ONLINE_WITHIN.total_seconds() // 60),
+            "token_hours": _token_hours(),
         }
     )
     response = render_screen(
