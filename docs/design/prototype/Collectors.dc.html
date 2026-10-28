@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Collectors and jobs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn.danger{color:#B42318;border-color:#FDA29B}
+.btn.danger:hover{background:#FEF3F2}
+.btn.dangerfill{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:500}
+.field input,.field select,.field textarea{font:inherit;font-size:14px;font-weight:400;border:1px solid #D0D5DD;border-radius:8px;padding:10px 12px;min-height:44px;box-sizing:border-box;color:#101828;background:#FFFFFF}
+.field textarea{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px}
+.pill{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.pill.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.bar{width:6px;border-radius:2px}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a class="on" href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> · collectors dial out on 443 and never listen</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Collectors &amp; jobs</h1>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<button class="btn" type="button" onClick="{{openJob}}">Start discovery</button>
+<button class="btn primary" type="button" onClick="{{openEnroll}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add collector</button>
+</div>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{enrollOpen}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Add a collector" style="background: #FFFFFF; border: 1px solid #A5E3EE; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">Add a collector for {{cname}}</h2>
+<ol style="display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{st.color}}; font-weight: {{st.weight}}"><span style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; background: {{st.bg}}; color: {{st.numColor}}">{{st.n}}</span>{{st.label}}</li>
+</sc-for>
+</ol>
+</div>
+<sc-if value="{{step1}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px">
+<label class="field">Name<input type="text" class="mono" value="{{enrollName}}"></label>
+<label class="field">Runs on<select><option>Customer Linux VM (container)</option><option>Customer Linux VM (uv install)</option><option>Engineer laptop (Windows exe)</option></select></label>
+</div>
+<div class="field">Site
+<div role="radiogroup" aria-label="Site" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{enrollSites}}" as="n" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{n.checked}}" class="{{n.cls}}" onClick="{{n.pick}}">{{n.name}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap"><span style="font-size: 13px; color: #475467">Collector for a customer that isn’t set up yet? <a href="NewCustomer.dc.html">Onboard the customer first</a>.</span><span style="display: flex; gap: 10px"><button class="btn" type="button" onClick="{{closeEnroll}}">Cancel</button><button class="btn primary" type="button" onClick="{{toStep2}}">Create and show token</button></span></div>
+</sc-if>
+<sc-if value="{{step2}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #713F12">This token is shown once and expires in 59 minutes. Only its hash is stored.</div>
+<div class="mono" style="background: #0E1A24; color: #C9D4DE; border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.8; overflow-x: auto; white-space: pre">uv run cartio-collector enroll \
+  --controller https://cartio.itcloudnetwork.com \
+  --token {{token}}   <span style="color: #8FA3B5"># one-time</span>
+uv run cartio-collector checkin</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap"><button class="btn" type="button" onClick="{{copyCmd}}">{{copyLabel}}</button><button class="btn primary" type="button" onClick="{{toStep3}}">I’ve run it</button></div>
+</sc-if>
+<sc-if value="{{step3}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 14px; align-items: center; padding: 8px 0">
+<span style="width: 14px; height: 14px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 0 6px #FEF3C7"></span>
+<div><div style="font-weight: 600">Waiting for {{enrollName}}’s first check-in…</div><div style="font-size: 13px; color: #475467">It must reach the controller on 443, through a proxy if needed. Nothing has to be opened inbound.</div></div>
+</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end"><button class="btn" type="button" onClick="{{closeEnroll}}">Close; keep waiting in the background</button></div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{jobOpen}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Start a discovery" style="background: #FFFFFF; border: 1px solid #A5E3EE; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">Start a discovery</h2>
+<div class="field">Collector
+<div role="radiogroup" aria-label="Collector" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{jobCollectors}}" as="n" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{n.checked}}" class="{{n.cls}}" disabled="{{n.disabled}}" onClick="{{n.pick}}">{{n.name}}</button></sc-for>
+</div>
+</div>
+<div style="font-size: 13px; color: #344054">Seeds, ranges and credentials come from the engagement: {{jobScope}} <a href="Engagement.dc.html">Change them in the engagement</a>.</div>
+<div style="font-size: 12px; color: #475467">{{credNote}}</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end"><button class="btn" type="button" onClick="{{closeJob}}">Cancel</button><button class="btn primary" type="button" onClick="{{queueJob}}">Queue discovery</button></div>
+</section>
+</sc-if>
+
+<section aria-label="Collectors" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px">
+<sc-for list="{{collectors}}" as="c" hint-placeholder-count="3">
+<article style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div><div class="mono" style="font-size: 15px; font-weight: 500">{{c.name}}</div><div style="font-size: 12px; color: #475467">{{c.site}} · {{c.host}}</div></div>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: {{c.bg}}; color: {{c.fg}}; flex: none"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{c.dot}}"></span>{{c.state}}</span>
+</div>
+<div>
+<div style="display: flex; align-items: flex-end; gap: 2px; height: 28px" role="img" aria-label="{{c.sparkLabel}}">
+<sc-for list="{{c.spark}}" as="b" hint-placeholder-count="24"><span class="bar" style="height: {{b.h}}px; background: {{b.c}}"></span></sc-for>
+</div>
+<div style="font-size: 11px; color: #475467; margin-top: 4px">Check-ins, last 24 h</div>
+</div>
+<div style="display: grid; grid-template-columns: 100px 1fr; gap: 4px 10px; font-size: 13px">
+<span style="color: #475467">Last check-in</span><span>{{c.seen}}</span>
+<span style="color: #475467">Version</span><span class="mono">{{c.version}}</span>
+<span style="color: #475467">Certificate</span><span>{{c.cert}}</span>
+<span style="color: #475467">Offline queue</span><span>{{c.queue}}</span>
+</div>
+<sc-if value="{{c.confirming}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FEF3F2; border: 1px solid #FDA29B; border-radius: 10px; padding: 12px; font-size: 13px; color: #7A271A; display: flex; flex-direction: column; gap: 10px">
+<span>Revoke {{c.name}}? Its certificate is rejected at once and open connections close. Queued results that were not acknowledged are lost.</span>
+<div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn" type="button" onClick="{{cancelRevoke}}">Keep</button><button class="btn dangerfill" type="button" onClick="{{c.revoke}}">Revoke</button></div>
+</div>
+</sc-if>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto">
+<a class="btn" href="Topology.dc.html">Site map</a>
+<button class="btn danger" type="button" onClick="{{c.askRevoke}}">{{c.revokeLabel}}</button>
+</div>
+</article>
+</sc-for>
+</section>
+
+<section aria-label="Jobs" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 6px 0">
+<div style="padding: 10px 18px; font-size: 16px; font-weight: 600">Jobs</div>
+<sc-for list="{{jobs}}" as="j" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(160px, 1.4fr) minmax(140px, 1fr) minmax(120px, .8fr); gap: 14px; align-items: center; padding: 12px 18px; border-top: 1px solid #EEF2F6; font-size: 13px">
+<div><div style="font-weight: 500">{{j.type}}</div><div class="mono" style="font-size: 11px; color: #475467">{{j.id}}</div></div>
+<div>{{j.detail}}</div>
+<div><div style="height: 6px; border-radius: 3px; background: #EEF2F6; overflow: hidden"><div style="height: 100%; width: {{j.pct}}%; background: {{j.color}}"></div></div><div style="font-size: 11px; color: #475467; margin-top: 4px">{{j.progress}}</div></div>
+<div style="font-weight: 600; color: {{j.color}}">{{j.state}}</div>
+</div>
+</sc-for>
+</section>
+
+<section id="audit" aria-label="Audit log" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 14px 18px">
+<div style="font-size: 16px; font-weight: 600">Audit log <span style="font-size: 12px; font-weight: 400; color: #475467">append-only</span></div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+<sc-for list="{{auditFilters}}" as="a" hint-placeholder-count="4"><button type="button" class="{{a.cls}}" aria-pressed="{{a.pressed}}" onClick="{{a.pick}}">{{a.label}}</button></sc-for>
+<button class="btn" type="button" onClick="{{exportAudit}}" style="margin-left: 6px">Export CSV</button>
+</div>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px">
+<thead><tr style="text-align: left; background: #F8FAFB; color: #475467; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th style="padding: 10px 18px; font-weight: 500">When</th><th style="padding: 10px 12px; font-weight: 500">Event</th><th style="padding: 10px 12px; font-weight: 500">Who</th><th style="padding: 10px 12px; font-weight: 500">Collector</th><th style="padding: 10px 12px; font-weight: 500">Detail</th></tr></thead>
+<tbody>
+<sc-for list="{{audit}}" as="e" hint-placeholder-count="6">
+<tr style="border-top: 1px solid #EEF2F6">
+<td class="mono" style="padding: 10px 18px; font-size: 12px; color: #475467; white-space: nowrap">{{e.at}}</td>
+<td style="padding: 10px 12px"><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: {{e.bg}}; color: {{e.fg}}">{{e.kind}}</span> {{e.what}}</td>
+<td style="padding: 10px 12px">{{e.who}}</td>
+<td class="mono" style="padding: 10px 12px; font-size: 12px">{{e.col}}</td>
+<td style="padding: 10px 12px; color: #475467">{{e.detail}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), enroll: 0, enrollSite: 0, job: false, jobCol: 0, confirm: null, revoked: {}, audit: 'all', toast: '', copied: false, queued: false };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { const v = this.readCtx(); if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) this.setCtx(v); }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  setCtx(v) { this.setState({ ctx: v, enroll: 0, enrollSite: 0, job: false, jobCol: 0, confirm: null, revoked: {}, audit: 'all', toast: '', copied: false, queued: false }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment'], 'nw-q4-25': ['Q4 2025 assessment'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025'], 'lk-wifi': ['Wi-Fi refresh baseline'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const onsite = cust === 'bp' || cust === 'om';
+    const parts = [];
+    if (cust === 'om') parts.push(['On site, inside access only.', 'The controller sees collector health and job status for Ostrander, nothing else. Results and reports stay on their file share.']);
+    if (cust === 'bp') parts.push(['On site customer.', 'Collectors write network data to Bluepeak’s on-site store. Credentials are entered on bp-dc1-vm, never on the controller.']);
+    if (cust === 'lk') parts.push(['lk-vm-01 has been offline for 2 days.', 'Last check-in Oct 26 16:12. Results from its last run were acknowledged before it dropped, so nothing is lost.']);
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: onsite ? '#F5F3FF' : '#FFFBEB', border: onsite ? '#DDD6FE' : '#FCD34D', fg: onsite ? '#4C1D95' : '#713F12' };
+    const DATA = {
+      nw: { prefix: 'nw', sites: ['HQ data center', 'Clinic East', 'Clinic West'], scope: '2 seeds at HQ, 1 at Clinic East; credential set “ro-audit”.',
+        C: [['nw-hq-vm', 'HQ data center', 'Linux VM · container', 'Online', '42 s ago', '0.4.0', 'Valid · renews in 81 days', 'Empty', '222222222222222222222222'], ['nw-east-vm', 'Clinic East', 'Linux VM · uv install', 'Online', '1 min ago', '0.4.0', 'Valid · renews in 81 days', 'Empty · 1 job running', '222222222211222222222222'], ['nw-west-vm', 'Clinic West', 'not enrolled', 'Pending', 'Never', '—', 'Issued at enrollment', 'Token expires in 40 min', '000000000000000000000000']],
+        J: [['Discovery', 'job_7f21', 'Clinic East · 2 seeds · nw-east-vm', 61, 'Hop 3 of 5 · 7 devices', 'Running'], ['Assess', 'job_7f1c', '5 checks · 58 devices', 100, '23 findings', 'Done'], ['Discovery', 'job_7f0a', 'HQ data center · 2 seeds · nw-hq-vm', 100, '58 devices · 4 m 12 s', 'Done'], ['Import parse', 'job_7ef3', '3 files from A. Chen', 100, '2 parsed · 1 rejected (unmasked secret)', 'Partial']],
+        A: [['2026-10-28 10:42', 'job', 'Discovery finished · 58 devices', 'Yandy R.', 'nw-hq-vm', 'job_7f0a · results acknowledged by result ID'], ['2026-10-28 10:12', 'admin', 'Collector created', 'Yandy R.', 'nw-west-vm', 'Enrollment token issued, expires 11:12'], ['2026-10-28 08:47', 'cred', 'Credential replaced', 'Yandy R.', '—', 'SNMPv3 user ro-audit · value not recorded'], ['2026-10-28 08:45', 'cred', 'Credential used', 'system', 'nw-hq-vm', 'Delivered in job_7f0a, in memory only'], ['2026-10-28 08:30', 'login', 'Signed in with MFA', 'Yandy R.', '—', 'TOTP'], ['2026-10-27 16:05', 'admin', 'Collector enrolled', 'A. Chen', 'nw-east-vm', 'Client certificate issued · fingerprint 4C:1A:…:9E']] },
+      bp: { prefix: 'bp', sites: ['DC1', 'Branch 7'], scope: '3 seeds at DC1, 1 at Branch 7; credentials stored on bp-dc1-vm.',
+        C: [['bp-dc1-vm', 'DC1', 'Linux VM · container', 'Online', '12 s ago', '0.4.0', 'Valid · renews in 64 days', 'Empty · live view relay idle', '222222222222222222222222'], ['bp-branch-laptop', 'Branch 7', 'Windows laptop · exe', 'Stale', '3 h ago', '0.3.1', 'Valid · renews in 12 days', '2 results queued offline', '222222222222222221100000']],
+        J: [['Live view', 'job_b30e', 'DC1 inventory, map and findings · Yandy R.', 100, 'Relayed in memory · nothing stored', 'Open'], ['Discovery', 'job_b2f1', 'Branch 7 · 1 seed · bp-branch-laptop', 100, 'Done on the laptop · 2 results waiting to sync', 'Queued offline'], ['Report', 'job_b2c4', 'Annual review 2025 · built on bp-dc1-vm', 100, 'Saved to \\\\bp-files01\\cartio\\reports', 'Saved'], ['Discovery', 'job_b2a0', 'DC1 · 3 seeds · bp-dc1-vm', 100, '12 devices · written to the on-site store', 'Done']],
+        A: [['2026-10-28 09:58', 'admin', 'Live view opened', 'Yandy R.', 'bp-dc1-vm', 'Nothing stored on the controller'], ['2026-10-28 09:20', 'job', 'Imported 1 config file', 'A. Chen', 'bp-dc1-vm', 'Masked and parsed on site'], ['2026-10-28 07:04', 'job', 'Discovery finished offline', 'system', 'bp-branch-laptop', '2 results queued; will replay by result ID'], ['2026-10-27 15:10', 'admin', 'Live view allowed switched on', 'Yandy R.', '—', 'Set during onboarding, approved by Bluepeak IT'], ['2026-10-27 15:02', 'cred', 'Credential referenced', 'Yandy R.', 'bp-dc1-vm', '“ro-audit SSH” stored on site; the controller holds its name only']] },
+      lk: { prefix: 'lk', sites: ['District office', 'Roosevelt High', 'Lincoln Elementary', 'Jefferson Middle', 'Bus depot'], scope: '5 seeds across 5 sites; credential set “ro-audit”.',
+        C: [['lk-vm-01', 'District office', 'Linux VM · container', 'Offline', '2 days ago', '0.3.1', 'Valid · renews in 40 days', 'Empty (all results acknowledged)', '000000000000000000000000']],
+        J: [['Discovery', 'job_l0b9', 'All 5 sites · 5 seeds · lk-vm-01', 100, '118 devices · 31 m', 'Done'], ['Assess', 'job_l0c2', '5 checks · 118 devices', 100, '35 findings', 'Done'], ['Report', 'job_l0c8', 'Wi-Fi refresh baseline', 100, 'PDF and DOCX', 'Done'], ['Health', 'job_l0d1', 'Heartbeat from lk-vm-01', 0, 'No check-in since Oct 26 16:12', 'Missed']],
+        A: [['2026-10-27 09:15', 'admin', 'Report sent to customer', 'Yandy R.', '—', 'Larkfield_WiFi-Refresh-Baseline.pdf'], ['2026-10-26 16:12', 'job', 'Last check-in', 'system', 'lk-vm-01', 'VM shut down for district maintenance?'], ['2026-10-24 14:40', 'job', 'Checks finished · 35 findings', 'system', 'lk-vm-01', 'job_l0c2'], ['2026-10-22 11:02', 'job', 'Imported 2 files', 'Yandy R.', '—', 'From the district IT team'], ['2026-10-21 08:30', 'login', 'Signed in with MFA', 'Yandy R.', '—', 'TOTP']] },
+      om: { prefix: 'om', sites: ['Plant 1', 'Plant 2'], scope: 'Defined on the on-site collector; the controller holds only names.',
+        C: [['om-plant-vm', 'Plant 1', 'Linux VM · container', 'Online', '30 s ago', '0.4.0', 'Valid · renews in 77 days', 'Report waiting to save', '222222222222222222222222']],
+        J: [['Report', 'job_o41e', 'Plant network review · built on om-plant-vm', 90, 'Saving to the on-site store failed: share unreachable · retrying every 5 min', 'Retrying'], ['Discovery', 'job_o40a', 'Plant 1 · seeds held on site', 100, 'Done · written to the on-site store', 'Done'], ['Assess', 'job_o40c', '5 checks', 100, 'Done · results stay on site', 'Done']],
+        A: [['2026-10-28 10:05', 'job', 'Report save failed, retrying', 'system', 'om-plant-vm', 'Reason: \\\\om-files01\\cartio unreachable'], ['2026-10-28 09:12', 'job', 'Discovery finished', 'system', 'om-plant-vm', 'Status only; no data received'], ['2026-10-20 13:40', 'admin', 'Live view allowed switched off', 'Yandy R.', '—', 'Ostrander requires inside access only']] },
+      lab: { prefix: 'lab', sites: ['Lab site A', 'Lab site B'], scope: '2 seeds; credential set “lab-ro”.',
+        C: [['lab-vm-a', 'Lab site A', 'Linux VM · uv install', 'Online', '5 s ago', '0.4.1-dev', 'Valid · renews in 88 days', 'Empty', '222222222222222222222222'], ['lab-vm-b', 'Lab site B', 'Linux VM · uv install', 'Online', '9 s ago', '0.4.1-dev', 'Valid · renews in 88 days', 'Empty', '222222222222222222222222']],
+        J: [['Discovery', 'job_x112', 'Lab A+B · 2 seeds', 100, '9 devices · 48 s', 'Done'], ['Assess', 'job_x113', '5 checks · 9 devices', 100, '5 findings (2 expected fixtures)', 'Done'], ['Import parse', 'job_x10f', '2 sanitized fixtures', 100, '1 parsed · 1 rejected as designed', 'Done']],
+        A: [['2026-10-28 10:20', 'job', 'Discovery finished · 9 devices', 'Yandy R.', 'lab-vm-a', 'Driver regression run'], ['2026-10-28 10:02', 'admin', 'Collector updated to 0.4.1-dev', 'system', 'lab-vm-b', '—']] },
+    };
+    const d = DATA[cust];
+    const spark = (p) => p.split('').map((ch) => ({ h: ch === '0' ? 3 : ch === '1' ? 14 : 26, c: ch === '0' ? '#E4E8EC' : ch === '1' ? '#F5B53F' : '#0E7490' }));
+    const ST = { Online: ['#DCFCE7', '#166534', '#22C55E'], Pending: ['#E0F2FE', '#075985', '#38BDF8'], Revoked: ['#FEE4E2', '#912018', '#B42318'], Stale: ['#FEF3C7', '#854D0E', '#F59E0B'], Offline: ['#EEF2F6', '#344054', '#98A2B3'] };
+    const collectors = d.C.map(([name, site, host, st0, seen, version, cert, queue, pat]) => {
+      const st = s.revoked[name] ? 'Revoked' : st0;
+      return { name, site, host, seen: s.revoked[name] ? 'Revoked by Yandy R.' : seen, version, cert: s.revoked[name] ? 'Revoked' : cert, queue, state: st, bg: ST[st][0], fg: ST[st][1], dot: ST[st][2],
+        spark: spark(pat), sparkLabel: name + ' check-ins over the last 24 hours',
+        confirming: s.confirm === name, askRevoke: () => this.setState({ confirm: name }),
+        revokeLabel: s.revoked[name] ? 'Revoked' : st0 === 'Pending' ? 'Cancel enrollment' : 'Revoke',
+        revoke: () => this.setState({ confirm: null, revoked: { ...s.revoked, [name]: true }, toast: name + ' revoked · logged in the audit log' }) };
+    });
+    const steps = ['Name and site', 'Run the enroll command', 'First check-in'].map((label, i) => {
+      const n = i + 1, done = s.enroll > n, cur = s.enroll === n;
+      return { n: done ? '✓' : n, label, bg: done ? '#0E7490' : cur ? '#0E1A24' : '#EEF2F6', numColor: done || cur ? '#FFFFFF' : '#475467', color: cur ? '#101828' : '#475467', weight: cur ? 600 : 400 };
+    });
+    const siteSlug = d.sites[s.enrollSite].toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')[0];
+    const JC = { Running: '#0E7490', Done: '#15803D', Partial: '#B54708', Open: '#5B21B6', 'Queued offline': '#B54708', Saved: '#15803D', Missed: '#B42318', Retrying: '#B54708', Queued: '#475467' };
+    const usable = d.C.filter((c) => c[3] === 'Online' && !s.revoked[c[0]]);
+    const jobs = (s.queued && usable[s.jobCol] ? [['Discovery', 'job_new1', d.sites[0] + ' · ' + usable[s.jobCol][0], 4, 'Queued · picked up on next poll', 'Queued']] : []).concat(d.J)
+      .map(([type, id, detail, pct, progress, state]) => ({ type, id, detail, pct, progress, state, color: JC[state] || '#475467' }));
+    const K = { job: ['#E0F2FE', '#075985', 'Job'], admin: ['#EDE9FE', '#5B21B6', 'Admin'], cred: ['#FEF3C7', '#854D0E', 'Credential'], login: ['#EEF2F6', '#344054', 'Login'] };
+    const audit = d.A.filter((r) => s.audit === 'all' || r[1] === s.audit).map(([at, k, what, who, col, detail]) => ({ at, kind: K[k][2], bg: K[k][0], fg: K[k][1], what, who, col, detail }));
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], banner, collectors, steps,
+      enrollOpen: s.enroll > 0, step1: s.enroll === 1, step2: s.enroll === 2, step3: s.enroll === 3,
+      enrollName: d.prefix + '-' + siteSlug + '-vm',
+      enrollSites: d.sites.map((name, i) => ({ name, checked: s.enrollSite === i ? 'true' : 'false', cls: s.enrollSite === i ? 'pill on' : 'pill', pick: () => this.setState({ enrollSite: i }) })),
+      token: { nw: '3f9c0e7a…b41d', bp: 'c71e2a90…0f3b', lk: '8d02f6c1…a7e4', om: '1b5e9d04…c62a', lab: '6a3f0b18…9d55' }[cust],
+      openEnroll: () => this.setState({ enroll: 1, job: false }), closeEnroll: () => this.setState({ enroll: 0, copied: false }),
+      toStep2: () => this.setState({ enroll: 2 }), toStep3: () => this.setState({ enroll: 3 }),
+      copyCmd: () => this.setState({ copied: true }), copyLabel: s.copied ? 'Copied' : 'Copy commands',
+      jobOpen: s.job, openJob: () => this.setState({ job: true, enroll: 0 }), closeJob: () => this.setState({ job: false }),
+      jobCollectors: d.C.map((c, i) => { const ok = c[3] === 'Online' && !s.revoked[c[0]]; const idx = usable.indexOf(c); return { name: c[0] + ' · ' + c[1] + (ok ? '' : ' (' + c[3].toLowerCase() + ')'), disabled: !ok, checked: ok && idx === s.jobCol ? 'true' : 'false', cls: ok && idx === s.jobCol ? 'pill on' : 'pill', pick: () => this.setState({ jobCol: idx }) }; }),
+      jobScope: d.scope,
+      credNote: onsite ? 'Credentials for this customer live on its collector. The controller sends the job and references them by name.' : 'Credentials are sent only inside the job, only to this customer’s collector, and kept in memory for the run.',
+      queueJob: () => { if (!usable.length) return this.setState({ job: false, toast: 'No online collector for ' + META[cust][0] + '. The job will wait until one checks in.' }); this.setState({ job: false, queued: true, toast: 'Discovery queued for ' + usable[s.jobCol][0] }); },
+      cancelRevoke: () => this.setState({ confirm: null }),
+      jobs,
+      auditFilters: [['all', 'All'], ['job', 'Jobs'], ['admin', 'Admin'], ['cred', 'Credentials'], ['login', 'Logins']].map(([id, label]) => ({ label, cls: s.audit === id ? 'pill on' : 'pill', pressed: s.audit === id ? 'true' : 'false', pick: () => this.setState({ audit: id }) })),
+      audit,
+      exportAudit: () => this.setState({ toast: 'Exported ' + d.prefix + '-audit-2026-10-28.csv (' + audit.length + ' events)' }),
+      toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

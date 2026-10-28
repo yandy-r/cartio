@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Global search</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gs-trigger{display:flex;align-items:center;gap:10px;width:100%;border:1px solid #1F3A50;background:#13222F;color:#C9D4DE;border-radius:10px;padding:0 10px 0 12px;font:inherit;font-size:14px;cursor:pointer;min-height:44px;box-sizing:border-box;text-align:left}
+.gs-trigger:hover{border-color:#2B4A63;color:#FFFFFF}
+.gs-kbd{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;border:1px solid #2B4A63;border-radius:5px;padding:1px 6px;color:#8FA3B5}
+.gs-row{display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:10px;text-decoration:none;color:#101828;min-height:44px;box-sizing:border-box}
+.gs-row:hover{background:#F3F5F7}
+.gs-row.on{background:#ECFEFF;box-shadow:inset 3px 0 0 #0E7490}
+.gs-mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.gs-scope{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;color:#344054;cursor:pointer;min-height:30px}
+.gs-scope.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.gs-dialog{width:min(760px,100%);max-height:min(640px,100%)}
+@media (max-width:720px){.gs-overlay{padding:0 !important}.gs-dialog{width:100%;max-height:100%;height:100%;border-radius:0 !important}}
+</style>
+</helmet>
+<div style="width: 100%; font-family: 'IBM Plex Sans', system-ui, sans-serif; margin-bottom: 10px">
+<button type="button" class="gs-trigger" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" onClick="{{openIt}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="flex: 1">Search…</span><span class="gs-kbd">{{kbd}}</span>
+</button>
+
+<sc-if value="{{open}}" hint-placeholder-val="{{ false }}">
+<div class="gs-overlay" onClick="{{bgClose}}" style="position: fixed; inset: 0; z-index: 1100; background: rgba(14,26,36,.5); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px 16px; box-sizing: border-box; color: #101828">
+<section role="dialog" aria-modal="true" aria-label="Search Cartio" class="gs-dialog" onKeyDown="{{onKey}}" style="background: #FFFFFF; border-radius: 14px; box-shadow: 0 24px 64px rgba(14,26,36,.4); display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #E4E8EC">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<label for="gs-input" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search devices, customers, findings and more</label>
+<input id="gs-input" ref="{{inputRef}}" type="text" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="gs-results" aria-activedescendant="{{activeId}}" value="{{q}}" onInput="{{onInput}}" placeholder="Search hostname, IP, serial, model, customer, finding…" style="flex: 1; border: 0; outline: none; font: inherit; font-size: 16px; min-height: 40px; background: transparent; color: #101828">
+<span class="gs-kbd" style="border-color: #D0D5DD; color: #475467">esc</span>
+</div>
+<div style="display: flex; gap: 6px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #EEF2F6; flex-wrap: wrap">
+<span style="font-size: 12px; color: #475467">Search in</span>
+<button type="button" class="{{scopeAllCls}}" aria-pressed="{{scopeAllPressed}}" onClick="{{scopeAll}}">All customers</button>
+<button type="button" class="{{scopeOneCls}}" aria-pressed="{{scopeOnePressed}}" onClick="{{scopeOne}}">{{curName}}</button>
+<span style="flex: 1"></span>
+<span style="font-size: 12px; color: #475467">{{countText}}</span>
+</div>
+<div id="gs-results" role="listbox" aria-label="Results" style="overflow-y: auto; padding: 6px 8px 10px; flex: 1; min-height: 0">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div role="group" aria-label="{{g.name}}">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #475467; padding: 10px 12px 4px; display: flex; justify-content: space-between"><span>{{g.name}}</span><span>{{g.more}}</span></div>
+<sc-for list="{{g.items}}" as="r" hint-placeholder-count="3">
+<a id="{{r.domId}}" role="option" aria-selected="{{r.selected}}" class="{{r.cls}}" href="{{r.href}}" ref="{{r.ref}}" onClick="{{r.go}}" onMouseEnter="{{r.hover}}">
+<span style="width: 32px; height: 32px; border-radius: 8px; background: {{r.iconBg}}; color: {{r.iconFg}}; display: flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg></span>
+<span style="flex: 1; min-width: 0"><span class="{{r.titleCls}}" style="display: block; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.title}}</span><span style="display: block; font-size: 12px; color: #475467; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.sub}}</span></span>
+<sc-if value="{{r.tag}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {{r.tagBg}}; color: {{r.tagFg}}; flex: none">{{r.tag}}</span></sc-if>
+<span style="font-size: 12px; color: #475467; flex: none; width: 92px; text-align: right">{{r.target}}</span>
+</a>
+</sc-for>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 28px 16px; text-align: center; color: #475467; font-size: 14px">No matches for “{{q}}”. Try a hostname, an IP address, a serial or a customer name.</div>
+</sc-if>
+<sc-if value="{{hasNote}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 8px 12px 0; font-size: 12px; color: #5B21B6; background: #F5F3FF; border-radius: 8px; padding: 8px 10px">{{note}}</div>
+</sc-if>
+</div>
+<div style="display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 14px; border-top: 1px solid #E4E8EC; font-size: 12px; color: #475467">
+<span><span class="gs-kbd" style="border-color: #D0D5DD; color: #475467">↑</span> <span class="gs-kbd" style="border-color: #D0D5DD; color: #475467">↓</span> move</span>
+<span><span class="gs-kbd" style="border-color: #D0D5DD; color: #475467">↵</span> open</span>
+<span><span class="gs-kbd" style="border-color: #D0D5DD; color: #475467">esc</span> close</span>
+<span style="flex: 1"></span><span>{{kbd}} opens search from anywhere on the page</span>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tick":{"editor":null},"$preview":{"width":360,"height":56}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: false, q: '', active: 0, scope: 'all', tick: props.tick || 0 };
+    this.anchors = {};
+    this.inputRef = (el) => { this.inputEl = el; if (el) setTimeout(() => { try { el.focus(); } catch (e) { /* focus unavailable */ } }, 0); };
+  }
+  componentDidUpdate() {
+    // The page bumps `tick` when Ctrl/⌘ K is pressed anywhere on it.
+    const t = this.props.tick || 0;
+    if (t !== this.state.tick) this.setState({ tick: t, open: true, q: '', active: 0 });
+  }
+  ctx() { try { return JSON.parse(window.localStorage.getItem('cartio.context') || 'null') || { cust: 'nw', eng: 'nw-q4' }; } catch (e) { return { cust: 'nw', eng: 'nw-q4' }; } }
+  renderVals() {
+    const s = this.state;
+    const ctx = this.ctx();
+    const IDX = {"dev":[["nw","acc-fsw-11","Fortinet","FortiSwitch 248E","169.254.1.2","S248EF••••","HQ data center","Supported"],["nw","acc-fsw-12","Fortinet","FortiSwitch 124F","169.254.1.3","S124FT••••","HQ data center","Drift"],["nw","ap-hq-01","Fortinet","FortiAP 231F","169.254.2.10","FP231F••••","HQ data center","Supported"],["nw","core-sw-01","Cisco","C9300-48P","192.0.2.20","FOC2419••••","HQ data center","Supported"],["nw","core-sw-02","Cisco","C9300-48P","192.0.2.21","FOC2420••••","HQ data center","Drift"],["nw","dist-sw-03","Cisco","C9200L-24P","192.0.2.23","JAE2511••••","HQ data center","Supported"],["nw","east-fw-01","Fortinet","FortiGate 60F","198.51.100.1","FGT60F••••1180","Clinic East","End of support"],["nw","east-sw-01","Cisco","C2960X-24PS","198.51.100.5","FOC1932••••","Clinic East","End of support"],["nw","fw-hq-01","Fortinet","FortiGate 200F","192.0.2.10","FG200F••••4821","HQ data center","Supported"],["nw","fw-hq-02","Fortinet","FortiGate 200F","192.0.2.11","FG200F••••4907","HQ data center","Supported"],["nw","pdu-rack-a","APC","Rack PDU","192.0.2.60","5A18••••","HQ data center","Basic"],["nw","rtr-wan-01","Cisco","ISR4331","192.0.2.1","FDO2213••••","HQ data center","End of support"],["bp","bp-acc-01","Cisco","C9200L-48P","10.40.2.11","JAE2604••••","DC1","Supported"],["bp","bp-acc-02","Cisco","C9200L-48P","10.40.2.12","JAE2604••••","DC1","Drift"],["bp","bp-ap-01","Fortinet","FortiAP 431F","169.254.2.10","FP431F••••","DC1","Supported"],["bp","bp-core-01","Cisco","C9500-24Y4C","10.40.1.1","FDO2532••••","DC1","Supported"],["bp","bp-core-02","Cisco","C9500-24Y4C","10.40.1.2","FDO2532••••","DC1","Supported"],["bp","bp-dmz-sw-01","Cisco","C9300-24T","10.40.5.2","FOC2601••••","DC1","Supported"],["bp","bp-fsw-01","Fortinet","FortiSwitch 148F","169.254.1.2","S148FP••••","DC1","Supported"],["bp","bp-fw-01","Fortinet","FortiGate 400F","10.40.0.1","FG4H0F••••2210","DC1","Supported"],["bp","bp-fw-02","Fortinet","FortiGate 400F","10.40.0.2","FG4H0F••••2274","DC1","Supported"],["bp","bp-ups-01","Eaton","UPS (network card)","10.40.9.20","—","DC1","Basic"],["lk","lin-acc-01","Cisco","C9200L-24P","10.62.2.11","JAE2602••••","Lincoln Elementary","Drift"],["lk","lk-acc-101","Cisco","C9200L-48P","10.60.2.11","JAE2509••••","District office","Drift"],["lk","lk-acc-102","Cisco","C9200L-48P","10.60.2.12","JAE2509••••","District office","Supported"],["lk","lk-acc-103","Cisco","C2960X-48FPS","10.60.2.13","FOC2011••••","District office","End of support"],["lk","lk-ap-101","Aruba","AP-515","10.60.3.21","—","District office","Basic"],["lk","lk-core-01","Cisco","C9500-16X","10.60.1.1","FCW2441••••","District office","Supported"],["lk","lk-core-02","Cisco","C9500-16X","10.60.1.2","FCW2441••••","District office","Supported"],["lk","lk-fw-01","Fortinet","FortiGate 100F","10.60.0.1","FG100F••••7731","District office","Supported"],["lk","lk-wlc-01","Aruba","7030 controller","10.60.1.40","CW00••••","District office","Basic"],["lk","rhs-acc-07","Cisco","C2960X-48LPS","10.61.2.17","FOC1940••••","Roosevelt High","End of support"],["lk","rhs-core-01","Cisco","C9300-48UXM","10.61.1.1","FOC2538••••","Roosevelt High","Supported"],["lab","lab-c8k-01","Cisco","Catalyst 8000V","172.16.1.1","9KZ3••••","Lab site A","Supported"],["lab","lab-c8k-02","Cisco","Catalyst 8000V","172.16.2.1","9KZ4••••","Lab site B","Supported"],["lab","lab-fap-01","Fortinet","FortiAP 231F","169.254.2.10","FP231F••••","Lab site A","Supported"],["lab","lab-fgt-01","Fortinet","FortiGate-VM64","172.16.0.1","FGVM02••••","Lab site A","Supported"],["lab","lab-fsw-01","Fortinet","FortiSwitch 108F","169.254.1.2","S108FF••••","Lab site A","Supported"],["lab","lab-iosv-01","Cisco","IOSv","172.16.1.5","9V1N••••","Lab site A","End of support"],["lab","lab-snmp-01","Linux","net-snmp host","172.16.1.50","—","Lab site A","Basic"],["lab","lab-sw-a","Cisco","IOSvL2","172.16.1.10","9L2A••••","Lab site A","Supported"],["lab","lab-sw-b","Cisco","IOSvL2","172.16.2.10","9L2B••••","Lab site B","Supported"]],"find":[["nw","f1","critical","Routers and firewalls run OS versions past end of support","CHK-01 EoL/EoS","rtr-wan-01, east-fw-01"],["nw","f2","critical","Access switch hardware is end of sale; support ends Oct 2027","CHK-01 EoL/EoS","east-sw-01"],["nw","f3","high","C9300-48P core switches run different IOS-XE releases","CHK-02 Firmware drift","core-sw-02"],["nw","f4","high","Telnet is allowed on VTY lines","CHK-03 Insecure mgmt","rtr-wan-01, east-sw-01"],["nw","f5","high","SNMPv2c community enabled on the network core","CHK-03 Insecure mgmt","core-sw-02, rtr-wan-01"],["nw","f6","medium","No syslog server configured","CHK-04 NTP & syslog","rtr-wan-01, dist-sw-03"],["nw","f7","medium","HTTP admin access allowed on an internal interface","CHK-03 Insecure mgmt","fw-hq-01"],["nw","f8","medium","FortiSwitch firmware differs across access switches","CHK-02 Firmware drift","acc-fsw-12"],["nw","f9","low","Only one NTP server configured","CHK-04 NTP & syslog","core-sw-01"],["bp","b1","high","SNMPv2c community in the cardholder-data DMZ matches a well-known default","CHK-03 Insecure mgmt","bp-dmz-sw-01"],["bp","b2","high","HTTP admin access allowed on the firewall management interface","CHK-03 Insecure mgmt","bp-fw-02"],["bp","b3","high","C9200L-48P access switches run different IOS-XE releases","CHK-02 Firmware drift","bp-acc-02"],["bp","b4","medium","Admin idle timeout is 480 minutes","CHK-03 Insecure mgmt","bp-fw-01, bp-fw-02"],["bp","b5","medium","No syslog server configured","CHK-04 NTP & syslog","bp-dmz-sw-01, bp-acc-01"],["bp","b6","low","Core switches use different NTP servers","CHK-04 NTP & syslog","bp-core-01, bp-core-02"],["lk","l1","high","Telnet is allowed on VTY lines at 3 sites","CHK-03 Insecure mgmt","lk-acc-101, lk-acc-103, rhs-acc-07"],["lk","l2","high","SNMPv2c community matches a well-known default","CHK-03 Insecure mgmt","lk-acc-102, lk-wlc-01"],["lk","l3","high","C9200L access switches run 2 IOS-XE releases across schools","CHK-02 Firmware drift","lk-acc-101, lin-acc-01"],["lk","l4","medium","C2960X hardware is end of sale; support ends Oct 2027","CHK-01 EoL/EoS","lk-acc-103, rhs-acc-07"],["lk","l5","medium","Wireless controller only answers SNMPv2c","CHK-05 SNMPv3 in use","lk-wlc-01"],["lk","l6","medium","No syslog server configured","CHK-04 NTP & syslog","lk-acc-101"],["lk","l7","low","Only one NTP server configured on the core","CHK-04 NTP & syslog","lk-core-01, lk-core-02"],["lab","x1","critical","IOS 15.9M fixture flagged as end of support (expected)","CHK-01 EoL/EoS","lab-iosv-01"],["lab","x2","high","Telnet allowed on VTY lines (negative-test fixture)","CHK-03 Insecure mgmt","lab-iosv-01"],["lab","x3","medium","HTTPS admin open on the outside port","CHK-03 Insecure mgmt","lab-fgt-01"],["lab","x4","medium","No syslog server configured","CHK-04 NTP & syslog","lab-sw-a"],["lab","x5","low","No login banner","CHK-03 Insecure mgmt","lab-c8k-02"]]};
+    const CUST = { nw: ['Northwind Clinics', 'Hosted', 'nw-q4'], bp: ['Bluepeak Credit Union', 'On site · live view', 'bp-26'], lk: ['Larkfield School District', 'Hosted', 'lk-wifi'], om: ['Ostrander Manufacturing', 'On site · inside only', 'om-plant'], lab: ['ITCN Lab', 'Hosted', 'lab-drv'] };
+    const ENG = [['nw', 'nw-q4', 'Q4 2026 assessment', 'Active'], ['nw', 'nw-q2', 'Q2 2026 assessment', 'Completed'], ['nw', 'nw-q4-25', 'Q4 2025 assessment', 'Completed'], ['bp', 'bp-26', 'Annual review 2026', 'Active'], ['bp', 'bp-25', 'Annual review 2025', 'Completed'], ['lk', 'lk-wifi', 'Wi-Fi refresh baseline', 'Completed'], ['om', 'om-plant', 'Plant network review', 'Active'], ['lab', 'lab-drv', 'Driver regression', 'Active']];
+    const COL = [['nw', 'nw-hq-vm', 'HQ data center', 'Online'], ['nw', 'nw-east-vm', 'Clinic East', 'Online'], ['nw', 'nw-west-vm', 'Clinic West', 'Pending'], ['bp', 'bp-dc1-vm', 'DC1', 'Online'], ['bp', 'bp-branch-laptop', 'Branch 7', 'Stale'], ['lk', 'lk-vm-01', 'District office', 'Offline'], ['om', 'om-plant-vm', 'Plant 1', 'Online'], ['lab', 'lab-vm-a', 'Lab site A', 'Online'], ['lab', 'lab-vm-b', 'Lab site B', 'Online']];
+    const INTG = [['nw', 'Site24x7', 'Connected'], ['nw', 'SolarWinds NPM', 'Connected'], ['nw', 'ExtraHop RevealX', 'Connected'], ['bp', 'Site24x7', 'Connected, on site'], ['lk', 'ManageEngine OpManager', 'Needs attention'], ['om', 'ManageEngine OpManager', 'On site'], ['lab', 'NetBox', 'Connected'], ['lab', 'LibreNMS', 'Connected']];
+    const PAGES = [['Customers', 'Main.dc.html', 'All customers and collector health', 'M3 21h18M5 21V7l7-4 7 4v14'], ['Site map', 'Topology.dc.html', 'L2/L3 topology per site', 'M5 6h.01M19 6h.01M12 18h.01M7 7l4 9M17 7l-4 9'], ['Inventory', 'Inventory.dc.html', 'Every device, filter and export', 'M3 4h18v6H3z M3 14h18v6H3z'], ['Findings', 'Findings.dc.html', 'Check results; add or edit findings', 'M12 3l9 16H3z M12 10v4'], ['Compare', 'Compare.dc.html', 'Engagement compare and config diff', 'M8 3v18M16 3v18'], ['Reports', 'Report.dc.html', 'Build and export the report', 'M6 3h9l4 4v14H6z'], ['Collectors & jobs', 'Collectors.dc.html', 'Health, jobs and audit log', 'M4 4h16v12H4z M8 20h8'], ['Integrations', 'Integrations.dc.html', 'SolarWinds, Site24x7, ExtraHop…', 'M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7z'], ['New customer', 'NewCustomer.dc.html', 'Onboard a customer', 'M12 5v14M5 12h14'], ['New engagement', 'Engagement.dc.html', 'Scope, seeds and credentials', 'M12 5v14M5 12h14']];
+    let seeds = [];
+    Object.keys(CUST).forEach((c) => { try { (JSON.parse(window.localStorage.getItem('cartio.seeds.' + c) || '[]') || []).forEach((g) => { if (!IDX.dev.some((d) => d[0] === c && d[1] === g.host)) seeds.push([c, g.host, '', g.model, g.ip, '—', g.site, 'Pending discovery', g.source]); }); } catch (e) { /* storage unavailable */ } });
+    const IC = { cust: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6', dev: 'M3 8h18v8H3z M7 12h.01 M11 12h.01 M15 12h.01', fw: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z', find: 'M12 3l9 16H3z M12 10v4 M12 17h.01', col: 'M4 4h16v12H4z M8 20h8 M12 16v4', eng: 'M4 6h16 M4 12h16 M4 18h10', intg: 'M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7z M12 16v5' };
+    const SEV = { critical: ['#FEE4E2', '#912018'], high: ['#FFEDD5', '#9A3412'], medium: ['#FEF3C7', '#854D0E'], low: ['#EEF2F6', '#344054'] };
+    const terms = s.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const inScope = (c) => s.scope === 'all' || c === ctx.cust;
+    const hit = (hay) => terms.every((t) => hay.toLowerCase().indexOf(t) >= 0);
+    const setCtx = (c, eng, focus) => () => {
+      try {
+        window.localStorage.setItem('cartio.context', JSON.stringify({ cust: c, eng: eng || CUST[c][2] }));
+        if (focus) window.localStorage.setItem('cartio.focus', JSON.stringify(focus));
+      } catch (e) { /* storage unavailable */ }
+      this.setState({ open: false });
+    };
+    const G = [];
+    const push = (name, items, limit) => { if (items.length) G.push({ name, items: items.slice(0, limit), total: items.length }); };
+    if (!terms.length) {
+      push('Jump to', PAGES.map(([t, href, sub, icon]) => ({ title: t, sub, href, icon, iconBg: '#F3F5F7', iconFg: '#344054', target: 'Page', go: setCtx(ctx.cust, ctx.eng) })), 10);
+      push('Customers', Object.keys(CUST).map((c) => ({ title: CUST[c][0], sub: CUST[c][1], href: 'Topology.dc.html', icon: IC.cust, iconBg: '#E0F2FE', iconFg: '#075985', target: 'Site map', go: setCtx(c) })), 5);
+    } else {
+      push('Customers', Object.keys(CUST).filter((c) => inScope(c) && hit(CUST[c][0] + ' ' + CUST[c][1])).map((c) => ({ title: CUST[c][0], sub: CUST[c][1], href: 'Topology.dc.html', icon: IC.cust, iconBg: '#E0F2FE', iconFg: '#075985', target: 'Site map', go: setCtx(c) })), 5);
+      const devs = IDX.dev.concat(seeds).filter((d) => inScope(d[0]) && hit(d.slice(1, 7).join(' ') + ' ' + CUST[d[0]][0]))
+        .sort((a, b) => (a[1].toLowerCase().indexOf(terms[0]) === 0 ? 0 : 1) - (b[1].toLowerCase().indexOf(terms[0]) === 0 ? 0 : 1));
+      push('Devices', devs.map((d) => ({ title: d[1], titleCls: 'gs-mono', sub: [CUST[d[0]][0], d[6], (d[2] ? d[2] + ' ' : '') + d[3], d[4], d[5] !== '—' ? 'SN ' + d[5] : ''].filter(Boolean).join(' · '),
+        href: 'Inventory.dc.html', icon: /Forti(Gate)/.test(d[3]) ? IC.fw : IC.dev, iconBg: '#ECFEFF', iconFg: '#0E7490', target: 'Inventory',
+        tag: d[7] === 'Pending discovery' ? 'from ' + d[8] : d[7] === 'End of support' || d[7] === 'Drift' ? d[7] : d[0] === 'bp' ? 'live view' : '', tagBg: d[7] === 'Pending discovery' ? '#E0F2FE' : d[7] === 'End of support' ? '#FEE4E2' : d[7] === 'Drift' ? '#FFEDD5' : '#EDE9FE', tagFg: d[7] === 'Pending discovery' ? '#075985' : d[7] === 'End of support' ? '#912018' : d[7] === 'Drift' ? '#9A3412' : '#5B21B6',
+        go: setCtx(d[0], null, { page: 'inventory', query: d[1] }) })), 8);
+      push('Findings', IDX.find.filter((f) => inScope(f[0]) && hit(f[3] + ' ' + f[4] + ' ' + f[5] + ' ' + f[2])).map((f) => ({ title: f[3], sub: CUST[f[0]][0] + ' · ' + f[4] + ' · ' + f[5], href: 'Findings.dc.html', icon: IC.find, iconBg: SEV[f[2]][0], iconFg: SEV[f[2]][1], tag: f[2], tagBg: SEV[f[2]][0], tagFg: SEV[f[2]][1], target: 'Findings', go: setCtx(f[0], null, { page: 'findings', fid: f[1] }) })), 6);
+      push('Collectors', COL.filter((c) => inScope(c[0]) && hit(c[1] + ' ' + c[2] + ' ' + c[3] + ' ' + CUST[c[0]][0])).map((c) => ({ title: c[1], titleCls: 'gs-mono', sub: CUST[c[0]][0] + ' · ' + c[2], href: 'Collectors.dc.html', icon: IC.col, iconBg: '#F3F5F7', iconFg: '#344054', tag: c[3], tagBg: c[3] === 'Online' ? '#DCFCE7' : c[3] === 'Offline' ? '#EEF2F6' : '#FEF3C7', tagFg: c[3] === 'Online' ? '#166534' : c[3] === 'Offline' ? '#344054' : '#854D0E', target: 'Collectors', go: setCtx(c[0]) })), 5);
+      push('Engagements', ENG.filter((e) => inScope(e[0]) && hit(e[2] + ' ' + e[3] + ' ' + CUST[e[0]][0])).map((e) => ({ title: e[2], sub: CUST[e[0]][0] + ' · ' + e[3], href: 'Report.dc.html', icon: IC.eng, iconBg: '#F3F5F7', iconFg: '#344054', target: 'Report', go: setCtx(e[0], e[1]) })), 5);
+      push('Integrations', INTG.filter((i) => inScope(i[0]) && hit(i[1] + ' ' + i[2] + ' ' + CUST[i[0]][0])).map((i) => ({ title: i[1], sub: CUST[i[0]][0] + ' · ' + i[2], href: 'Integrations.dc.html', icon: IC.intg, iconBg: '#F3F5F7', iconFg: '#344054', target: 'Integrations', go: setCtx(i[0]) })), 5);
+      push('Pages and actions', PAGES.filter((p) => hit(p[0] + ' ' + p[2])).map(([t, href, sub, icon]) => ({ title: t, sub, href, icon, iconBg: '#F3F5F7', iconFg: '#344054', target: 'Page', go: setCtx(ctx.cust, ctx.eng) })), 5);
+    }
+    let n = 0;
+    const flat = [];
+    const groups = G.map((g) => ({ name: g.name, more: g.total > g.items.length ? g.items.length + ' of ' + g.total : '', items: g.items.map((r) => {
+      const i = n++; flat.push(r);
+      return { ...r, titleCls: r.titleCls || '', tag: r.tag || '', domId: 'gs-opt-' + i, selected: i === s.active ? 'true' : 'false', cls: i === s.active ? 'gs-row on' : 'gs-row',
+        ref: (el) => { this.anchors[i] = el; }, hover: () => { if (s.active !== i) this.setState({ active: i }); } };
+    }) }));
+    const omHit = terms.length && s.scope === 'all' && terms.some((t) => 'ostrander om-'.indexOf(t) >= 0 || /^om/.test(t));
+    const isMac = (() => { try { return /Mac|iPhone|iPad/.test(window.navigator.platform || ''); } catch (e) { return false; } })();
+    return {
+      open: s.open, q: s.q, kbd: isMac ? '⌘K' : 'Ctrl K',
+      openIt: () => this.setState({ open: true, q: '', active: 0 }),
+      bgClose: (e) => { if (e.target === e.currentTarget) this.setState({ open: false }); },
+      inputRef: this.inputRef,
+      onInput: (e) => this.setState({ q: e.target.value, active: 0 }),
+      onKey: (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); this.setState({ open: false }); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ active: Math.min(flat.length - 1, s.active + 1) }); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ active: Math.max(0, s.active - 1) }); }
+        else if (e.key === 'Enter') { e.preventDefault(); const a = this.anchors[s.active]; if (a && a.click) a.click(); }
+      },
+      activeId: flat.length ? 'gs-opt-' + Math.min(s.active, flat.length - 1) : '',
+      groups, empty: terms.length > 0 && flat.length === 0,
+      countText: terms.length ? flat.length + (flat.length === 1 ? ' result' : ' results') : 'Type to search',
+      curName: 'Only ' + CUST[ctx.cust in CUST ? ctx.cust : 'nw'][0],
+      scopeAllCls: s.scope === 'all' ? 'gs-scope on' : 'gs-scope', scopeOneCls: s.scope === 'one' ? 'gs-scope on' : 'gs-scope',
+      scopeAllPressed: s.scope === 'all' ? 'true' : 'false', scopeOnePressed: s.scope === 'one' ? 'true' : 'false',
+      scopeAll: () => this.setState({ scope: 'all', active: 0 }), scopeOne: () => this.setState({ scope: 'one', active: 0 }),
+      hasNote: !!(omHit || (terms.length && s.scope === 'all')), note: omHit ? 'Ostrander Manufacturing keeps its data on site with inside access only, so its devices and findings are not searchable here.' : 'Bluepeak results come through live view and are not stored on the controller. Ostrander’s data is inside access only and not searchable here.',
+    };
+  }
+}
+</script>
+</body>
+</html>

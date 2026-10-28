@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Compare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.stat{border:1px solid #E4E8EC;background:#FFFFFF;border-radius:12px;padding:14px 16px;text-align:left;font:inherit;cursor:pointer;color:#101828}
+.stat:hover{border-color:#98A2B3}
+.stat.on{border-color:#0E7490;box-shadow:0 0 0 2px #A5E3EE}
+.devpick{display:flex;justify-content:space-between;gap:8px;width:100%;border:0;background:transparent;font:inherit;font-size:13px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#101828;text-align:left;min-height:44px;align-items:center}
+.devpick:hover{background:#F3F5F7}
+.devpick.on{background:#ECFEFF;font-weight:600}
+.dl{display:grid;grid-template-columns:44px 44px 18px 1fr;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;line-height:22px}
+.dl span{white-space:pre;overflow:hidden;text-overflow:ellipsis}
+.epill{display:inline-flex;flex-direction:column;gap:2px;border:1px solid #D0D5DD;background:#FFFFFF;border-radius:8px;padding:6px 12px;min-height:44px;box-sizing:border-box;justify-content:center}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a class="on" href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> · comparisons stay within one customer</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Compare engagements</h1>
+</div>
+<sc-if value="{{hasPair}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<span class="epill"><span style="font-size: 11px; color: #475467">Baseline</span><span style="font-size: 14px; font-weight: 500">{{pair.base}}</span></span>
+<span aria-hidden="true" style="color: #475467">→</span>
+<span class="epill"><span style="font-size: 11px; color: #475467">Current</span><span style="font-size: 14px; font-weight: 500">{{pair.cur}}</span></span>
+<button class="btn primary" type="button" onClick="{{addToReport}}">Add to report</button>
+</div>
+</sc-if>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{locked}}" hint-placeholder-val="{{ false }}">
+<dc-import name="OnsiteLocked" screen="Compare" customer="{{cname}}" hint-size="100%,420px"></dc-import>
+</sc-if>
+
+<sc-if value="{{single}}" hint-placeholder-val="{{ false }}">
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+<div style="font-size: 18px; font-weight: 600">Nothing to compare yet</div>
+<div style="font-size: 14px; color: #475467; max-width: 520px; line-height: 1.55">{{cname}} has one engagement, {{ename}}. Run another assessment and Cartio shows devices added or removed, OS changes, findings fixed and new, and a config diff for every device.</div>
+<a class="btn primary" href="Engagement.dc.html">New engagement for {{cname}}</a>
+</section>
+</sc-if>
+
+<sc-if value="{{hasPair}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Changes since baseline" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{stats}}" as="t" hint-placeholder-count="5">
+<button type="button" class="{{t.cls}}" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}">
+<span style="display: block; font-size: 13px; color: #475467">{{t.label}}</span>
+<span style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px"><span style="font-size: 26px; font-weight: 600; color: {{t.color}}">{{t.value}}</span><span style="font-size: 12px; color: #475467">{{t.sub}}</span></span>
+</button>
+</sc-for>
+</section>
+
+<section aria-label="Change list" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 6px 0">
+<div style="padding: 10px 18px; font-size: 14px; font-weight: 600">{{groupTitle}}</div>
+<sc-for list="{{changes}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 18px; border-top: 1px solid #EEF2F6; font-size: 13px">
+<span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: {{c.bg}}; color: {{c.fg}}; width: 70px; text-align: center; box-sizing: border-box">{{c.tag}}</span>
+<span class="mono" style="font-weight: 500; min-width: 120px">{{c.host}}</span>
+<span style="flex: 1 1 260px; color: #344054">{{c.text}}</span>
+<span style="color: #475467; font-size: 12px">{{c.site}}</span>
+</div>
+</sc-for>
+<sc-if value="{{noChanges}}" hint-placeholder-val="{{ false }}"><div style="padding: 12px 18px; border-top: 1px solid #EEF2F6; font-size: 13px; color: #475467">None.</div></sc-if>
+</section>
+
+<section aria-label="Config diff" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; display: flex; flex-wrap: wrap; overflow: hidden">
+<div style="flex: 1 1 220px; border-right: 1px solid #E4E8EC; padding: 12px; box-sizing: border-box">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; padding: 4px 6px 8px">{{changedText}}</div>
+<sc-for list="{{devs}}" as="d" hint-placeholder-count="4">
+<button type="button" class="{{d.cls}}" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}"><span class="mono">{{d.host}}</span><span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace"><span style="color: #15803D">+{{d.add}}</span> <span style="color: #B42318">−{{d.del}}</span></span></button>
+</sc-for>
+</div>
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #E4E8EC">
+<span class="mono" style="font-weight: 500">{{cur.host}}</span>
+<span style="font-size: 12px; color: #475467">{{cur.hashes}}</span>
+<div style="flex-grow: 1"></div>
+<label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #344054; min-height: 40px; cursor: pointer"><input type="checkbox" checked="{{hideSame}}" onChange="{{toggleSame}}" style="width: 18px; height: 18px; accent-color: #0E7490">Changes only</label>
+<button class="btn" type="button" onClick="{{exportDiff}}">Export .diff</button>
+</div>
+<div style="overflow-x: auto; padding: 8px 0">
+<div style="min-width: 560px">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="14">
+<div class="dl" style="background: {{l.bg}}">
+<span style="color: #98A2B3; text-align: right; padding-right: 10px">{{l.a}}</span>
+<span style="color: #98A2B3; text-align: right; padding-right: 10px">{{l.b}}</span>
+<span style="color: {{l.sigColor}}; font-weight: 600">{{l.sig}}</span>
+<span style="color: {{l.color}}; padding-right: 16px">{{l.text}}<sc-if value="{{l.badge}}" hint-placeholder-val="{{ false }}"><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; font-weight: 600; margin-left: 10px; padding: 1px 6px; border-radius: 4px; background: {{l.badgeBg}}; color: {{l.badgeFg}}">{{l.badge}}</span></sc-if></span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="padding: 12px 16px; border-top: 1px solid #E4E8EC; font-size: 12px; color: #475467; display: flex; flex-wrap: wrap; gap: 18px">
+<span><span style="background: #FEF3C7; color: #854D0E; padding: 1px 6px; border-radius: 4px; font-weight: 600">secret changed</span> digest differs, value never shown</span>
+<span><span style="background: #E0F2FE; color: #075985; padding: 1px 6px; border-radius: 4px; font-weight: 600">key rotated</span> masking key moved to v2, not counted as a change</span>
+</div>
+</div>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), group: 'os', dev: null, hideSame: false, toast: '' };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { const v = this.readCtx(); if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) this.setCtx(v); }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  setCtx(v) { this.setState({ ctx: v, group: 'os', dev: null, hideSame: false, toast: '' }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment', 'Apr 14, 2026'], 'nw-q4-25': ['Q4 2025 assessment', 'Nov 3, 2025'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025', 'Nov 12, 2025'], 'lk-wifi': ['Wi-Fi refresh baseline', 'Oct 24, 2026'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const live = META[cust][1] === 'live';
+    const locked = META[cust][1] === 'locked';
+    const T = { add: ['#DCFCE7', '#166534', 'Added'], del: ['#FEE4E2', '#912018', 'Removed'], os: ['#E0F2FE', '#075985', 'OS'], fixed: ['#DCFCE7', '#166534', 'Fixed'], new: ['#FFEDD5', '#9A3412', 'New'] };
+    const DATA = {
+      nw: {
+        pairs: { 'nw-q4': ['Q2 2026 · Apr 14', 'Q4 2026 · Oct 28'], 'nw-q2': ['Q4 2025 · Nov 3', 'Q2 2026 · Apr 14'], 'nw-q4-25': null },
+        stats: [['add', 'Devices added', 4, '#15803D', '58 total'], ['del', 'Devices removed', 1, '#B42318', 'needs review'], ['os', 'OS changes', 6, '#075985', 'upgrades'], ['fixed', 'Findings fixed', 7, '#15803D', 'since baseline'], ['new', 'New findings', 3, '#9A3412', '2 high']],
+        G: {
+          add: [['east-sw-02', 'New access switch, C9200L-24P on IOS-XE 17.9.4a', 'Clinic East'], ['ap-hq-02', 'FortiAP 231F on the 3rd floor', 'HQ data center'], ['acc-fsw-12', 'FortiSwitch 124F, managed by fw-hq-01', 'HQ data center'], ['pdu-rack-a', 'SNMP-only device first seen by core-sw-02 LLDP', 'HQ data center']],
+          del: [['east-sw-legacy', 'Catalyst 2960-S last seen Apr 14. Not reachable or decommissioned?', 'Clinic East']],
+          os: [['fw-hq-01', 'FortiOS 7.2.5 → 7.2.8', 'HQ data center'], ['fw-hq-02', 'FortiOS 7.2.5 → 7.2.8', 'HQ data center'], ['core-sw-01', 'IOS-XE 17.6.5 → 17.9.4a', 'HQ data center'], ['acc-fsw-11', 'FSW 7.0.4 → 7.2.6', 'HQ data center'], ['ap-hq-01', 'FAP 7.0.6 → 7.2.3', 'HQ data center'], ['dist-sw-03', 'IOS-XE 17.6.4 → 17.9.4a', 'HQ data center']],
+          fixed: [['fw-hq-01', 'FortiOS 7.2.5 had a known critical advisory', 'HQ data center'], ['core-sw-01', 'Telnet removed from VTY lines', 'HQ data center'], ['core-sw-01', 'Second syslog host added', 'HQ data center'], ['dist-sw-03', 'SNMPv3 authPriv replaced v2c', 'HQ data center'], ['east-fw-01', 'NTP now points to two internal servers', 'Clinic East'], ['acc-fsw-11', 'Firmware now matches the fleet', 'HQ data center'], ['rtr-wan-01', 'HTTP server disabled', 'HQ data center']],
+          new: [['core-sw-02', 'Firmware drift: core-sw-01 upgraded, core-sw-02 did not', 'HQ data center'], ['acc-fsw-12', 'New switch arrived on older firmware', 'HQ data center'], ['east-fw-01', 'FortiOS 7.0 reached end of support since the last assessment', 'Clinic East']],
+        },
+        changed: 14,
+        DIFF: [
+          ['rtr-wan-01', 5, 3, 'sha256 3a71…e0c2 → 9c1e…4ab0', [[' ', 1, 1, 'hostname rtr-wan-01'], [' ', 2, 2, 'enable secret <masked:2:7f3c9a1e>', 'rot'], ['-', 3, '', 'username netops privilege 15 secret <masked:1:5d02aa8c>'], ['+', '', 3, 'username netops privilege 15 secret <masked:2:b204e6d0>', 'sec'], [' ', 4, 4, 'snmp-server community <masked:2:0d55e2a1> RO', 'rot'], ['-', 6, '', 'ip http server'], [' ', 7, 6, 'line vty 0 4'], [' ', 8, 7, ' transport input telnet ssh'], [' ', 10, 9, 'router bgp 65010'], [' ', 11, 10, ' neighbor 203.0.113.1 remote-as 64496'], ['-', 12, '', ' neighbor 203.0.113.1 password <masked:1:91aa04cf>'], ['+', '', 11, ' neighbor 203.0.113.1 password <masked:2:e81f3d70>', 'sec'], ['+', '', 12, ' neighbor 203.0.113.1 description ISP-A primary'], ['+', '', 14, 'ntp server 192.0.2.123']]],
+          ['core-sw-01', 4, 2, 'sha256 77b0…19aa → c2d4…0f61', [[' ', 1, 1, 'hostname core-sw-01'], ['-', 2, '', 'line vty 0 15'], ['-', 3, '', ' transport input telnet ssh'], ['+', '', 2, 'line vty 0 15'], ['+', '', 3, ' transport input ssh'], ['+', '', 4, ' access-class MGMT-ONLY in'], [' ', 4, 5, 'logging host 192.0.2.50'], ['+', '', 6, 'logging host 192.0.2.51'], [' ', 5, 7, 'snmp-server user ro-audit ro-audit v3 auth sha <masked:2:22d1e0aa>', 'rot']]],
+          ['fw-hq-01', 2, 2, 'API backup · sha256 1f0e…aa29 → 6b3c…d118', [[' ', 1, 1, 'config system global'], ['-', 2, '', '    set admin-sport 8443'], ['+', '', 2, '    set admin-sport 10443'], [' ', 3, 3, 'end'], [' ', 5, 5, '    edit "to-clinic-east"'], ['-', 6, '', '        set psksecret <masked:1:a90c11e4>'], ['+', '', 6, '        set psksecret <masked:2:3e7b55d2>', 'sec']]],
+          ['dist-sw-03', 2, 1, 'from uploads · sha256 0aa1…7c3e → 4d9f…be20', [[' ', 1, 1, 'hostname dist-sw-03'], ['-', 2, '', 'snmp-server community <masked:1:0d55e2a1> RO'], ['+', '', 2, 'snmp-server group ro-audit v3 priv read AUDIT'], ['+', '', 3, 'snmp-server user ro-audit ro-audit v3 auth sha <masked:2:c7e14b09> priv aes 128 <masked:2:61af2d3e>']]],
+        ],
+      },
+      bp: {
+        pairs: { 'bp-26': ['Annual review 2025 · Nov 12, 2025', 'Annual review 2026 · live'], 'bp-25': null },
+        stats: [['add', 'Devices added', 3, '#15803D', '41 total'], ['del', 'Devices removed', 0, '#475467', ''], ['os', 'OS changes', 5, '#075985', 'upgrades'], ['fixed', 'Findings fixed', 4, '#15803D', 'since 2025'], ['new', 'New findings', 2, '#9A3412', '1 high']],
+        G: {
+          add: [['bp-dmz-sw-01', 'New DMZ switch for the online-banking front end', 'DC1'], ['bp-ap-01', 'FortiAP 431F in the lobby', 'DC1'], ['bp-ups-01', 'UPS network card, SNMP only', 'DC1']],
+          del: [],
+          os: [['bp-fw-01', 'FortiOS 7.2.7 → 7.4.4', 'DC1'], ['bp-fw-02', 'FortiOS 7.2.7 → 7.4.4', 'DC1'], ['bp-core-01', 'IOS-XE 17.6.4 → 17.9.5', 'DC1'], ['bp-core-02', 'IOS-XE 17.6.4 → 17.9.5', 'DC1'], ['bp-acc-01', 'IOS-XE 17.6.4 → 17.9.5', 'DC1']],
+          fixed: [['bp-core-01', 'Telnet removed from VTY lines', 'DC1'], ['bp-core-02', 'SNMPv3 authPriv replaced v2c', 'DC1'], ['bp-fw-01', 'FortiOS 7.2.7 advisory resolved by the 7.4.4 upgrade', 'DC1'], ['bp-acc-01', 'Firmware now matches the fleet', 'DC1']],
+          new: [['bp-dmz-sw-01', 'Arrived with a default SNMPv2c community', 'DC1'], ['bp-acc-02', 'Left on 17.6.4 when the others were upgraded', 'DC1']],
+        },
+        changed: 6,
+        DIFF: [
+          ['bp-fw-01', 3, 2, 'Diffed on bp-dc1-vm · sha256 b0c1…11e2 → 7d4a…90fc', [[' ', 1, 1, 'config system global'], [' ', 2, 2, '    set admintimeout 480'], [' ', 3, 3, 'end'], [' ', 4, 4, 'config vpn ipsec phase1-interface'], [' ', 5, 5, '    edit "to-branch-7"'], ['-', 6, '', '        set proposal aes128-sha1'], ['+', '', 6, '        set proposal aes256-sha256'], ['-', 7, '', '        set psksecret <masked:1:6e02c1a9>'], ['+', '', 7, '        set psksecret <masked:2:f21b0e77>', 'sec'], ['+', '', 8, '        set dhgrp 20']]],
+          ['bp-core-02', 3, 2, 'Diffed on bp-dc1-vm · sha256 51ae…c3d0 → e90f…2a7b', [[' ', 1, 1, 'hostname bp-core-02'], ['-', 2, '', 'snmp-server community <masked:1:8a1d33f0> RO'], ['+', '', 2, 'snmp-server group ro-audit v3 priv read AUDIT'], ['+', '', 3, 'snmp-server user ro-audit ro-audit v3 auth sha <masked:2:0be4d1c2> priv aes 128 <masked:2:93f7a0d5>'], ['-', 3, '', 'ntp server 10.40.9.1'], ['+', '', 4, 'ntp server 10.40.9.2']]],
+          ['bp-acc-02', 1, 0, 'Diffed on bp-dc1-vm · sha256 0c3e…77a1 → 14b2…aa90', [[' ', 1, 1, 'hostname bp-acc-02'], [' ', 2, 2, 'enable secret <masked:2:5f1c09ab>', 'rot'], ['+', '', 3, 'interface range Gi1/0/1-8'], [' ', 3, 4, '! no software change since 2025: still 17.6.4']]],
+        ],
+      },
+    };
+    const data = DATA[cust];
+    const pair = data ? data.pairs[eng] : null;
+    const hasPair = !locked && !!pair;
+    const single = !locked && !pair;
+    const parts = [];
+    if (live && hasPair) parts.push(['Diffed on Bluepeak’s collector.', 'Both configs stay in the on-site store; the controller relays the diff in memory and keeps nothing.']);
+    if (cust === 'nw' && eng === 'nw-q4-25') parts.push(['Q4 2025 is Northwind’s first engagement.', 'Pick a later one to compare against it.']);
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: live ? '#F5F3FF' : '#F8FAFB', border: live ? '#DDD6FE' : '#DDE2E8', fg: live ? '#4C1D95' : '#344054' };
+    const titles = { add: 'Devices added', del: 'Devices no longer seen', os: 'OS version changes', fixed: 'Findings fixed', new: 'New findings' };
+    let lines = [], devs = [], curDev = { host: '', hashes: '' }, stats = [], changes = [];
+    if (hasPair) {
+      const d0 = data.DIFF.find((d) => d[0] === s.dev) || data.DIFF[0];
+      curDev = { host: d0[0], hashes: d0[3] };
+      devs = data.DIFF.map(([host, add, del]) => ({ host, add, del, cls: d0[0] === host ? 'devpick on' : 'devpick', pressed: d0[0] === host ? 'true' : 'false', pick: () => this.setState({ dev: host }) }));
+      lines = d0[4].filter((l) => !s.hideSame || l[0] !== ' ' || l[4] === 'rot').map(([sig, a, b, text, flag]) => ({
+        sig: sig === ' ' ? '' : sig === '+' ? '+' : '−', a, b, text,
+        bg: sig === '+' ? '#ECFDF3' : sig === '-' ? '#FEF3F2' : flag === 'rot' ? '#F0F9FF' : 'transparent',
+        sigColor: sig === '+' ? '#15803D' : '#B42318', color: sig === '-' ? '#912018' : sig === '+' ? '#14532D' : '#344054',
+        badge: flag === 'sec' ? 'secret changed' : flag === 'rot' ? 'key rotated' : '', badgeBg: flag === 'sec' ? '#FEF3C7' : '#E0F2FE', badgeFg: flag === 'sec' ? '#854D0E' : '#075985' }));
+      stats = data.stats.map(([id, label, value, color, sub]) => ({ label, value, color, sub, cls: s.group === id ? 'stat on' : 'stat', pressed: s.group === id ? 'true' : 'false', pick: () => this.setState({ group: id }) }));
+      changes = data.G[s.group].map(([host, text, site]) => ({ host, text, site, tag: T[s.group][2], bg: T[s.group][0], fg: T[s.group][1] }));
+    }
+    const slug = { nw: 'northwind', bp: 'bluepeak' }[cust] || cust;
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], ename: ENGS[eng][0], banner, locked, single, hasPair,
+      pair: { base: pair ? pair[0] : '', cur: pair ? pair[1] : '' },
+      stats, groupTitle: titles[s.group], changes, noChanges: hasPair && changes.length === 0,
+      changedText: hasPair ? 'Changed configs · ' + data.changed : '',
+      devs, cur: curDev, lines,
+      hideSame: s.hideSame, toggleSame: () => this.setState({ hideSame: !s.hideSame }),
+      exportDiff: () => this.setState({ toast: live ? 'Saved ' + curDev.host + '.diff to Bluepeak’s on-site store · masked values only' : 'Exported ' + curDev.host + '_' + slug + '.diff · masked values only' }),
+      addToReport: () => this.setState({ toast: '“Changes since last assessment” section added to the ' + ENGS[eng][0] + ' report' }),
+      toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

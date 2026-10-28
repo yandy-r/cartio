@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Inside access only</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section aria-label="Inside access only" style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #FFFFFF; border: 1px solid #DDD6FE; border-radius: 14px; padding: 28px; display: flex; flex-wrap: wrap; gap: 28px; box-sizing: border-box; width: 100%">
+<div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<span style="width: 48px; height: 48px; border-radius: 12px; background: #EDE9FE; color: #5B21B6; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg></span>
+<h2 style="margin: 0; font-size: 22px; font-weight: 600">{{screen}} is inside access only for {{customer}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #344054; max-width: 620px">This customer keeps its network data on site, and chose not to allow live view through the controller. The controller holds no inventory, maps, configs or findings for them, so there is nothing to show here. Open the collector’s own page from inside their network instead.</p>
+<div style="background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5B21B6">Inside access</div>
+<div class="mono" style="font-family: 'IBM Plex Mono', monospace; font-size: 14px">https://om-plant-vm.ostrander.local:8443</div>
+<div style="font-size: 13px; color: #4C1D95">Reach it through Ostrander’s VPN or jump host, or on site. Sign in with your Cartio account and MFA.</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" onClick="{{copy}}" style="font: inherit; font-size: 14px; font-weight: 500; border: 1px solid #C4B5FD; background: #FFFFFF; color: #4C1D95; border-radius: 8px; padding: 9px 14px; cursor: pointer; min-height: 44px">{{copyLabel}}</button><a href="Collectors.dc.html" style="display: inline-flex; align-items: center; font-size: 14px; font-weight: 500; border: 1px solid #D0D5DD; color: #101828; border-radius: 8px; padding: 9px 14px; min-height: 44px; box-sizing: border-box; text-decoration: none">Collector health and jobs</a></div>
+</div>
+</div>
+<div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">What the controller can see</div>
+<div style="border: 1px solid #E4E8EC; border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: 100px 1fr; gap: 6px 10px">
+<span style="color: #475467">Collector</span><span style="font-family: 'IBM Plex Mono', monospace">om-plant-vm</span>
+<span style="color: #475467">Health</span><span style="color: #15803D; font-weight: 600">Online · 30 s ago</span>
+<span style="color: #475467">Last job</span><span>Discovery, done 09:12</span>
+<span style="color: #475467">Report</span><span style="color: #B54708">Saving to on-site store, retrying</span>
+<span style="color: #475467">Store</span><span>File share on their network</span>
+</div>
+<div style="color: #475467; line-height: 1.5">The controller only ever receives job status (“done”, “saved”, “failed” with a reason) for this customer.</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"screen":{"editor":"text","default":"This screen"},"customer":{"editor":null},"$preview":{"width":960,"height":420}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { copied: false }; }
+  renderVals() {
+    return {
+      screen: this.props.screen ?? 'This screen',
+      customer: this.props.customer ?? 'Ostrander Manufacturing',
+      copy: () => this.setState({ copied: true }),
+      copyLabel: this.state.copied ? 'Copied' : 'Copy address',
+    };
+  }
+}
+</script>
+</body>
+</html>

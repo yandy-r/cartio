@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Inventory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.pill{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.pill:hover{border-color:#98A2B3}
+.pill.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+table.inv{width:100%;border-collapse:collapse;font-size:13px}
+table.inv th{text-align:left;font-weight:500;color:#475467;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:0;background:#F8FAFB;border-bottom:1px solid #E4E8EC;white-space:nowrap}
+table.inv th button{border:0;background:transparent;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;padding:12px 12px;cursor:pointer;display:inline-flex;gap:4px;align-items:center;min-height:44px}
+table.inv th button:hover{color:#101828}
+table.inv td{padding:11px 12px;border-bottom:1px solid #EEF2F6;vertical-align:middle;white-space:nowrap}
+table.inv tbody tr:hover td{background:#F8FAFB}
+.hostbtn{border:0;background:transparent;font:inherit;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;font-weight:500;color:#0E7490;cursor:pointer;padding:6px 0;text-decoration:underline;text-decoration-color:#A5E3EE;text-underline-offset:3px}
+.connect{display:inline-flex;align-items:center;gap:6px;border:1px solid #A5E3EE;background:#ECFEFF;color:#155E75;border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;min-height:36px}
+.connect:hover{background:#CFFAFE;border-color:#0E7490}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;border:0;background:transparent;font:inherit;font-size:14px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#101828;text-align:left;min-height:44px}
+.menu button:hover{background:#F3F5F7}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a class="on" href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> / {{ename}}</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Inventory <span style="font-size: 16px; font-weight: 400; color: #475467">{{countText}}</span></h1>
+</div>
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; position: relative">
+<button class="btn" type="button" aria-expanded="{{importExpanded}}" onClick="{{toggleImport}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"></path></svg>Import files</button>
+<button class="btn primary" type="button" aria-haspopup="menu" aria-expanded="{{exportExpanded}}" onClick="{{toggleExport}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>{{exportLabel}} ▾</button>
+<sc-if value="{{exportOpen}}" hint-placeholder-val="{{ false }}">
+<div class="menu" role="menu" style="position: absolute; z-index: 40; right: 0; top: 52px; width: 290px; background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 12px; padding: 6px; box-shadow: 0 16px 40px rgba(16,24,40,.16)">
+<sc-for list="{{exports}}" as="x" hint-placeholder-count="4">
+<button role="menuitem" type="button" onClick="{{x.pick}}"><span class="mono" style="font-size: 11px; width: 44px; color: #0E7490; font-weight: 500">{{x.ext}}</span><span><span style="display: block; font-weight: 500">{{x.label}}</span><span style="display: block; font-size: 12px; color: #475467">{{x.hint}}</span></span></button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{locked}}" hint-placeholder-val="{{ false }}">
+<dc-import name="OnsiteLocked" screen="Inventory" customer="{{cname}}" hint-size="100%,420px"></dc-import>
+</sc-if>
+
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{importOpen}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Import" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; display: flex; flex-wrap: wrap; gap: 18px">
+<div style="flex: 1 1 320px; border: 2px dashed #A5E3EE; background: #F0FBFD; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="font-size: 16px; font-weight: 600">Drop show outputs, configs or a CSV device list</div>
+<div style="font-size: 13px; color: #475467; line-height: 1.5">{{importHint}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<label class="btn" style="cursor: pointer">Choose files<input type="file" multiple style="position: absolute; width: 1px; height: 1px; opacity: 0"></label>
+</div>
+<div role="radiogroup" aria-label="Site for these files" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 13px; color: #344054">Site</span>
+<sc-for list="{{siteNames}}" as="n" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{n.checked}}" class="{{n.cls}}" onClick="{{n.pick}}">{{n.name}}</button></sc-for>
+</div>
+</div>
+<div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Recent imports</div>
+<sc-for list="{{imports}}" as="i" hint-placeholder-count="3">
+<div style="display: flex; gap: 12px; align-items: center; border: 1px solid #E4E8EC; border-radius: 10px; padding: 10px 12px">
+<span class="mono" style="font-size: 11px; font-weight: 500; padding: 3px 6px; border-radius: 4px; background: #EEF2F6; color: #344054; flex: none">{{i.kind}}</span>
+<div style="min-width: 0; flex: 1"><div class="mono" style="font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{i.file}}</div><div style="font-size: 12px; color: #475467">{{i.detail}}</div></div>
+<span style="font-size: 12px; font-weight: 600; color: {{i.color}}; flex: none">{{i.state}}</span>
+</div>
+</sc-for>
+<sc-if value="{{noImports}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #475467">No files imported for this customer yet.</div></sc-if>
+</div>
+</section>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section style="flex: 999 1 760px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; overflow: visible">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid #E4E8EC">
+<label style="display: inline-flex; align-items: center; gap: 8px; background: #F3F5F7; border-radius: 8px; padding: 0 10px; min-height: 40px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Filter devices</span>
+<input type="search" placeholder="Hostname, IP, serial, model" value="{{query}}" onInput="{{onSearch}}" style="border: 0; outline: none; background: transparent; font: inherit; font-size: 13px; width: 200px">
+</label>
+<span style="font-size: 13px; color: #475467; margin-left: 6px">Vendor</span>
+<sc-for list="{{vendors}}" as="v" hint-placeholder-count="4"><button type="button" class="{{v.cls}}" aria-pressed="{{v.pressed}}" onClick="{{v.pick}}">{{v.label}}</button></sc-for>
+<span style="font-size: 13px; color: #475467; margin-left: 6px">OS</span>
+<sc-for list="{{osFilters}}" as="v" hint-placeholder-count="3"><button type="button" class="{{v.cls}}" aria-pressed="{{v.pressed}}" onClick="{{v.pick}}">{{v.label}}</button></sc-for>
+</div>
+<div style="overflow-x: auto">
+<table class="inv">
+<thead><tr>
+<th style="width: 44px; padding-left: 14px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Select</span></th>
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="9"><th aria-sort="{{c.aria}}"><button type="button" onClick="{{c.sort}}">{{c.label}}<span aria-hidden="true" style="color: #0E7490">{{c.arrow}}</span></button></th></sc-for>
+<th style="padding: 12px 14px 12px 12px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Actions</span></th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+<tr>
+<td style="padding-left: 14px"><input type="checkbox" aria-label="Select {{r.host}}" checked="{{r.checked}}" onChange="{{r.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490"></td>
+<td style="position: relative">
+<button type="button" class="hostbtn" onMouseEnter="{{r.enter}}" onMouseLeave="{{leave}}" onFocus="{{r.enter}}" onBlur="{{leave}}">{{r.host}}</button>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ false }}">
+<div role="tooltip" style="position: absolute; z-index: 30; left: 8px; top: 42px; width: 320px; background: #0E1A24; color: #E6EDF3; border-radius: 12px; padding: 14px 16px; box-shadow: 0 16px 40px rgba(14,26,36,.32); font-size: 12px; line-height: 1.45; white-space: normal">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span class="mono" style="font-size: 14px; color: #FFFFFF">{{r.host}}</span><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {{r.osDark}}; color: #0E1A24">{{r.osState}}</span></div>
+<div style="color: #C9D4DE">{{r.vendor}} {{r.model}} · {{r.role}}</div>
+<div style="display: grid; grid-template-columns: 96px 1fr; gap: 3px 10px; margin-top: 10px">
+<span style="color: #8FA3B5">Support ends</span><span>{{r.eos}}</span>
+<span style="color: #8FA3B5">Uptime</span><span>{{r.uptime}}</span>
+<span style="color: #8FA3B5">Interfaces</span><span>{{r.ifaces}}</span>
+<span style="color: #8FA3B5">Neighbors</span><span>{{r.nbs}}</span>
+<span style="color: #8FA3B5">Config</span><span>{{r.cfg}}</span>
+<span style="color: #8FA3B5">Collector</span><span class="mono">{{r.collector}}</span>
+<sc-if value="{{r.hasAlso}}" hint-placeholder-val="{{ false }}"><span style="color: #8FA3B5">Also seen by</span><span>{{r.alsoText}}</span></sc-if>
+</div>
+<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1F3A50; color: #8FA3B5">{{r.note}}</div>
+</div>
+</sc-if>
+</td>
+<td><div>{{r.vendor}}</div><div style="font-size: 12px; color: #475467">{{r.model}}</div></td>
+<td><span class="mono" style="font-size: 12px">{{r.os}}</span> <span style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: {{r.osBg}}; color: {{r.osFg}}">{{r.osState}}</span></td>
+<td>{{r.site}}</td>
+<td class="mono" style="font-size: 12px">{{r.ip}}</td>
+<td class="mono" style="font-size: 12px">{{r.serial}}</td>
+<td><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{r.srcDot}}"></span>{{r.source}}</span>
+<sc-if value="{{r.hasAlso}}" hint-placeholder-val="{{ false }}"><span style="display: flex; gap: 3px; margin-top: 4px" title="Also seen by {{r.alsoText}}" aria-label="Also seen by {{r.alsoText}}">
+<sc-for list="{{r.also}}" as="a" hint-placeholder-count="2"><span style="font-size: 9.5px; font-weight: 700; color: #FFFFFF; background: {{a.color}}; border-radius: 4px; padding: 1px 4px; letter-spacing: .02em">{{a.short}}</span></sc-for>
+</span></sc-if></td>
+<td><a href="Findings.dc.html" style="font-size: 13px; font-weight: 600; color: {{r.fColor}}; text-decoration: none">{{r.findings}}</a></td>
+<td style="font-size: 12px; color: #475467">{{r.seen}}</td>
+<td style="padding-right: 14px"><button type="button" class="connect" aria-label="Connect to {{r.host}}" onClick="{{r.connect}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"></path></svg>Connect</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 12px 16px; font-size: 13px; color: #475467">
+<span>{{selText}}</span>
+<span>Source key: <span style="color: #0E7490">●</span> live collection · <span style="color: #7C3AED">●</span> uploaded file · <span style="color: #B54708">●</span> SNMP only</span>
+</div>
+</section>
+
+<aside aria-label="Inventory summary" style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{summary}}" as="g" hint-placeholder-count="4">
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px"><h2 style="margin: 0; font-size: 14px; font-weight: 600">{{g.title}}</h2><span style="font-size: 12px; color: #475467">{{g.hint}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+<button type="button" onClick="{{r.pick}}" disabled="{{r.static}}" aria-pressed="{{r.pressed}}" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; width: 100%; border: 1px solid {{r.border}}; background: {{r.bg}}; border-radius: 8px; padding: 8px 10px; font: inherit; text-align: left; cursor: {{r.cursor}}; color: #101828; min-height: 44px">
+<span style="font-size: 13px">{{r.label}}</span>
+<span style="font-size: 13px; font-weight: 600">{{r.n}}</span>
+<span style="grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #EEF2F6; overflow: hidden"><span style="display: block; height: 100%; width: {{r.pct}}%; background: {{r.color}}"></span></span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-for>
+<div style="font-size: 12px; color: #475467; line-height: 1.5; padding: 0 4px">{{summaryNote}}</div>
+</aside>
+</div>
+</sc-if>
+</main>
+<sc-if value="{{connectOpen}}" hint-placeholder-val="{{ false }}">
+<dc-import name="ConnectModal" device="{{connectDev}}" cust="{{ctx.cust}}" on-close="{{closeConnect}}" hint-size="0px,0px"></dc-import>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), query: '', vendor: 'all', os: 'all', sort: 'host', dir: 1, hover: null, picked: {}, exportOpen: false, importOpen: false, toast: '' };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  takeFocus() {
+    let f = null; try { f = JSON.parse(window.localStorage.getItem('cartio.focus') || 'null'); } catch (e) { f = null; }
+    if (!f || f.page !== 'inventory') return;
+    try { window.localStorage.removeItem('cartio.focus'); } catch (e) { /* storage unavailable */ }
+    this.setState({ query: f.query || '', vendor: 'all', os: 'all' });
+  }
+  componentDidMount() {
+    this.takeFocus();
+    this.timer = setInterval(() => {
+      const v = this.readCtx();
+      if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) return this.setCtx(v);
+      this.takeFocus();
+      const b = this.seedBlob(v.cust); if (b !== this._sb) { this._sb = b; this.forceUpdate(); }
+    }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  seedBlob(cust) { try { return window.localStorage.getItem('cartio.seeds.' + cust) || ''; } catch (e) { return ''; } }
+  seeds(cust) { try { return JSON.parse(this.seedBlob(cust) || '[]'); } catch (e) { return []; } }
+  setCtx(v) { this.setState({ ctx: v, query: '', vendor: 'all', os: 'all', hover: null, picked: {}, exportOpen: false, importOpen: false, toast: '', connect: null }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment', 'Apr 14, 2026'], 'nw-q4-25': ['Q4 2025 assessment', 'Nov 3, 2025'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025', 'Nov 12, 2025'], 'lk-wifi': ['Wi-Fi refresh baseline', 'Oct 24, 2026'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const completed = ENGS[eng][1];
+    const live = META[cust][1] === 'live';
+    const locked = META[cust][1] === 'locked';
+    const parts = [];
+    if (live) parts.push(['Live view from bp-dc1-vm.', 'Rows are streamed through the controller in memory and never stored there. Exports are saved to Bluepeak’s on-site store.']);
+    if (completed) parts.push(['Completed engagement.', 'Showing data as collected on ' + completed + '. Read-only.']);
+    if (cust === 'lk') parts.push(['Collector lk-vm-01 is offline.', 'Devices can’t be refreshed until it reconnects.']);
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: live ? '#F5F3FF' : '#F8FAFB', border: live ? '#DDD6FE' : '#DDE2E8', fg: live ? '#4C1D95' : '#344054' };
+
+    // [host, vendor, model, role, os, osKey, site, ip, serial, src, findings, seen, eos, uptime, ifaces, neighbors, config, collector, note]
+    const DATA = {
+      nw: { total: 58, sites: ['HQ data center', 'Clinic East', 'Clinic West'], rows: [
+        ['rtr-wan-01', 'Cisco', 'ISR4331', 'WAN router', 'IOS-XE 16.9.8', 'EoS', 'HQ data center', '192.0.2.1', 'FDO2213••••', 'live', 3, '10:39', 'Ended Jul 2024', '212 days', '4/6 up', 4, 'Captured 10:39 · 6 secrets masked', 'nw-hq-vm', 'Replace or upgrade to a supported IOS-XE train.'],
+        ['fw-hq-01', 'Fortinet', 'FortiGate 200F', 'Firewall · HA primary', 'FortiOS 7.2.8', 'OK', 'HQ data center', '192.0.2.10', 'FG200F••••4821', 'live', 1, '10:38', 'Sep 2026 (7.2 train)', '88 days', '9/18 up', 5, 'API backup 10:38 · 4 secrets masked', 'nw-hq-vm', 'Manages acc-fsw-11, acc-fsw-12 and 2 FortiAPs.'],
+        ['fw-hq-02', 'Fortinet', 'FortiGate 200F', 'Firewall · HA secondary', 'FortiOS 7.2.8', 'OK', 'HQ data center', '192.0.2.11', 'FG200F••••4907', 'live', 0, '10:38', 'Sep 2026 (7.2 train)', '88 days', '7/18 up', 3, 'API backup 10:38', 'nw-hq-vm', 'In sync with fw-hq-01.'],
+        ['core-sw-01', 'Cisco', 'C9300-48P', 'Core switch', 'IOS-XE 17.9.4a', 'OK', 'HQ data center', '192.0.2.20', 'FOC2419••••', 'live', 1, '10:40', 'Supported', '301 days', '31/52 up', 6, 'Captured 10:40 · 3 secrets masked', 'nw-hq-vm', 'Stack of 2 members.'],
+        ['core-sw-02', 'Cisco', 'C9300-48P', 'Core switch', 'IOS-XE 17.6.5', 'Drift', 'HQ data center', '192.0.2.21', 'FOC2420••••', 'live', 2, '10:40', 'Supported, but differs from core-sw-01', '301 days', '28/52 up', 6, 'Captured 10:40 · 3 secrets masked', 'nw-hq-vm', 'Align with core-sw-01 on 17.9.4a.'],
+        ['dist-sw-03', 'Cisco', 'C9200L-24P', 'Distribution', 'IOS-XE 17.9.4a', 'OK', 'HQ data center', '192.0.2.23', 'JAE2511••••', 'upload', 1, 'Oct 26', 'Supported', 'from file', '14/28 up', 2, 'From show running-config upload', 'upload · A. Chen', 'No live access granted; data from files the customer sent.'],
+        ['acc-fsw-11', 'Fortinet', 'FortiSwitch 248E', 'Access · managed', 'FSW 7.2.6', 'OK', 'HQ data center', '169.254.1.2', 'S248EF••••', 'live', 0, '10:38', 'Supported', '88 days', '22/50 up', 4, 'Part of fw-hq-01 config', 'nw-hq-vm', 'Inventory through the FortiGate API.'],
+        ['acc-fsw-12', 'Fortinet', 'FortiSwitch 124F', 'Access · managed', 'FSW 7.0.4', 'Drift', 'HQ data center', '169.254.1.3', 'S124FT••••', 'live', 1, '10:38', 'Supported', '41 days', '9/26 up', 1, 'Part of fw-hq-01 config', 'nw-hq-vm', 'Older than acc-fsw-11.'],
+        ['ap-hq-01', 'Fortinet', 'FortiAP 231F', 'Access point', 'FAP 7.2.3', 'OK', 'HQ data center', '169.254.2.10', 'FP231F••••', 'live', 0, '10:38', 'Supported', '88 days', '1/2 up', 1, 'Managed', 'nw-hq-vm', '2nd floor.'],
+        ['pdu-rack-a', 'APC', 'Rack PDU', 'SNMP-only', 'AOS 6.9', 'Basic', 'HQ data center', '192.0.2.60', '5A18••••', 'snmp', 0, '10:41', 'Unknown (no EoL data)', '612 days', '1/1 up', 1, 'Not captured: SNMP only', 'nw-hq-vm', 'Vendor guessed from sysObjectID.'],
+        ['east-fw-01', 'Fortinet', 'FortiGate 60F', 'Firewall', 'FortiOS 7.0.12', 'EoS', 'Clinic East', '198.51.100.1', 'FGT60F••••1180', 'live', 2, '10:44', 'Ended Sep 2024 (7.0 train)', '133 days', '6/10 up', 2, 'API backup 10:44', 'nw-east-vm', 'Discovery at this site still running.'],
+        ['east-sw-01', 'Cisco', 'C2960X-24PS', 'Access switch', 'IOS 15.2(7)E8', 'EoS', 'Clinic East', '198.51.100.5', 'FOC1932••••', 'live', 3, '10:45', 'Hardware support ends Oct 2027', '1 044 days', '18/28 up', 2, 'Captured 10:45 · 2 secrets masked', 'nw-east-vm', 'Plan replacement before the hardware support date.'],
+      ], imports: [['show', 'dist-sw-03_show-tech.txt', '9 commands parsed · 1 secret masked · by A. Chen', 'Parsed'], ['csv', 'clinic-west-devices.csv', '22 rows · 2 merged with live devices by serial', 'Parsed'], ['config', 'old-core_running.cfg', 'An unmasked secret was found after masking, so the file was rejected', 'Rejected']] },
+      bp: { total: 41, sites: ['DC1', 'Branch 7'], rows: [
+        ['bp-fw-01', 'Fortinet', 'FortiGate 400F', 'Firewall · HA primary', 'FortiOS 7.4.4', 'OK', 'DC1', '10.40.0.1', 'FG4H0F••••2210', 'live', 1, '09:58', 'Supported (7.4 train)', '146 days', '12/24 up', 5, 'API backup · stored on site', 'bp-dc1-vm', 'Manages bp-fsw-01 and the lobby FortiAP.'],
+        ['bp-fw-02', 'Fortinet', 'FortiGate 400F', 'Firewall · HA secondary', 'FortiOS 7.4.4', 'OK', 'DC1', '10.40.0.2', 'FG4H0F••••2274', 'live', 1, '09:58', 'Supported (7.4 train)', '146 days', '10/24 up', 3, 'API backup · stored on site', 'bp-dc1-vm', 'HTTP admin enabled on mgmt.'],
+        ['bp-core-01', 'Cisco', 'C9500-24Y4C', 'Core switch', 'IOS-XE 17.9.5', 'OK', 'DC1', '10.40.1.1', 'FDO2532••••', 'live', 1, '09:59', 'Supported', '233 days', '22/28 up', 7, 'Captured · stored on site', 'bp-dc1-vm', 'Sees an unknown LLDP neighbor on Gi1/0/40.'],
+        ['bp-core-02', 'Cisco', 'C9500-24Y4C', 'Core switch', 'IOS-XE 17.9.5', 'OK', 'DC1', '10.40.1.2', 'FDO2532••••', 'live', 0, '09:59', 'Supported', '233 days', '21/28 up', 7, 'Captured · stored on site', 'bp-dc1-vm', 'Passes all checks.'],
+        ['bp-dmz-sw-01', 'Cisco', 'C9300-24T', 'DMZ switch', 'IOS-XE 17.9.5', 'OK', 'DC1', '10.40.5.2', 'FOC2601••••', 'live', 2, '09:59', 'Supported', '233 days', '9/28 up', 2, 'Captured · stored on site', 'bp-dc1-vm', 'Default SNMPv2c community in the cardholder-data DMZ.'],
+        ['bp-acc-01', 'Cisco', 'C9200L-48P', 'Access switch', 'IOS-XE 17.9.5', 'OK', 'DC1', '10.40.2.11', 'JAE2604••••', 'live', 1, '10:00', 'Supported', '120 days', '33/52 up', 2, 'Captured · stored on site', 'bp-dc1-vm', 'Teller floor.'],
+        ['bp-acc-02', 'Cisco', 'C9200L-48P', 'Access switch', 'IOS-XE 17.6.4', 'Drift', 'DC1', '10.40.2.12', 'JAE2604••••', 'live', 1, '10:00', 'Supported, but differs from bp-acc-01', '410 days', '29/52 up', 2, 'Captured · stored on site', 'bp-dc1-vm', 'Back office; missed the last upgrade window.'],
+        ['bp-fsw-01', 'Fortinet', 'FortiSwitch 148F', 'Access · managed', 'FSW 7.4.2', 'OK', 'DC1', '169.254.1.2', 'S148FP••••', 'live', 0, '09:58', 'Supported', '146 days', '12/52 up', 3, 'Part of bp-fw-01 config', 'bp-dc1-vm', 'ATM and kiosk ports.'],
+        ['bp-ap-01', 'Fortinet', 'FortiAP 431F', 'Access point', 'FAP 7.4.1', 'OK', 'DC1', '169.254.2.10', 'FP431F••••', 'live', 0, '09:58', 'Supported', '146 days', '1/2 up', 1, 'Managed', 'bp-dc1-vm', 'Lobby guest Wi-Fi.'],
+        ['bp-ups-01', 'Eaton', 'UPS (network card)', 'SNMP-only', '—', 'Basic', 'DC1', '10.40.9.20', '—', 'snmp', 0, '10:00', 'Unknown (no EoL data)', '980 days', '1/1 up', 1, 'Not captured: SNMP only', 'bp-dc1-vm', 'Vendor guessed from sysObjectID.'],
+      ], imports: [['config', 'branch7-fgt60f_backup.conf', 'Masked on bp-dc1-vm before parsing · by A. Chen', 'Parsed']] },
+      lk: { total: 118, sites: ['District office', 'Roosevelt High', 'Lincoln Elementary', 'Jefferson Middle', 'Bus depot'], rows: [
+        ['lk-fw-01', 'Fortinet', 'FortiGate 100F', 'Firewall', 'FortiOS 7.2.8', 'OK', 'District office', '10.60.0.1', 'FG100F••••7731', 'live', 1, 'Oct 24', 'Sep 2026 (7.2 train)', '64 days', '8/22 up', 3, 'API backup Oct 24', 'lk-vm-01', 'Internet edge for all five sites.'],
+        ['lk-core-01', 'Cisco', 'C9500-16X', 'Core switch', 'IOS-XE 17.9.4a', 'OK', 'District office', '10.60.1.1', 'FCW2441••••', 'live', 1, 'Oct 24', 'Supported', '190 days', '12/16 up', 6, 'Captured Oct 24', 'lk-vm-01', 'OSPF neighbor toward the bus depot not collected.'],
+        ['lk-core-02', 'Cisco', 'C9500-16X', 'Core switch', 'IOS-XE 17.9.4a', 'OK', 'District office', '10.60.1.2', 'FCW2441••••', 'live', 1, 'Oct 24', 'Supported', '190 days', '11/16 up', 5, 'Captured Oct 24', 'lk-vm-01', 'Pair with lk-core-01.'],
+        ['lk-wlc-01', 'Aruba', '7030 controller', 'SNMP-only', 'AOS 8.10', 'Basic', 'District office', '10.60.1.40', 'CW00••••', 'snmp', 1, 'Oct 24', 'Unknown (no EoL data)', '402 days', '2/8 up', 3, 'Not captured: SNMP only', 'lk-vm-01', 'Lists 64 APs in its AP table.'],
+        ['lk-acc-101', 'Cisco', 'C9200L-48P', 'Access switch', 'IOS-XE 17.6.5', 'Drift', 'District office', '10.60.2.11', 'JAE2509••••', 'live', 2, 'Oct 24', 'Supported, but behind the district standard', '511 days', '40/52 up', 2, 'Captured Oct 24', 'lk-vm-01', 'Telnet still enabled.'],
+        ['lk-acc-102', 'Cisco', 'C9200L-48P', 'Access switch', 'IOS-XE 17.9.4a', 'OK', 'District office', '10.60.2.12', 'JAE2509••••', 'live', 1, 'Oct 24', 'Supported', '190 days', '31/52 up', 2, 'Captured Oct 24', 'lk-vm-01', 'Default SNMPv2c community.'],
+        ['lk-acc-103', 'Cisco', 'C2960X-48FPS', 'Access switch', 'IOS 15.2(7)E8', 'EoS', 'District office', '10.60.2.13', 'FOC2011••••', 'upload', 2, 'Oct 22', 'Hardware support ends Oct 2027', 'from file', '44/52 up', 1, 'From show tech-support upload', 'upload · district IT', 'Sent by the district IT team; no live access to this switch.'],
+        ['rhs-core-01', 'Cisco', 'C9300-48UXM', 'Core switch', 'IOS-XE 17.9.4a', 'OK', 'Roosevelt High', '10.61.1.1', 'FOC2538••••', 'live', 0, 'Oct 23', 'Supported', '190 days', '36/48 up', 9, 'Captured Oct 23', 'lk-vm-01', 'Feeds 14 access switches.'],
+        ['rhs-acc-07', 'Cisco', 'C2960X-48LPS', 'Access switch', 'IOS 15.2(7)E8', 'EoS', 'Roosevelt High', '10.61.2.17', 'FOC1940••••', 'live', 2, 'Oct 23', 'Hardware support ends Oct 2027', '1 210 days', '41/48 up', 1, 'Captured Oct 23', 'lk-vm-01', 'One of 6 C2960X switches at this school.'],
+        ['lin-acc-01', 'Cisco', 'C9200L-24P', 'Access switch', 'IOS-XE 17.6.5', 'Drift', 'Lincoln Elementary', '10.62.2.11', 'JAE2602••••', 'live', 1, 'Oct 21', 'Supported, but behind the district standard', '388 days', '19/24 up', 1, 'Captured Oct 21', 'lk-vm-01', 'Behind 17.9.4a like lk-acc-101.'],
+        ['lk-ap-101', 'Aruba', 'AP-515', 'Access point', 'AOS 8.10', 'Basic', 'District office', '10.60.3.21', '—', 'snmp', 0, 'Oct 24', 'Unknown (no EoL data)', '—', '1/1 up', 1, 'From controller AP table', 'lk-vm-01', 'Library.'],
+      ], imports: [['show', 'lk-acc-103_show-tech.txt', '14 commands parsed · 2 secrets masked · from the district IT team', 'Parsed'], ['csv', 'bus-depot-devices.csv', '6 rows · bus depot router has no live access', 'Parsed']] },
+      lab: { total: 9, sites: ['Lab site A', 'Lab site B'], rows: [
+        ['lab-fgt-01', 'Fortinet', 'FortiGate-VM64', 'Firewall', 'FortiOS 7.4.5', 'OK', 'Lab site A', '172.16.0.1', 'FGVM02••••', 'live', 1, '10:18', 'Supported (7.4 train)', '12 days', '4/10 up', 3, 'API backup 10:18', 'lab-vm-a', 'Lab edge and FortiSwitch manager.'],
+        ['lab-c8k-01', 'Cisco', 'Catalyst 8000V', 'Router', 'IOS-XE 17.12.3', 'OK', 'Lab site A', '172.16.1.1', '9KZ3••••', 'live', 0, '10:19', 'Supported', '12 days', '3/4 up', 3, 'Captured 10:19', 'lab-vm-a', 'OSPF to the FortiGate, iBGP to lab-c8k-02.'],
+        ['lab-c8k-02', 'Cisco', 'Catalyst 8000V', 'Router', 'IOS-XE 17.12.3', 'OK', 'Lab site B', '172.16.2.1', '9KZ4••••', 'live', 1, '10:19', 'Supported', '12 days', '3/4 up', 3, 'Captured 10:19', 'lab-vm-b', 'No login banner.'],
+        ['lab-iosv-01', 'Cisco', 'IOSv', 'Router (fixture)', 'IOS 15.9(3)M8', 'EoS', 'Lab site A', '172.16.1.5', '9V1N••••', 'live', 2, '10:19', 'Flagged as end of support (fixture)', '12 days', '2/4 up', 2, 'Captured 10:19 · 2 secrets masked', 'lab-vm-a', 'Deliberately insecure fixture for checks CHK-01 and CHK-03.'],
+        ['lab-sw-a', 'Cisco', 'IOSvL2', 'Access switch', 'IOS 15.2(2020)', 'OK', 'Lab site A', '172.16.1.10', '9L2A••••', 'live', 1, '10:19', 'Lab image', '12 days', '4/16 up', 2, 'Captured 10:19', 'lab-vm-a', 'No syslog configured.'],
+        ['lab-sw-b', 'Cisco', 'IOSvL2', 'Access switch', 'IOS 15.2(2020)', 'OK', 'Lab site B', '172.16.2.10', '9L2B••••', 'live', 0, '10:19', 'Lab image', '12 days', '3/16 up', 1, 'Captured 10:19', 'lab-vm-b', 'Passes all checks.'],
+        ['lab-fsw-01', 'Fortinet', 'FortiSwitch 108F', 'Access · managed', 'FSW 7.4.2', 'OK', 'Lab site A', '169.254.1.2', 'S108FF••••', 'live', 0, '10:18', 'Supported', '12 days', '4/10 up', 2, 'Part of lab-fgt-01 config', 'lab-vm-a', 'Managed switch fixture.'],
+        ['lab-fap-01', 'Fortinet', 'FortiAP 231F', 'Access point', 'FAP 7.4.1', 'OK', 'Lab site A', '169.254.2.10', 'FP231F••••', 'live', 0, '10:18', 'Supported', '12 days', '1/2 up', 1, 'Managed', 'lab-vm-a', 'Bench AP.'],
+        ['lab-snmp-01', 'Linux', 'net-snmp host', 'SNMP-only', '—', 'Basic', 'Lab site A', '172.16.1.50', '—', 'snmp', 0, '10:20', 'Not applicable', '12 days', '1/1 up', 1, 'Not captured: SNMP only', 'lab-vm-a', 'Tests the generic SNMP driver.'],
+      ], imports: [['show', 'fixtures/ios-xe_show-version.txt', 'Sanitized fixture · parser regression', 'Parsed'], ['config', 'fixtures/fortios_unmasked-psk.conf', 'Negative test: rejected because a secret survived masking', 'Rejected']] },
+    };
+    const data0 = DATA[cust] || DATA.nw;
+    // Devices added as seeds from an integration, not yet discovered.
+    const pendingSeeds = this.seeds(cust).filter((g) => !data0.rows.some((r) => r[0] === g.host));
+    const splitModel = (m) => (/^Cisco /.test(m) ? ['Cisco', m.slice(6)] : /^Forti/.test(m) ? ['Fortinet', m] : ['Unknown', m]);
+    const pendingRows = pendingSeeds.map((g) => { const [v, mo] = splitModel(g.model); return [g.host, v, mo, 'Pending discovery', '—', 'Pending', g.site, g.ip, '—', 'integration', 0, 'not yet', '—', '—', '—', 0, 'Not collected yet', 'queued as seed', 'Suggested by ' + g.source + '. Discovery collects it on the next run.', g.source]; });
+    const data = { ...data0, rows: data0.rows.concat(pendingRows), total: data0.total + pendingRows.length };
+    // Which connected integrations also report each device.
+    const INT = { S7: ['Site24x7', '#15803D'], SW: ['SolarWinds', '#9A3412'], EH: ['ExtraHop', '#5B21B6'], ME: ['OpManager', '#B54708'], Nx: ['NetBox', '#0E7490'], LN: ['LibreNMS', '#334155'] };
+    const ALSO = {
+      nw: { S7: ['rtr-wan-01', 'fw-hq-01', 'fw-hq-02', 'core-sw-01', 'core-sw-02', 'east-fw-01'], SW: '*', EH: ['rtr-wan-01', 'fw-hq-01', 'core-sw-01', 'core-sw-02', 'dist-sw-03'] },
+      bp: { S7: ['bp-fw-01', 'bp-fw-02', 'bp-core-01', 'bp-core-02', 'bp-dmz-sw-01', 'bp-ups-01'] },
+      lk: { ME: '*' }, lab: { Nx: '*', LN: '*' },
+    }[cust] || {};
+    const alsoFor = (host, pendingSrc) => Object.keys(ALSO).filter((k) => !pendingSrc && (ALSO[k] === '*' || ALSO[k].indexOf(host) >= 0)).map((k) => ({ short: k, name: INT[k][0], color: INT[k][1] }));
+    const SRC = { live: [live ? 'Live view' : 'Live', '#0E7490'], upload: ['Upload', '#7C3AED'], snmp: ['SNMP', '#B54708'], integration: ['Integration', '#0F766E'] };
+    const OS = { OK: ['#DCFCE7', '#166534', '#86EFAC', 'Supported'], EoS: ['#FEE4E2', '#912018', '#FDA29B', 'End of support'], Drift: ['#FFEDD5', '#9A3412', '#FDBA74', 'Drift'], Basic: ['#EEF2F6', '#344054', '#CBD5E1', 'Basic'], Pending: ['#E0F2FE', '#075985', '#7DD3FC', 'Pending discovery'] };
+    const q = s.query.trim().toLowerCase();
+    const vendorOf = (v) => (v === 'Cisco' || v === 'Fortinet' ? v : 'other');
+    let rows = data.rows.map((d) => ({ host: d[0], vendor: d[1], model: d[2], role: d[3], os: d[4], osKey: d[5], site: d[6], ip: d[7], serial: d[8], src: d[9], fcount: d[10], seen: d[11], eos: d[12], uptime: d[13], ifaces: d[14], nbs: d[15], cfg: d[16], collector: d[17], note: d[18], pendingSrc: d[19] || '' }))
+      .filter((r) => s.vendor === 'all' || vendorOf(r.vendor) === s.vendor)
+      .filter((r) => s.os === 'all' || (s.os === 'risk' ? r.osKey === 'EoS' || r.osKey === 'Drift' : r.osKey === 'OK'))
+      .filter((r) => !q || (r.host + ' ' + r.ip + ' ' + r.serial + ' ' + r.model).toLowerCase().includes(q));
+    const key = s.sort;
+    rows.sort((a, b) => { const x = a[key], y = b[key]; return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * s.dir; });
+    rows = rows.map((r) => {
+      const o = OS[r.osKey];
+      return { ...r, osBg: o[0], osFg: o[1], osDark: o[2], osState: o[3], source: SRC[r.src][0], srcDot: SRC[r.src][1],
+        findings: r.pendingSrc ? 'Not collected' : r.fcount ? r.fcount + (r.fcount === 1 ? ' finding' : ' findings') : 'None', fColor: r.pendingSrc ? '#475467' : r.fcount >= 2 ? '#B42318' : r.fcount ? '#9A3412' : '#15803D',
+        source: r.pendingSrc ? 'From ' + r.pendingSrc : SRC[r.src][0],
+        also: alsoFor(r.host, r.pendingSrc), hasAlso: alsoFor(r.host, r.pendingSrc).length > 0, alsoText: alsoFor(r.host, r.pendingSrc).map((a) => a.name).join(', '),
+        open: s.hover === r.host, enter: () => this.setState({ hover: r.host }),
+        checked: !!s.picked[r.host], toggle: () => this.setState({ picked: { ...s.picked, [r.host]: !s.picked[r.host] } }),
+        connect: () => this.setState({ connect: { host: r.host, vendor: r.vendor, model: r.model, os: r.os, ip: r.ip, serial: r.serial, collector: r.src === 'integration' ? '' : r.collector, source: r.src === 'upload' ? 'Upload' : r.src === 'snmp' ? 'SNMP' : 'Live', kind: r.src === 'snmp' ? 'snmp' : '' }, hover: null }) };
+    });
+    // Only rows the filters still show count as selected, so export never includes hidden rows.
+    const nSel = rows.filter((r) => s.picked[r.host]).length;
+    const nHiddenSel = Object.keys(s.picked).filter((k) => s.picked[k]).length - nSel;
+    const colDefs = [['host', 'Hostname'], ['vendor', 'Vendor / model'], ['os', 'OS version'], ['site', 'Site'], ['ip', 'Mgmt IP'], ['serial', 'Serial'], ['src', 'Source'], ['fcount', 'Findings'], ['seen', 'Last seen']];
+    const pills = (cur, defs, field) => defs.map(([id, label]) => ({ label, cls: cur === id ? 'pill on' : 'pill', pressed: cur === id ? 'true' : 'false', pick: () => this.setState({ [field]: id }) }));
+    const hasOther = data.rows.some((r) => vendorOf(r[1]) === 'other');
+    const vendorDefs = [['all', 'All'], ['Cisco', 'Cisco'], ['Fortinet', 'Fortinet']].concat(hasOther ? [['other', 'Other (SNMP)']] : []);
+    const exp = [['CSV', '.csv', 'Opens in Excel; one row per device'], ['Excel', '.xlsx', 'Devices, interfaces and neighbors as sheets'], ['JSON', '.json', 'The normalized model, for other tools'], ['Report appendix', '→', 'Use as the device appendix in the report']];
+    const scope = nSel ? nSel + ' selected' : rows.length + ' shown';
+    const slug = { nw: 'northwind', bp: 'bluepeak', lk: 'larkfield', lab: 'itcn-lab', om: 'ostrander' }[cust];
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], ename: ENGS[eng][0], banner, locked, unlocked: !locked,
+      countText: locked ? '' : rows.length + ' of ' + data.total + ' devices',
+      query: s.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      vendors: pills(s.vendor, vendorDefs, 'vendor'),
+      osFilters: pills(s.os, [['all', 'Any'], ['risk', 'EoS or drift'], ['ok', 'Supported']], 'os'),
+      cols: colDefs.map(([k, label]) => ({ label, arrow: s.sort === k ? (s.dir === 1 ? ' ↑' : ' ↓') : '', aria: s.sort === k ? (s.dir === 1 ? 'ascending' : 'descending') : 'none', sort: () => this.setState({ sort: k, dir: s.sort === k ? -s.dir : 1 }) })),
+      rows, leave: () => this.setState({ hover: null }),
+      summary: (() => {
+        const all = data.rows;
+        const n = all.length;
+        const count = (fn) => all.filter(fn).length;
+        const mkRow = (label, k, color, pick, on) => ({ label, n: k, pct: n ? Math.round((k / n) * 100) : 0, color, pick: pick || (() => {}), static: !pick, cursor: pick ? 'pointer' : 'default', pressed: on ? 'true' : 'false', border: on ? '#0E7490' : '#EEF2F6', bg: on ? '#ECFEFF' : '#FFFFFF' });
+        const vendors = ['Cisco', 'Fortinet'].filter((x) => count((r) => r[1] === x)).map((x) => mkRow(x, count((r) => r[1] === x), x === 'Cisco' ? '#0E7490' : '#E8590C', () => this.setState({ vendor: s.vendor === x ? 'all' : x }), s.vendor === x));
+        const other = count((r) => vendorOf(r[1]) === 'other');
+        if (other) vendors.push(mkRow('Other (SNMP)', other, '#98A2B3', () => this.setState({ vendor: s.vendor === 'other' ? 'all' : 'other' }), s.vendor === 'other'));
+        const osRows = [['Supported', 'OK', '#22C55E', 'ok'], ['End of support', 'EoS', '#B42318', 'risk'], ['Drift', 'Drift', '#E8590C', 'risk'], ['Basic inventory only', 'Basic', '#98A2B3', null], ['Pending discovery', 'Pending', '#38BDF8', null]]
+          .map(([label, k, color, f]) => mkRow(label, count((r) => r[5] === k), color, f ? () => this.setState({ os: s.os === f ? 'all' : f }) : null, f && s.os === f)).filter((r) => r.n);
+        const srcRows = [['Live collection', 'live', '#0E7490'], ['Uploaded files', 'upload', '#7C3AED'], ['SNMP only', 'snmp', '#B54708'], ['Suggested by integrations', 'integration', '#0F766E']].map(([label, k, color]) => mkRow(label, count((r) => r[9] === k), color, null)).filter((r) => r.n);
+        const sites = data.sites.map((x) => mkRow(x, count((r) => r[6] === x), '#475467', null)).filter((r) => r.n);
+        return [
+          { title: 'By vendor', hint: 'click to filter', rows: vendors },
+          { title: 'OS status', hint: 'click to filter', rows: osRows },
+          { title: 'How it was collected', hint: '', rows: srcRows },
+          { title: 'By site', hint: '', rows: sites },
+        ];
+      })(),
+      summaryNote: 'Breakdown of the ' + data.rows.length + ' devices listed here. The full ' + data.total + '-device inventory is in the export.',
+      connectOpen: !!s.connect, connectDev: s.connect || null, closeConnect: () => this.setState({ connect: null }),
+      selText: (nSel ? nSel + ' selected · export uses the selection' : 'Select rows to export a subset') + (nHiddenSel ? ' · ' + nHiddenSel + ' more selected but hidden by the filters, not exported' : ''),
+      exportLabel: nSel ? 'Export ' + nSel + ' selected' : 'Export',
+      exportOpen: s.exportOpen, exportExpanded: s.exportOpen ? 'true' : 'false',
+      toggleExport: () => this.setState({ exportOpen: !s.exportOpen }),
+      exports: exp.map(([label, ext, hint]) => ({ label, ext, hint, pick: () => this.setState({ exportOpen: false,
+        toast: ext === '→' ? 'Device appendix linked to the ' + ENGS[eng][0] + ' report (' + scope + ')' : live ? 'Saved ' + slug + '-inventory' + ext + ' to Bluepeak’s on-site store · ' + scope : 'Exported ' + slug + '-inventory' + ext + ' · ' + scope }) })),
+      importOpen: s.importOpen, importExpanded: s.importOpen ? 'true' : 'false', toggleImport: () => this.setState({ importOpen: !s.importOpen }),
+      importHint: live ? 'Files go to bp-dc1-vm, which masks and parses them and writes the result to Bluepeak’s on-site store. Nothing is kept on the controller.' : 'Parsed by the same parsers as live collection and tagged Source = upload. Secrets are masked on import. Anything that still looks like a secret is rejected, not stored.',
+      siteNames: data.sites.map((name, i) => ({ name, checked: (s.impSite || 0) === i ? 'true' : 'false', cls: (s.impSite || 0) === i ? 'pill on' : 'pill', pick: () => this.setState({ impSite: i }) })),
+      imports: data.imports.map(([kind, file, detail, st]) => ({ kind, file, detail, state: st, color: st === 'Rejected' ? '#B42318' : '#15803D' })),
+      noImports: data.imports.length === 0,
+      toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

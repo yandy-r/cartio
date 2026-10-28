@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Customer and engagement switcher</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; margin-bottom: 12px; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #FFFFFF">
+<button type="button" aria-haspopup="dialog" aria-expanded="{{expanded}}" onClick="{{toggle}}" style="display: flex; width: 100%; align-items: center; gap: 10px; text-align: left; font: inherit; color: inherit; background: #13222F; border: 1px solid #1F3A50; border-radius: 10px; padding: 10px 12px; cursor: pointer; min-height: 44px; box-sizing: border-box">
+<span style="flex: 1; min-width: 0">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8FA3B5"><span style="width: 7px; height: 7px; border-radius: 2px; background: {{cur.modeDot}}"></span>{{cur.mode}}</span>
+<span style="display: block; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{cur.name}}</span>
+<span style="display: block; font-size: 12px; color: #C9D4DE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{cur.eng}}</span>
+</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8FA3B5" stroke-width="2" aria-hidden="true" style="flex: none"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg>
+</button>
+
+<sc-if value="{{open}}" hint-placeholder-val="{{ false }}">
+<div role="dialog" aria-label="Switch customer or engagement" style="position: absolute; z-index: 100; left: 0; top: calc(100% + 6px); width: 340px; max-width: calc(100vw - 32px); background: #FFFFFF; color: #101828; border: 1px solid #DDE2E8; border-radius: 12px; box-shadow: 0 20px 48px rgba(14,26,36,.32); overflow: hidden">
+<div style="padding: 10px; border-bottom: 1px solid #EEF2F6; display: flex; gap: 8px; align-items: center">
+<label style="flex: 1; display: flex; align-items: center; gap: 8px; background: #F3F5F7; border-radius: 8px; padding: 0 10px; min-height: 40px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find a customer</span>
+<input type="search" value="{{query}}" onInput="{{onSearch}}" placeholder="Find a customer" style="border: 0; outline: none; background: transparent; font: inherit; font-size: 13px; width: 100%">
+</label>
+<button type="button" aria-label="Close" onClick="{{close}}" style="width: 40px; height: 40px; border: 0; background: transparent; border-radius: 8px; cursor: pointer; color: #475467; font: inherit; font-size: 18px">×</button>
+</div>
+<div style="max-height: 420px; overflow-y: auto; padding: 6px">
+<sc-for list="{{customers}}" as="c" hint-placeholder-count="5">
+<div>
+<button type="button" aria-expanded="{{c.expandedAttr}}" onClick="{{c.expand}}" style="display: flex; width: 100%; gap: 10px; align-items: center; text-align: left; font: inherit; border: 0; background: {{c.bg}}; border-radius: 8px; padding: 10px; cursor: pointer; color: #101828; min-height: 44px">
+<span style="flex: 1; min-width: 0">
+<span style="display: block; font-size: 14px; font-weight: 600">{{c.name}}</span>
+<span style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #475467; margin-top: 2px"><span style="font-weight: 500; padding: 1px 6px; border-radius: 4px; background: {{c.modeBg}}; color: {{c.modeFg}}">{{c.mode}}</span>{{c.tag}}</span>
+</span>
+<span style="font-size: 12px; color: #475467; flex: none">{{c.count}}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2" aria-hidden="true" style="flex: none; transform: rotate({{c.rot}}deg)"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<sc-if value="{{c.expanded}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 2px 0 8px 14px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{c.engs}}" as="e" hint-placeholder-count="2">
+<button type="button" aria-current="{{e.current}}" onClick="{{e.pick}}" style="display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; font: inherit; font-size: 13px; border: 0; background: {{e.bg}}; border-radius: 8px; padding: 9px 10px; cursor: pointer; color: #101828; min-height: 40px">
+<span style="width: 8px; height: 8px; border-radius: 2px; background: {{e.dot}}; flex: none"></span>
+<span style="flex: 1">{{e.name}}</span>
+<span style="font-size: 12px; color: #475467">{{e.status}}</span>
+<sc-if value="{{e.isCurrent}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E7490" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+</button>
+</sc-for>
+<a href="Engagement.dc.html" style="font-size: 13px; padding: 8px 10px; color: #0E7490; text-decoration: none; font-weight: 500">+ New engagement for {{c.name}}</a>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div style="padding: 14px; font-size: 13px; color: #475467">No customer matches “{{query}}”.</div></sc-if>
+</div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-top: 1px solid #EEF2F6; font-size: 13px">
+<a href="Main.dc.html" style="color: #0E7490; text-decoration: none; font-weight: 500; padding: 6px 0">All customers</a>
+<a href="NewCustomer.dc.html" style="color: #0E7490; text-decoration: none; font-weight: 500; padding: 6px 0">+ New customer</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{sampleNote}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 11px; line-height: 1.4; color: #8FA3B5; padding: 6px 4px 0">Prototype: screens still show Northwind sample data.</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"cust":{"editor":null},"eng":{"editor":null},"onChange":{"editor":null},"$preview":{"width":360,"height":96}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    let saved = null;
+    try { saved = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); } catch (e) { saved = null; }
+    const cust = (saved && saved.cust) || 'nw';
+    const eng = (saved && saved.eng) || 'nw-q4';
+    this.state = { open: false, query: '', cust, eng, expanded: cust };
+  }
+  renderVals() {
+    const s = this.state;
+    const C = [
+      { id: 'nw', name: 'Northwind Clinics', mode: 'Hosted', tag: 'HIPAA', engs: [['nw-q4', 'Q4 2026 assessment', 'Active'], ['nw-q2', 'Q2 2026 assessment', 'Completed'], ['nw-q4-25', 'Q4 2025 assessment', 'Completed']] },
+      { id: 'bp', name: 'Bluepeak Credit Union', mode: 'On site', tag: 'Live view on', engs: [['bp-26', 'Annual review 2026', 'Active'], ['bp-25', 'Annual review 2025', 'Completed']] },
+      { id: 'lk', name: 'Larkfield School District', mode: 'Hosted', tag: 'Education', engs: [['lk-wifi', 'Wi-Fi refresh baseline', 'Completed']] },
+      { id: 'om', name: 'Ostrander Manufacturing', mode: 'On site', tag: 'Inside access only', engs: [['om-plant', 'Plant network review', 'Active']] },
+      { id: 'lab', name: 'ITCN Lab', mode: 'Hosted', tag: 'Internal lab', engs: [['lab-drv', 'Driver regression', 'Active']] },
+    ];
+    const DOT = { Active: '#0E7490', Planned: '#98A2B3', Completed: '#15803D' };
+    const custId = this.props.cust || s.cust;
+    const engId = this.props.eng || s.eng;
+    const curC = C.find((c) => c.id === custId) || C[0];
+    const curE = curC.engs.find((e) => e[0] === engId) || curC.engs[0];
+    const pick = (c, e) => {
+      try { window.localStorage.setItem('cartio.context', JSON.stringify({ cust: c, eng: e })); } catch (err) { /* storage unavailable */ }
+      this.setState({ cust: c, eng: e, open: false, query: '' });
+      if (this.props.onChange) this.props.onChange({ cust: c, eng: e });
+    };
+    const q = s.query.trim().toLowerCase();
+    const list = C.filter((c) => !q || (c.name + ' ' + c.tag).toLowerCase().includes(q));
+    return {
+      cur: { name: curC.name, eng: curE[1] + ' · ' + curE[2], mode: 'Customer · ' + curC.mode, modeDot: curC.mode === 'Hosted' ? '#38BDF8' : '#A78BFA' },
+      open: s.open, expanded: s.open ? 'true' : 'false',
+      toggle: () => this.setState({ open: !s.open, expanded: curC.id }), close: () => this.setState({ open: false }),
+      query: s.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      empty: list.length === 0,
+      customers: list.map((c) => {
+        const exp = s.expanded === c.id || !!q;
+        return { name: c.name, mode: c.mode, tag: c.tag, count: c.engs.length + (c.engs.length === 1 ? ' engagement' : ' engagements'),
+          modeBg: c.mode === 'Hosted' ? '#E0F2FE' : '#EDE9FE', modeFg: c.mode === 'Hosted' ? '#075985' : '#5B21B6',
+          bg: c.id === curC.id ? '#F3F5F7' : 'transparent', expanded: exp, expandedAttr: exp ? 'true' : 'false', rot: exp ? 90 : 0,
+          expand: () => this.setState({ expanded: s.expanded === c.id ? null : c.id }),
+          engs: c.engs.map(([id, name, status]) => ({ name, status, dot: DOT[status], isCurrent: c.id === curC.id && id === curE[0], current: c.id === curC.id && id === curE[0] ? 'true' : 'false',
+            bg: c.id === curC.id && id === curE[0] ? '#ECFEFF' : 'transparent', pick: () => pick(c.id, id) })) };
+      }),
+      sampleNote: false,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Findings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.check{border:1px solid #E4E8EC;background:#FFFFFF;border-radius:12px;padding:14px;text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:#101828}
+.check:hover{border-color:#98A2B3}
+.check.on{border-color:#0E7490;box-shadow:0 0 0 2px #A5E3EE}
+.fitem{display:flex;gap:12px;align-items:flex-start;width:100%;border:0;border-top:1px solid #EEF2F6;background:#FFFFFF;text-align:left;font:inherit;padding:14px 16px;cursor:pointer;color:#101828}
+.fitem:hover{background:#F8FAFB}
+.fitem.on{background:#ECFEFF;box-shadow:inset 3px 0 0 #0E7490}
+.dev{border:1px solid #DDE2E8;background:#FFFFFF;border-radius:8px;padding:6px 10px;font:inherit;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;cursor:default;display:inline-flex;gap:6px;align-items:center;min-height:32px;color:#101828}
+.dev:hover,.dev:focus{border-color:#0E7490;outline:none}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:500}
+.field input,.field textarea{font:inherit;font-size:14px;font-weight:400;border:1px solid #D0D5DD;border-radius:8px;padding:10px 12px;min-height:44px;box-sizing:border-box;color:#101828;background:#FFFFFF;resize:vertical}
+.field textarea.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px}
+.hint{font-size:12px;font-weight:400;color:#475467}
+.pill{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.pill.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.btn.danger{color:#B42318;border-color:#FDA29B}
+.btn.danger:hover{background:#FEF3F2}
+.btn.dangerfill{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.devconnect{display:inline-flex;align-items:center;gap:5px;border:1px solid #A5E3EE;border-left:0;background:#ECFEFF;color:#155E75;border-radius:0 8px 8px 0;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;min-height:32px}
+.devconnect:hover,.devconnect:focus-visible{background:#CFFAFE;color:#0E1A24}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a class="on" href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> / {{ename}}</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Findings</h1>
+</div>
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<span style="font-size: 13px; color: #475467">{{ranText}} · {{hiddenText}}</span>
+<button class="btn" type="button" onClick="{{openAdd}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add finding</button>
+<button class="btn" type="button" disabled="{{readOnly}}" onClick="{{rerun}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7M20 4v5h-5"></path></svg>Re-run checks</button>
+<a class="btn primary" href="Report.dc.html">Build report</a>
+</div>
+</sc-if>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{locked}}" hint-placeholder-val="{{ false }}">
+<dc-import name="OnsiteLocked" screen="Findings" customer="{{cname}}" hint-size="100%,420px"></dc-import>
+</sc-if>
+
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Checks" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="5">
+<button type="button" class="{{c.cls}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}">
+<span style="display: flex; justify-content: space-between; width: 100%; align-items: center"><span class="mono" style="font-size: 11px; color: #475467">{{c.id}}</span><span style="font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: {{c.bg}}; color: {{c.fg}}">{{c.failText}}</span></span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3">{{c.title}}</span>
+<span style="display: flex; height: 6px; width: 100%; border-radius: 3px; overflow: hidden; background: #EEF2F6; gap: 2px" aria-hidden="true"><span style="flex: {{c.fail}} 1 0; background: {{c.bar}}"></span><span style="flex: {{c.pass}} 1 0; background: #4ADE80"></span><span style="flex: {{c.unk}} 1 0; background: #CBD5E1"></span></span>
+<span style="font-size: 12px; color: #475467">{{c.pass}} pass · {{c.fail}} fail · {{c.unk}} unknown · {{c.na}} n/a</span>
+</button>
+</sc-for>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section aria-label="Finding list" style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px">
+<span style="font-size: 14px; font-weight: 600">{{listTitle}}</span>
+<sc-if value="{{filtered}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{clear}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #0E7490; cursor: pointer; min-height: 36px">Show all</button></sc-if>
+</div>
+<sc-for list="{{list}}" as="f" hint-placeholder-count="7">
+<button type="button" class="{{f.cls}}" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}">
+<span style="font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 4px; background: {{f.bg}}; color: {{f.fg}}; text-transform: uppercase; letter-spacing: .04em; flex: none; margin-top: 2px; width: 58px; text-align: center; box-sizing: border-box">{{f.sev}}</span>
+<span style="min-width: 0; flex: 1">
+<span style="display: block; font-size: 14px; font-weight: 500; line-height: 1.35; text-decoration: {{f.strike}}; color: {{f.titleColor}}">{{f.title}}</span>
+<span style="display: block; font-size: 12px; color: #475467; margin-top: 3px">{{f.check}} · {{f.devText}}{{f.hiddenTag}}</span>
+<sc-if value="{{f.tag}}" hint-placeholder-val="{{ false }}"><span style="display: inline-block; margin-top: 5px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: {{f.tagBg}}; color: {{f.tagFg}}">{{f.tag}}</span></sc-if>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{emptyList}}" hint-placeholder-val="{{ false }}"><div style="padding: 16px; font-size: 13px; color: #15803D; border-top: 1px solid #EEF2F6">No open findings for this check.</div></sc-if>
+<sc-if value="{{hasRemoved}}" hint-placeholder-val="{{ false }}">
+<div style="border-top: 1px solid #E4E8EC; padding: 10px 16px; background: #F8FAFB">
+<button type="button" aria-expanded="{{removedExpanded}}" onClick="{{toggleRemoved}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #475467; cursor: pointer; min-height: 36px; padding: 0">{{removedText}}</button>
+<sc-if value="{{showRemoved}}" hint-placeholder-val="{{ false }}">
+<sc-for list="{{removedList}}" as="r" hint-placeholder-count="1">
+<div style="display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px dashed #DDE2E8; font-size: 13px">
+<span style="flex: 1; min-width: 0"><span style="display: block; color: #475467; text-decoration: line-through">{{r.title}}</span><span style="display: block; font-size: 12px; color: #667085">{{r.reason}}</span></span>
+<button type="button" onClick="{{r.restore}}" style="border: 1px solid #D0D5DD; background: #FFFFFF; font: inherit; font-size: 12px; font-weight: 500; border-radius: 6px; padding: 4px 10px; cursor: pointer; min-height: 32px">Restore</button>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-if>
+</section>
+
+<section aria-label="Finding detail" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 18px">
+<sc-if value="{{viewing}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start">
+<div style="min-width: 0; flex: 1 1 320px">
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: {{cur.bg}}; color: {{cur.fg}}; text-transform: uppercase; letter-spacing: .04em">{{cur.sev}}</span><span class="mono" style="font-size: 12px; color: #475467">{{cur.check}}</span><sc-if value="{{cur.tag}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: {{cur.tagBg}}; color: {{cur.tagFg}}">{{cur.tag}}</span></sc-if></div>
+<h2 style="margin: 8px 0 0; font-size: 21px; font-weight: 600; line-height: 1.3">{{cur.title}}</h2>
+<sc-if value="{{cur.changeNote}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #475467; margin-top: 4px">{{cur.changeNote}}</div></sc-if>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+<label style="display: inline-flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer; border: 1px solid #D0D5DD; border-radius: 8px; padding: 0 12px; min-height: 44px">
+<input type="checkbox" checked="{{cur.inReport}}" onChange="{{cur.toggleHide}}" style="width: 18px; height: 18px; accent-color: #0E7490">Include in report
+</label>
+<button class="btn" type="button" onClick="{{cur.edit}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path></svg>Edit</button>
+<button class="btn danger" type="button" onClick="{{cur.askRemove}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"></path></svg>{{cur.removeLabel}}</button>
+</div>
+</div>
+<sc-if value="{{confirming}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FEF3F2; border: 1px solid #FDA29B; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #7A271A">
+<span>{{confirmText}}</span>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; color: #344054">Reason <span style="font-weight: 400; color: #475467">(kept in the audit log)</span>
+<input type="text" value="{{reason}}" onInput="{{onReason}}" placeholder="e.g. Accepted risk: device is being replaced in January" style="font: inherit; font-size: 14px; font-weight: 400; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box; background: #FFFFFF; color: #101828"></label>
+<div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn" type="button" onClick="{{cancelRemove}}">Cancel</button><button class="btn dangerfill" type="button" disabled="{{noReason}}" onClick="{{confirmRemove}}">{{confirmLabel}}</button></div>
+</div>
+</sc-if>
+
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Affected devices · hover for details</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{cur.devices}}" as="d" hint-placeholder-count="2">
+<span style="position: relative; display: inline-flex">
+<button type="button" class="dev" onMouseEnter="{{d.enter}}" onMouseLeave="{{leave}}" onFocus="{{d.enter}}" onBlur="{{leave}}" style="border-radius: 8px 0 0 8px"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{d.dot}}"></span>{{d.host}}<span style="color: #475467; font-family: 'IBM Plex Sans', sans-serif">{{d.result}}</span></button>
+<button type="button" class="devconnect" aria-label="Connect to {{d.host}}" title="Connect to {{d.host}}" onClick="{{d.connect}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"></path></svg>Connect</button>
+<sc-if value="{{d.open}}" hint-placeholder-val="{{ false }}">
+<div role="tooltip" style="position: absolute; z-index: 30; left: 0; top: 40px; width: 280px; background: #0E1A24; color: #E6EDF3; border-radius: 12px; padding: 12px 14px; box-shadow: 0 16px 40px rgba(14,26,36,.32); font-size: 12px; line-height: 1.5">
+<div class="mono" style="font-size: 13px; color: #FFFFFF">{{d.host}}</div>
+<div style="color: #C9D4DE">{{d.model}} · {{d.site}}</div>
+<div style="display: grid; grid-template-columns: 74px 1fr; gap: 3px 10px; margin-top: 8px">
+<span style="color: #8FA3B5">OS</span><span class="mono">{{d.os}}</span>
+<span style="color: #8FA3B5">Mgmt IP</span><span class="mono">{{d.ip}}</span>
+<span style="color: #8FA3B5">Result</span><span>{{d.result}}</span>
+<span style="color: #8FA3B5">Evidence</span><span>{{d.ev}}</span>
+</div>
+</div>
+</sc-if>
+</span>
+</sc-for>
+</div>
+</div>
+
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Evidence</div>
+<pre class="mono" style="margin: 0; background: #F8FAFB; border: 1px solid #E4E8EC; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre; color: #101828">{{cur.evidence}}</pre>
+<div style="font-size: 12px; color: #475467; margin-top: 6px">{{cur.evSource}}</div>
+<sc-if value="{{cur.hasIntEv}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 12px; border: 1px solid #DDD6FE; background: #F5F3FF; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5B21B6">Evidence from integrations · printed in the report</div>
+<sc-for list="{{cur.intEv}}" as="e" hint-placeholder-count="1">
+<div style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #2E1065">
+<span style="flex: 1; min-width: 0"><b style="font-weight: 600">{{e.title}}</b><br><span style="color: #4C1D95">{{e.text}}</span></span>
+<button type="button" onClick="{{e.remove}}" style="border: 0; background: transparent; font: inherit; font-size: 12px; color: #5B21B6; cursor: pointer; min-height: 32px; flex: none">Remove</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="flex: 1 1 260px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Recommendation</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.6">{{cur.rec}}</p>
+</div>
+<div style="flex: 1 1 300px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px"><span style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Suggested config · text only</span><button type="button" onClick="{{copy}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #0E7490; cursor: pointer; min-height: 36px">{{copyLabel}}</button></div>
+<pre class="mono" style="margin: 0; background: #0E1A24; color: #C9D4DE; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre">{{cur.snippet}}</pre>
+<div style="font-size: 12px; color: #475467; margin-top: 6px">Cartio is read-only in v1. Nothing is pushed to the device.</div>
+</div>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Engineer note for the report</span>
+<textarea rows="3" value="{{cur.note}}" onInput="{{cur.onNote}}" placeholder="Context for the customer, e.g. replacement already budgeted for next quarter" style="font: inherit; font-size: 14px; border: 1px solid #D0D5DD; border-radius: 10px; padding: 10px 12px; resize: vertical; color: #101828"></textarea>
+<span style="font-size: 12px; color: #475467">Printed under the finding in the report.</span>
+</label>
+</sc-if>
+
+<sc-if value="{{editing}}" hint-placeholder-val="{{ false }}">
+<div>
+<h2 style="margin: 0; font-size: 20px; font-weight: 600">{{formTitle}}</h2>
+<p style="margin: 6px 0 0; font-size: 13px; color: #475467; line-height: 1.5">{{formHint}}</p>
+</div>
+<label class="field">Title<input type="text" value="{{form.title}}" onInput="{{onTitle}}" placeholder="What is wrong, in one line"></label>
+<div class="field">Severity
+<div role="radiogroup" aria-label="Severity" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{sevOptions}}" as="o" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="font: inherit; font-size: 13px; font-weight: 600; text-transform: capitalize; border: 1.5px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; border-radius: 8px; padding: 8px 14px; cursor: pointer; min-height: 40px">{{o.label}}</button></sc-for>
+</div>
+</div>
+<sc-if value="{{needReason}}" hint-placeholder-val="{{ false }}">
+<label class="field">Why is the severity different from the check? <span class="hint">Required. Shown in the audit log and as a note in the report.</span><input type="text" value="{{form.reason}}" onInput="{{onFormReason}}" placeholder="e.g. Device is isolated in a lab VLAN"></label>
+</sc-if>
+<sc-if value="{{isManualForm}}" hint-placeholder-val="{{ false }}">
+<div class="field">Category
+<div role="radiogroup" aria-label="Category" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{catOptions}}" as="o" hint-placeholder-count="6"><button type="button" role="radio" aria-checked="{{o.checked}}" class="{{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+</div>
+</div>
+</sc-if>
+<div class="field">Affected devices <span class="hint">{{devHint}}</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{devOptions}}" as="o" hint-placeholder-count="6"><button type="button" aria-pressed="{{o.pressed}}" class="{{o.cls}}" onClick="{{o.pick}}"><span class="mono" style="font-size: 12px">{{o.host}}</span></button></sc-for>
+</div>
+</div>
+<label class="field">Evidence <span class="hint">{{evHint}}</span><textarea rows="4" class="mono" value="{{form.evidence}}" onInput="{{onEvidence}}" readOnly="{{evReadOnly}}" placeholder="What you saw: a command and its output, a screenshot reference, or what the customer told you" style="background: {{evBg}}"></textarea></label>
+<label class="field">Recommendation<textarea rows="3" value="{{form.rec}}" onInput="{{onRec}}" placeholder="What the customer should do, in plain words"></textarea></label>
+<label class="field">Suggested config <span class="hint">Optional. Text only; Cartio never pushes it.</span><textarea rows="3" class="mono" value="{{form.snippet}}" onInput="{{onSnippet}}" placeholder="interface ...&#10; no ip http server"></textarea></label>
+<label style="display: inline-flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer"><input type="checkbox" checked="{{form.inReport}}" onChange="{{onInReport}}" style="width: 18px; height: 18px; accent-color: #0E7490">Include in report</label>
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid #E4E8EC; padding-top: 16px">
+<span style="font-size: 13px; color: #B42318">{{formError}}</span>
+<div style="display: flex; gap: 10px"><button class="btn" type="button" onClick="{{cancelForm}}">Cancel</button><button class="btn primary" type="button" disabled="{{formInvalid}}" onClick="{{saveForm}}">{{saveFormLabel}}</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{noSelection}}" hint-placeholder-val="{{ false }}">
+<div style="margin: auto; text-align: center; padding: 40px 20px; display: flex; flex-direction: column; gap: 10px; align-items: center">
+<div style="font-size: 16px; font-weight: 600">{{noSelTitle}}</div>
+<div style="font-size: 14px; color: #475467">{{noSelText}}</div>
+<button class="btn primary" type="button" onClick="{{openAdd}}">Add finding</button>
+</div>
+</sc-if>
+</section>
+</div>
+</sc-if>
+</main>
+<sc-if value="{{connectOpen}}" hint-placeholder-val="{{ false }}">
+<dc-import name="ConnectModal" device="{{connectDev}}" cust="{{ctx.cust}}" on-close="{{closeConnect}}" hint-size="0px,0px"></dc-import>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const ctx = this.readCtx();
+    this.state = { ctx, ...this.load(ctx.cust), ...this.ui() };
+  }
+  ui() { return { check: null, sel: null, hover: null, toast: '', copied: false, connect: null, form: null, confirm: null, reason: '', showRemoved: false }; }
+  load(cust) {
+    let v = null;
+    try { v = JSON.parse(window.localStorage.getItem('cartio.findings.' + cust) || 'null'); } catch (e) { v = null; }
+    return v && v.edits ? { hidden: v.hidden || {}, edits: v.edits || {}, added: v.added || [], removed: v.removed || {}, notes: v.notes || {} }
+      : { hidden: cust === 'nw' ? { f7: true } : {}, edits: {}, added: [], removed: {}, notes: {} };
+  }
+  persist() {
+    const s = this.state;
+    const cust = this._cust || s.ctx.cust;
+    const blob = JSON.stringify({ hidden: s.hidden, edits: s.edits, added: s.added, removed: s.removed, notes: s.notes });
+    if (blob !== this._lastBlob) { this._lastBlob = blob; try { window.localStorage.setItem('cartio.findings.' + cust, blob); } catch (e) { /* storage unavailable */ } }
+    if (this._report && this._report !== this._lastReport) { this._lastReport = this._report; try { window.localStorage.setItem('cartio.report.' + cust, this._report); } catch (e) { /* storage unavailable */ } }
+  }
+  componentDidUpdate() { this.persist(); }
+  evBlob(cust) { try { return window.localStorage.getItem('cartio.evidence.' + cust) || ''; } catch (e) { return ''; } }
+  evidence(cust) { try { return JSON.parse(this.evBlob(cust) || '{}'); } catch (e) { return {}; } }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  takeFocus() {
+    let f = null; try { f = JSON.parse(window.localStorage.getItem('cartio.focus') || 'null'); } catch (e) { f = null; }
+    if (!f || f.page !== 'findings') return;
+    try { window.localStorage.removeItem('cartio.focus'); } catch (e) { /* storage unavailable */ }
+    this.setState({ sel: f.fid, check: null, form: null, confirm: null });
+  }
+  componentDidMount() {
+    this.takeFocus();
+    this.persist();
+    this.timer = setInterval(() => {
+      const v = this.readCtx();
+      if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) return this.setCtx(v);
+      this.takeFocus();
+      // Pick up changes made on other screens: findings created and evidence attached from Integrations.
+      let fb = null; try { fb = window.localStorage.getItem('cartio.findings.' + v.cust); } catch (e) { fb = null; }
+      if (fb && this._lastBlob && fb !== this._lastBlob) { this._lastBlob = fb; this.setState(this.load(v.cust)); return; }
+      const eb = this.evBlob(v.cust); if (eb !== this._eb) { this._eb = eb; this.forceUpdate(); }
+    }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  setCtx(v) { this._lastBlob = null; this._lastReport = null; this.setState({ ctx: v, ...this.load(v.cust), ...this.ui() }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment', 'Apr 14, 2026'], 'nw-q4-25': ['Q4 2025 assessment', 'Nov 3, 2025'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025', 'Nov 12, 2025'], 'lk-wifi': ['Wi-Fi refresh baseline', 'Oct 24, 2026'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const completed = ENGS[eng][1];
+    const live = META[cust][1] === 'live';
+    const locked = META[cust][1] === 'locked';
+    const parts = [];
+    if (live) parts.push(['Live view from bp-dc1-vm.', 'Checks run on the on-site collector; results are relayed in memory and never stored on the controller.']);
+    if (completed) parts.push(['Completed engagement.', 'Showing findings as of ' + completed + '. Read-only.']);
+    if (cust === 'lk') parts.push(['Collector lk-vm-01 is offline.', 'Checks re-run on the stored model, so you can still re-run them.']);
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: live ? '#F5F3FF' : '#F8FAFB', border: live ? '#DDD6FE' : '#DDE2E8', fg: live ? '#4C1D95' : '#344054' };
+    const SEV = { critical: ['#FEE4E2', '#912018', '#B42318'], high: ['#FFEDD5', '#9A3412', '#E8590C'], medium: ['#FEF3C7', '#854D0E', '#F5B53F'], low: ['#EEF2F6', '#344054', '#98A2B3'] };
+
+    const DATA = {
+      nw: {
+        ran: 'Checks ran 10:31 on 58 devices',
+        DEV: { 'rtr-wan-01': ['Cisco ISR4331', 'HQ data center', 'IOS-XE 16.9.8', '192.0.2.1'], 'east-fw-01': ['FortiGate 60F', 'Clinic East', 'FortiOS 7.0.12', '198.51.100.1'], 'east-sw-01': ['Cisco C2960X-24PS', 'Clinic East', 'IOS 15.2(7)E8', '198.51.100.5'], 'core-sw-01': ['Cisco C9300-48P', 'HQ data center', 'IOS-XE 17.9.4a', '192.0.2.20'], 'core-sw-02': ['Cisco C9300-48P', 'HQ data center', 'IOS-XE 17.6.5', '192.0.2.21'], 'fw-hq-01': ['FortiGate 200F', 'HQ data center', 'FortiOS 7.2.8', '192.0.2.10'], 'dist-sw-03': ['Cisco C9200L-24P', 'HQ data center', 'IOS-XE 17.9.4a', '192.0.2.23'], 'acc-fsw-12': ['FortiSwitch 124F', 'HQ data center', 'FSW 7.0.4', '169.254.1.3'] },
+        CHECKS: [['CHK-01', 'EoL / EoS versions', 52, 3, 3, 0], ['CHK-02', 'Firmware drift', 54, 2, 0, 2], ['CHK-03', 'Insecure management', 49, 5, 1, 3], ['CHK-04', 'NTP & syslog', 50, 3, 5, 0], ['CHK-05', 'SNMPv3 in use', 41, 2, 6, 9]],
+        F: [
+          ['f1', 'critical', 'CHK-01 EoL/EoS', 'Routers and firewalls run OS versions past end of support', [['rtr-wan-01', 'Fail', 'IOS-XE 16.9 maintenance ended Jul 2024'], ['east-fw-01', 'Fail', 'FortiOS 7.0 support ended Sep 2024']], 'rtr-wan-01   show version   Cisco IOS XE Software, Version 16.09.08\neast-fw-01   /api/v2/monitor/system/status   "version": "v7.0.12"\n\nEoL source: data/eol/cisco-fortinet.yaml · 2026-10-01', 'Live collection 10:39–10:44 · nw-hq-vm, nw-east-vm', 'Upgrade rtr-wan-01 to a supported IOS-XE 17.9 or 17.12 release. Move east-fw-01 to FortiOS 7.2.x or 7.4.x after a compatibility check of the Clinic East VPN.', '! rtr-wan-01: target release (example)\n! install add file bootflash:isr4300-universalk9.17.09.05.SPA.bin activate commit\n\n# east-fw-01: follow the FortiOS upgrade path\n# 7.0.12 → 7.2.10 → 7.4.x'],
+          ['f2', 'critical', 'CHK-01 EoL/EoS', 'Access switch hardware is end of sale; support ends Oct 2027', [['east-sw-01', 'Fail', 'C2960X end of sale; last support Oct 2027']], 'east-sw-01   show inventory   PID: WS-C2960X-24PS-L', 'Live collection 10:45 · nw-east-vm', 'Budget a replacement within the next 12 months. A Catalyst 9200L-24P or a FortiSwitch 124F matches the port count and PoE needs.', '(No config change. Hardware replacement.)'],
+          ['f3', 'high', 'CHK-02 Firmware drift', 'C9300-48P core switches run different IOS-XE releases', [['core-sw-01', 'Pass', '17.9.4a (majority)'], ['core-sw-02', 'Fail', '17.6.5 differs']], 'Model C9300-48P · 2 devices\n  17.9.4a   core-sw-01\n  17.6.5    core-sw-02   ← differs', 'Compared across all Northwind sites', 'Align core-sw-02 with core-sw-01 on 17.9.4a during the next change window, so both cores behave the same during a failover.', 'install add file flash:cat9k_iosxe.17.09.04a.SPA.bin activate commit'],
+          ['f4', 'high', 'CHK-03 Insecure mgmt', 'Telnet is allowed on VTY lines', [['rtr-wan-01', 'Fail', 'transport input telnet ssh'], ['east-sw-01', 'Fail', 'transport input all']], 'rtr-wan-01\n  line vty 0 4\n   transport input telnet ssh\neast-sw-01\n  line vty 0 15\n   transport input all', 'From masked running-config snapshots', 'Allow SSH only on all VTY lines and restrict them with an access class to the management subnet.', 'line vty 0 15\n transport input ssh\n access-class MGMT-ONLY in\nip ssh version 2'],
+          ['f5', 'high', 'CHK-03 Insecure mgmt', 'SNMPv2c community enabled on the network core', [['core-sw-02', 'Fail', 'v2c community present'], ['rtr-wan-01', 'Fail', 'v2c community present']], 'core-sw-02   snmp-server community <masked:1:0d55e2a1> RO\nrtr-wan-01   snmp-server community <masked:1:0d55e2a1> RO\n\nSame digest on both devices: the same community is reused.', 'Masked digests compared within this customer only', 'Remove the v2c community. SNMPv3 authPriv is already configured on core-sw-02 for monitoring.', 'no snmp-server community <the community> RO'],
+          ['f6', 'medium', 'CHK-04 NTP & syslog', 'No syslog server configured', [['rtr-wan-01', 'Fail', 'no logging host'], ['dist-sw-03', 'Fail', 'no logging host']], 'rtr-wan-01   (no "logging host" lines)\ndist-sw-03   (no "logging host" lines)', 'dist-sw-03 from an uploaded file · A. Chen', 'Send logs to the customer’s existing collector at the same address the FortiGates use.', 'logging host 192.0.2.50\nlogging trap informational\nservice timestamps log datetime msec localtime'],
+          ['f7', 'medium', 'CHK-03 Insecure mgmt', 'HTTP admin access allowed on an internal interface', [['fw-hq-01', 'Fail', 'allowaccess … http …']], 'config system interface\n    edit "port2"\n        set allowaccess ping https http ssh', 'API config backup 10:38', 'Remove HTTP from allowaccess. HTTPS stays available for admins.', 'config system interface\n    edit "port2"\n        unset allowaccess http\n    next\nend'],
+          ['f8', 'medium', 'CHK-02 Firmware drift', 'FortiSwitch firmware differs across access switches', [['acc-fsw-12', 'Fail', '7.0.4 vs 7.2.6']], 'FortiSwitch · 2 devices\n  7.2.6   acc-fsw-11\n  7.0.4   acc-fsw-12   ← differs', 'Through fw-hq-01 managed switch inventory', 'Upgrade acc-fsw-12 from the FortiGate’s managed FortiSwitch page.', 'execute switch-controller switch-software upgrade acc-fsw-12 <image>'],
+          ['f9', 'low', 'CHK-04 NTP & syslog', 'Only one NTP server configured', [['core-sw-01', 'Fail', '1 server']], 'core-sw-01   ntp server 192.0.2.123', 'Masked running-config', 'Add a second NTP source so time stays correct if one fails.', 'ntp server 192.0.2.124'],
+        ],
+      },
+      bp: {
+        ran: 'Checks ran 10:02 on bp-dc1-vm · 41 devices',
+        DEV: { 'bp-dmz-sw-01': ['Cisco C9300-24T', 'DC1 · DMZ', 'IOS-XE 17.9.5', '10.40.5.2'], 'bp-fw-01': ['FortiGate 400F', 'DC1', 'FortiOS 7.4.4', '10.40.0.1'], 'bp-fw-02': ['FortiGate 400F', 'DC1', 'FortiOS 7.4.4', '10.40.0.2'], 'bp-acc-01': ['Cisco C9200L-48P', 'DC1', 'IOS-XE 17.9.5', '10.40.2.11'], 'bp-acc-02': ['Cisco C9200L-48P', 'DC1', 'IOS-XE 17.6.4', '10.40.2.12'], 'bp-core-01': ['Cisco C9500-24Y4C', 'DC1', 'IOS-XE 17.9.5', '10.40.1.1'], 'bp-core-02': ['Cisco C9500-24Y4C', 'DC1', 'IOS-XE 17.9.5', '10.40.1.2'] },
+        CHECKS: [['CHK-01', 'EoL / EoS versions', 39, 0, 2, 0], ['CHK-02', 'Firmware drift', 36, 1, 0, 4], ['CHK-03', 'Insecure management', 35, 3, 3, 0], ['CHK-04', 'NTP & syslog', 32, 4, 5, 0], ['CHK-05', 'SNMPv3 in use', 33, 1, 4, 3]],
+        F: [
+          ['b1', 'high', 'CHK-03 Insecure mgmt', 'SNMPv2c community in the cardholder-data DMZ matches a well-known default', [['bp-dmz-sw-01', 'Fail', 'default community digest']], 'bp-dmz-sw-01   snmp-server community <masked:1:3b7e0d90> RO\n\nThe digest matches Cartio’s list of default communities. The check ran on\nbp-dc1-vm with Bluepeak’s own masking key, so the value never left the network.', 'Live view · masked running-config from bp-dc1-vm', 'Remove the v2c community and monitor this switch with SNMPv3 authPriv, as the core already does. Vendor default credentials in the cardholder-data environment are a PCI DSS requirement 2.2.2 issue.', 'no snmp-server community <the community> RO\nsnmp-server group ro-audit v3 priv read AUDIT\nsnmp-server user ro-audit ro-audit v3 auth sha <secret> priv aes 128 <secret>'],
+          ['b2', 'high', 'CHK-03 Insecure mgmt', 'HTTP admin access allowed on the firewall management interface', [['bp-fw-02', 'Fail', 'allowaccess includes http'], ['bp-fw-01', 'Pass', 'https and ssh only']], 'bp-fw-02\nconfig system interface\n    edit "mgmt"\n        set allowaccess ping https http ssh', 'Live view · API config backup from bp-dc1-vm', 'Remove HTTP from the management interface on bp-fw-02 to match bp-fw-01. In an HA pair this setting should be identical on both members.', 'config system interface\n    edit "mgmt"\n        unset allowaccess http\n    next\nend'],
+          ['b3', 'high', 'CHK-02 Firmware drift', 'C9200L-48P access switches run different IOS-XE releases', [['bp-acc-01', 'Pass', '17.9.5 (majority)'], ['bp-acc-02', 'Fail', '17.6.4 differs']], 'Model C9200L-48P · 9 devices at DC1 and Branch 7\n  17.9.5   8 devices\n  17.6.4   bp-acc-02   ← differs', 'Compared across all Bluepeak sites', 'Bring bp-acc-02 to 17.9.5 in the next change window.', 'install add file flash:cat9k_lite_iosxe.17.09.05.SPA.bin activate commit'],
+          ['b4', 'medium', 'CHK-03 Insecure mgmt', 'Admin idle timeout is 480 minutes', [['bp-fw-01', 'Fail', 'admintimeout 480'], ['bp-fw-02', 'Fail', 'admintimeout 480']], 'config system global\n    set admintimeout 480\nend', 'Live view · API config backup', 'Set the admin idle timeout to 15 minutes, which PCI DSS requirement 8.2.8 expects.', 'config system global\n    set admintimeout 15\nend'],
+          ['b5', 'medium', 'CHK-04 NTP & syslog', 'No syslog server configured', [['bp-dmz-sw-01', 'Fail', 'no logging host'], ['bp-acc-01', 'Fail', 'no logging host']], 'bp-dmz-sw-01   (no "logging host" lines)\nbp-acc-01      (no "logging host" lines)', 'Live view · masked running-configs', 'Send logs to Bluepeak’s SIEM collector, as the FortiGates already do. PCI DSS requirement 10 needs logs from every system in scope.', 'logging host 10.40.9.5\nlogging trap informational'],
+          ['b6', 'low', 'CHK-04 NTP & syslog', 'Core switches use different NTP servers', [['bp-core-01', 'Fail', '10.40.9.1'], ['bp-core-02', 'Fail', '10.40.9.2 only']], 'bp-core-01   ntp server 10.40.9.1\nbp-core-02   ntp server 10.40.9.2', 'Live view · masked running-configs', 'Point both cores at both NTP servers.', 'ntp server 10.40.9.1\nntp server 10.40.9.2'],
+        ],
+      },
+      lk: {
+        ran: 'Checks ran Oct 24 on 118 devices',
+        DEV: { 'lk-acc-101': ['Cisco C9200L-48P', 'District office', 'IOS-XE 17.6.5', '10.60.2.11'], 'lk-acc-102': ['Cisco C9200L-48P', 'District office', 'IOS-XE 17.9.4a', '10.60.2.12'], 'lk-acc-103': ['Cisco C2960X-48FPS', 'District office', 'IOS 15.2(7)E8', '10.60.2.13'], 'rhs-acc-07': ['Cisco C2960X-48LPS', 'Roosevelt High', 'IOS 15.2(7)E8', '10.61.2.17'], 'lin-acc-01': ['Cisco C9200L-24P', 'Lincoln Elementary', 'IOS-XE 17.6.5', '10.62.2.11'], 'lk-wlc-01': ['Aruba 7030 controller', 'District office', 'AOS 8.10', '10.60.1.40'], 'lk-core-01': ['Cisco C9500-16X', 'District office', 'IOS-XE 17.9.4a', '10.60.1.1'], 'lk-core-02': ['Cisco C9500-16X', 'District office', 'IOS-XE 17.9.4a', '10.60.1.2'], 'lk-fw-01': ['FortiGate 100F', 'District office', 'FortiOS 7.2.8', '10.60.0.1'] },
+        CHECKS: [['CHK-01', 'EoL / EoS versions', 110, 6, 2, 0], ['CHK-02', 'Firmware drift', 98, 14, 0, 6], ['CHK-03', 'Insecure management', 92, 22, 4, 0], ['CHK-04', 'NTP & syslog', 80, 30, 8, 0], ['CHK-05', 'SNMPv3 in use', 70, 12, 20, 16]],
+        F: [
+          ['l1', 'high', 'CHK-03 Insecure mgmt', 'Telnet is allowed on VTY lines at 3 sites', [['lk-acc-101', 'Fail', 'transport input telnet ssh'], ['lk-acc-103', 'Fail', 'transport input all'], ['rhs-acc-07', 'Fail', 'transport input all']], 'lk-acc-101   line vty 0 4    transport input telnet ssh\nlk-acc-103   line vty 0 15   transport input all\nrhs-acc-07   line vty 0 15   transport input all\n... and 16 more access switches', 'lk-acc-103 from the district IT team’s upload; others live via lk-vm-01', 'Allow SSH only on every access switch. The district’s switch template still enables Telnet, so fix the template too.', 'line vty 0 15\n transport input ssh\n access-class MGMT-ONLY in'],
+          ['l2', 'high', 'CHK-03 Insecure mgmt', 'SNMPv2c community matches a well-known default', [['lk-acc-102', 'Fail', 'default community digest'], ['lk-wlc-01', 'Fail', 'v2c enabled']], 'lk-acc-102   snmp-server community <masked:1:3b7e0d90> RO\nlk-wlc-01    sysDescr answered on SNMPv2c with a default community', 'Live via lk-vm-01', 'Remove default communities and move monitoring to SNMPv3 authPriv.', 'no snmp-server community <the community> RO'],
+          ['l3', 'high', 'CHK-02 Firmware drift', 'C9200L access switches run 2 IOS-XE releases across schools', [['lk-acc-102', 'Pass', '17.9.4a (district standard)'], ['lk-acc-101', 'Fail', '17.6.5'], ['lin-acc-01', 'Fail', '17.6.5']], 'Model C9200L · 31 devices\n  17.9.4a   19 devices\n  17.6.5    12 devices   ← differ', 'Compared across all 5 Larkfield sites', 'Schedule the 12 switches still on 17.6.5 for the summer break window.', 'install add file flash:cat9k_lite_iosxe.17.09.04a.SPA.bin activate commit'],
+          ['l4', 'medium', 'CHK-01 EoL/EoS', 'C2960X hardware is end of sale; support ends Oct 2027', [['lk-acc-103', 'Fail', 'WS-C2960X-48FPS-L'], ['rhs-acc-07', 'Fail', 'WS-C2960X-48LPS-L']], 'lk-acc-103   show inventory   PID: WS-C2960X-48FPS-L\nrhs-acc-07   show inventory   PID: WS-C2960X-48LPS-L\n... 4 more at Roosevelt High', 'Live and uploaded inventory', 'Include the 6 C2960X switches in the Wi-Fi refresh budget; the new APs need multigigabit PoE they can’t provide.', '(No config change. Hardware replacement.)'],
+          ['l5', 'medium', 'CHK-05 SNMPv3 in use', 'Wireless controller only answers SNMPv2c', [['lk-wlc-01', 'Fail', 'no SNMPv3 user']], 'lk-wlc-01   SNMPv3 request timed out; SNMPv2c answered', 'Live SNMP probe via lk-vm-01', 'Create a read-only SNMPv3 user on the controller and remove v2c.', '(Aruba: configure an SNMPv3 user with SHA and AES, read-only view)'],
+          ['l6', 'medium', 'CHK-04 NTP & syslog', 'No syslog server configured', [['lk-acc-101', 'Fail', 'no logging host']], 'lk-acc-101   (no "logging host" lines)\n... and 29 more switches', 'Live via lk-vm-01', 'Send switch logs to the same server the FortiGate uses.', 'logging host 10.60.9.5\nlogging trap informational'],
+          ['l7', 'low', 'CHK-04 NTP & syslog', 'Only one NTP server configured on the core', [['lk-core-01', 'Fail', '1 server'], ['lk-core-02', 'Fail', '1 server']], 'lk-core-01   ntp server 10.60.9.1\nlk-core-02   ntp server 10.60.9.1', 'Live via lk-vm-01', 'Add a second NTP source.', 'ntp server 10.60.9.2'],
+        ],
+      },
+      lab: {
+        ran: 'Checks ran 10:21 on 9 devices',
+        DEV: { 'lab-iosv-01': ['Cisco IOSv', 'Lab site A', 'IOS 15.9(3)M8', '172.16.1.5'], 'lab-fgt-01': ['FortiGate-VM64', 'Lab site A', 'FortiOS 7.4.5', '172.16.0.1'], 'lab-sw-a': ['Cisco IOSvL2', 'Lab site A', 'IOS 15.2(2020)', '172.16.1.10'], 'lab-c8k-02': ['Cisco Catalyst 8000V', 'Lab site B', 'IOS-XE 17.12.3', '172.16.2.1'] },
+        CHECKS: [['CHK-01', 'EoL / EoS versions', 7, 1, 0, 1], ['CHK-02', 'Firmware drift', 9, 0, 0, 0], ['CHK-03', 'Insecure management', 6, 3, 0, 0], ['CHK-04', 'NTP & syslog', 7, 1, 1, 0], ['CHK-05', 'SNMPv3 in use', 6, 0, 0, 3]],
+        F: [
+          ['x1', 'critical', 'CHK-01 EoL/EoS', 'IOS 15.9M fixture flagged as end of support (expected)', [['lab-iosv-01', 'Fail', 'IOS 15.9(3)M8']], 'lab-iosv-01   show version   Cisco IOS Software, IOSv, Version 15.9(3)M8\n\nExpected: this device is the CHK-01 positive fixture.', 'Live · lab-vm-a', 'Expected result for the driver regression suite. Leave as is.', '(Fixture: no change)'],
+          ['x2', 'high', 'CHK-03 Insecure mgmt', 'Telnet allowed on VTY lines (negative-test fixture)', [['lab-iosv-01', 'Fail', 'transport input telnet ssh']], 'lab-iosv-01\n  line vty 0 4\n   transport input telnet ssh', 'Live · lab-vm-a', 'Expected result. Confirms the SSH driver’s command allow-list still reads this config without running anything else.', '(Fixture: no change)'],
+          ['x3', 'medium', 'CHK-03 Insecure mgmt', 'HTTPS admin open on the outside port', [['lab-fgt-01', 'Fail', 'allowaccess https on port1']], 'config system interface\n    edit "port1"\n        set allowaccess ping https', 'Live · API backup via lab-vm-a', 'Restrict admin access to the lab management port.', 'config system interface\n    edit "port1"\n        unset allowaccess https\n    next\nend'],
+          ['x4', 'medium', 'CHK-04 NTP & syslog', 'No syslog server configured', [['lab-sw-a', 'Fail', 'no logging host']], 'lab-sw-a   (no "logging host" lines)', 'Live · lab-vm-a', 'Point lab switches at the lab log host.', 'logging host 172.16.1.50'],
+          ['x5', 'low', 'CHK-03 Insecure mgmt', 'No login banner', [['lab-c8k-02', 'Fail', 'no banner login']], 'lab-c8k-02   (no "banner login")', 'Live · lab-vm-b', 'Add the standard authorized-use banner.', 'banner login ^Authorized use only.^'],
+        ],
+      },
+    };
+    const data = DATA[cust] || DATA.nw;
+    this._cust = cust;
+    const base = data.F.map(([id, sev, check, title, devices, evidence, evSource, rec, snippet]) => ({ id, sev, check, title, devices, evidence, evSource, rec, snippet, manual: false }));
+    // Engineer changes on top of the check results: edits, added findings, dismissals.
+    const merged = base.map((f) => (s.edits[f.id] ? { ...f, ...s.edits[f.id], origSev: f.sev, edited: true } : f)).concat(s.added.map((a) => ({ ...a, manual: true })));
+    const F = merged.filter((f) => !s.removed[f.id]);
+    const removedF = merged.filter((f) => s.removed[f.id]);
+    const list = F.filter((f) => !s.check || f.check.indexOf(s.check) === 0);
+    const deco = (f) => {
+      const n = f.devices.filter((d) => d[1] === 'Fail').length;
+      return { ...f, bg: SEV[f.sev][0], fg: SEV[f.sev][1], hiddenTag: s.hidden[f.id] ? ' · hidden from report' : '', strike: s.hidden[f.id] ? 'line-through' : 'none', titleColor: s.hidden[f.id] ? '#667085' : '#101828', devText: n + ' device' + (n === 1 ? '' : 's'),
+        tag: f.manual ? 'Added by Yandy R.' : f.edited ? 'Edited by Yandy R.' : '', tagBg: f.manual ? '#EDE9FE' : '#E0F2FE', tagFg: f.manual ? '#5B21B6' : '#075985' };
+    };
+    const EMPTY = { id: '_none', sev: 'low', check: '', title: '', devices: [], evidence: '', evSource: '', rec: '', snippet: '' };
+    // The detail panel only ever shows a finding that is visible in the list.
+    const cur0 = list.find((f) => f.id === s.sel) || list[0] || EMPTY;
+    const blankForm = { id: null, manual: true, title: '', sev: 'medium', check: 'Engineer finding', devices: {}, evidence: '', rec: '', snippet: '', inReport: true, reason: '', origSev: null };
+    const EV = this.evidence(cust);
+    const evFor = (id) => EV[id] || [];
+    const cur = { ...deco(cur0), inReport: !s.hidden[cur0.id], note: s.notes[cur0.id] || '',
+      hasIntEv: evFor(cur0.id).length > 0,
+      intEv: evFor(cur0.id).map((e, i) => ({ title: e[0], text: e[1], remove: () => { const all = this.evidence(cust); all[cur0.id] = (all[cur0.id] || []).filter((x, j) => j !== i); try { window.localStorage.setItem('cartio.evidence.' + cust, JSON.stringify(all)); } catch (err) { /* storage unavailable */ } this.setState({ toast: 'Evidence removed from this finding' }); } })),
+      onNote: (e) => this.setState({ notes: { ...s.notes, [cur0.id]: e.target.value } }),
+      changeNote: cur0.edited && cur0.origSev && cur0.origSev !== cur0.sev ? 'Severity changed from ' + cur0.origSev + ' to ' + cur0.sev + ': ' + (cur0.reason || 'no reason given') : cur0.manual ? 'Engineer finding · not produced by an automated check' : '',
+      removeLabel: cur0.manual ? 'Delete' : 'Dismiss',
+      toggleHide: () => this.setState({ hidden: { ...s.hidden, [cur0.id]: !s.hidden[cur0.id] } }),
+      edit: () => { const dv = {}; cur0.devices.forEach((x) => { dv[x[0]] = true; }); this.setState({ confirm: null, form: { id: cur0.id, manual: !!cur0.manual, title: cur0.title, sev: cur0.sev, check: cur0.check, devices: dv, evidence: cur0.evidence, rec: cur0.rec, snippet: cur0.snippet, inReport: !s.hidden[cur0.id], reason: cur0.reason || '', origSev: cur0.manual ? null : (cur0.origSev || cur0.sev) } }); },
+      askRemove: () => this.setState({ confirm: cur0.id, reason: '' }),
+      devices: cur0.devices.map(([host, result, ev]) => { const m = data.DEV[host] || ['—', '—', '—', '—']; const k = cur0.id + host; return { host, result, ev, model: m[0], site: m[1], os: m[2], ip: m[3], dot: result === 'Fail' ? SEV[cur0.sev][2] : '#22C55E', open: s.hover === k, enter: () => this.setState({ hover: k }),
+        connect: () => this.setState({ hover: null, connect: { host, model: m[0], os: m[2], ip: m[3], source: /controller/.test(m[0]) ? 'SNMP' : 'Live', kind: /Aruba|controller/.test(m[0]) ? 'snmp' : '' } }) }; }) };
+    const nHidden = Object.keys(s.hidden).filter((k) => s.hidden[k] && !s.removed[k]).length;
+    // What the report prints: included findings with the engineer's edits and notes.
+    const sevOrder = ['critical', 'high', 'medium', 'low'];
+    this._report = JSON.stringify(F.filter((f) => !s.hidden[f.id]).sort((a, b) => sevOrder.indexOf(a.sev) - sevOrder.indexOf(b.sev))
+      .map((f) => [f.sev, f.title, f.devices.filter((x) => x[1] === 'Fail').map((x) => x[0]).join(', ') || '—', f.rec + (s.notes[f.id] ? ' Note: ' + s.notes[f.id] : '') + evFor(f.id).map((e) => ' Evidence (' + e[0].split(':')[0] + '): ' + e[1]).join(''), f.manual ? 1 : 0]));
+    const form = s.form;
+    const setForm = (patch) => this.setState({ form: { ...form, ...patch } });
+    const needReason = !!(form && !form.manual && form.origSev && form.sev !== form.origSev);
+    const selDevs = form ? Object.keys(form.devices).filter((k) => form.devices[k]) : [];
+    const formError = !form ? '' : !form.title.trim() ? 'Add a title' : !form.rec.trim() ? 'Add a recommendation' : needReason && !form.reason.trim() ? 'Give a reason for the severity change' : form.manual && selDevs.length === 0 ? 'Pick at least one affected device' : '';
+    const saveForm = () => {
+      if (formError) return;
+      if (form.manual) {
+        const devices = selDevs.map((h) => [h, 'Fail', 'Added manually']);
+        const item = { id: form.id || 'm' + Date.now().toString(36), sev: form.sev, check: form.check, title: form.title.trim(), devices, evidence: form.evidence.trim() || '(no evidence attached)', evSource: 'Engineer finding · Yandy R. · ' + new Date().toISOString().slice(0, 10), rec: form.rec.trim(), snippet: form.snippet.trim() || '(none)' };
+        const added = form.id ? s.added.map((a) => (a.id === form.id ? item : a)) : s.added.concat([item]);
+        this.setState({ added, sel: item.id, form: null, hidden: { ...s.hidden, [item.id]: !form.inReport }, toast: form.id ? 'Finding updated' : 'Finding added · it will appear in the report' });
+      } else {
+        const orig = base.find((b) => b.id === form.id);
+        const devices = orig.devices.filter((x) => form.devices[x[0]]).concat(selDevs.filter((h) => !orig.devices.find((x) => x[0] === h)).map((h) => [h, 'Fail', 'Added by engineer']));
+        this.setState({ edits: { ...s.edits, [form.id]: { sev: form.sev, title: form.title.trim(), rec: form.rec.trim(), snippet: form.snippet, devices, reason: needReason ? form.reason.trim() : '' } }, form: null, hidden: { ...s.hidden, [form.id]: !form.inReport }, toast: 'Changes saved · logged in the audit log' });
+      }
+    };
+    const devPool = Object.keys(data.DEV);
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], ename: ENGS[eng][0], banner, locked, unlocked: !locked, readOnly: !!completed,
+      ranText: data.ran,
+      checks: data.CHECKS.map(([id, title, pass, fail, unk, na]) => {
+        const sev = fail >= 3 ? 'critical' : fail >= 2 ? 'high' : fail >= 1 ? 'medium' : 'low';
+        return { id, title, pass, fail, unk, na, failText: fail + ' fail', bg: fail ? SEV[sev][0] : '#DCFCE7', fg: fail ? SEV[sev][1] : '#166534', bar: SEV[sev][2], cls: s.check === id ? 'check on' : 'check', pressed: s.check === id ? 'true' : 'false', pick: () => this.setState({ check: s.check === id ? null : id }) };
+      }),
+      list: list.map((f) => ({ ...deco(f), cls: cur0.id === f.id && !form ? 'fitem on' : 'fitem', pressed: cur0.id === f.id ? 'true' : 'false', pick: () => this.setState({ sel: f.id, copied: false, form: null, confirm: null }) })),
+      viewing: !form && list.length > 0, editing: !!form, noSelection: !form && list.length === 0,
+      noSelTitle: F.length === 0 ? 'No open findings' : 'No findings for ' + (s.check || 'this filter'),
+      noSelText: F.length === 0 ? 'Every finding has been dismissed. Restore one from the list, or add your own.' : 'This check passes on every device, or its findings were dismissed. Show all findings, or add your own.',
+      openAdd: () => this.setState({ form: { ...blankForm }, confirm: null }),
+      confirming: s.confirm === cur0.id && !form,
+      confirmText: cur0.manual ? 'Delete this engineer finding? It is removed from the assessment and the report.' : 'Dismiss this finding? The check keeps it dismissed on future runs, and it leaves the report. You can restore it later.',
+      confirmLabel: cur0.manual ? 'Delete finding' : 'Dismiss finding',
+      reason: s.reason, onReason: (e) => this.setState({ reason: e.target.value }), noReason: !s.reason.trim(),
+      cancelRemove: () => this.setState({ confirm: null, reason: '' }),
+      confirmRemove: () => this.setState({ removed: { ...s.removed, [cur0.id]: s.reason.trim() + ' · Yandy R.' }, confirm: null, reason: '', sel: null, toast: (cur0.manual ? 'Finding deleted' : 'Finding dismissed') + ' · logged in the audit log' }),
+      hasRemoved: removedF.length > 0, showRemoved: s.showRemoved, removedExpanded: s.showRemoved ? 'true' : 'false',
+      removedText: (s.showRemoved ? '▾ ' : '▸ ') + removedF.length + (removedF.length === 1 ? ' dismissed finding' : ' dismissed findings'),
+      toggleRemoved: () => this.setState({ showRemoved: !s.showRemoved }),
+      removedList: removedF.map((f) => ({ title: f.title, reason: s.removed[f.id], restore: () => { const r = { ...s.removed }; delete r[f.id]; this.setState({ removed: r, sel: f.id, toast: 'Finding restored' }); } })),
+      form: form || blankForm,
+      formTitle: form && form.id ? (form.manual ? 'Edit engineer finding' : 'Edit finding') : 'Add a finding',
+      formHint: form && !form.manual ? 'This finding comes from check ' + (form.check || '').split(' ')[0] + '. You can change its wording, severity, affected devices and recommendation; the evidence stays as collected. Changes are kept when checks re-run.' : 'For something the checks don’t cover: what you saw on site, what the customer told you, or a design concern. It is printed in the report like any other finding.',
+      onTitle: (e) => setForm({ title: e.target.value }), onRec: (e) => setForm({ rec: e.target.value }), onSnippet: (e) => setForm({ snippet: e.target.value }),
+      onEvidence: (e) => { if (form && form.manual) setForm({ evidence: e.target.value }); }, onFormReason: (e) => setForm({ reason: e.target.value }),
+      onInReport: () => setForm({ inReport: !form.inReport }),
+      sevOptions: sevOrder.map((k) => ({ label: k, checked: form && form.sev === k ? 'true' : 'false', border: form && form.sev === k ? SEV[k][2] : '#D0D5DD', bg: form && form.sev === k ? SEV[k][0] : '#FFFFFF', fg: form && form.sev === k ? SEV[k][1] : '#344054', pick: () => setForm({ sev: k }) })),
+      needReason, isManualForm: !!(form && form.manual),
+      catOptions: ['Engineer finding', 'CHK-01 EoL/EoS', 'CHK-02 Firmware drift', 'CHK-03 Insecure mgmt', 'CHK-04 NTP & syslog', 'CHK-05 SNMPv3 in use', 'Design'].map((c) => ({ label: c, checked: form && form.check === c ? 'true' : 'false', cls: form && form.check === c ? 'pill on' : 'pill', pick: () => setForm({ check: c }) })),
+      devOptions: devPool.map((h) => ({ host: h, pressed: form && form.devices[h] ? 'true' : 'false', cls: form && form.devices[h] ? 'pill on' : 'pill', pick: () => setForm({ devices: { ...form.devices, [h]: !form.devices[h] } }) })),
+      devHint: selDevs.length + ' selected',
+      evHint: form && !form.manual ? 'As collected; read-only' : 'Optional',
+      evReadOnly: !!(form && !form.manual), evBg: form && !form.manual ? '#F8FAFB' : '#FFFFFF',
+      formError, formInvalid: !!formError,
+      saveFormLabel: form && form.id ? 'Save changes' : 'Add finding',
+      cancelForm: () => this.setState({ form: null }), saveForm,
+      emptyList: list.length === 0,
+      listTitle: (s.check ? s.check + ' · ' : 'All findings · ') + list.length,
+      filtered: !!s.check, clear: () => this.setState({ check: null }),
+      cur, leave: () => this.setState({ hover: null }),
+      connectOpen: !!s.connect, connectDev: s.connect || null, closeConnect: () => this.setState({ connect: null }),
+      hiddenText: nHidden + ' hidden from report',
+      copy: () => this.setState({ copied: true }), copyLabel: s.copied ? 'Copied' : 'Copy',
+      rerun: () => this.setState({ toast: live ? 'Checks queued on bp-dc1-vm · results stay on site' : 'Checks queued against the stored model · no re-collection needed' }),
+      toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

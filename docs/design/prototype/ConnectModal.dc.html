@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Connect to device</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cm-mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.cm-overlay{padding:24px}
+.cm-overlay.max{padding:0}
+.cm-dialog{width:min(1680px,100%);height:min(1120px,100%);border-radius:16px}
+.cm-dialog.max{width:100%;height:100%;border-radius:0}
+.cm-left{flex:1 1 280px}
+@media (min-width:1600px){.cm-overlay{padding:40px}.cm-left{flex-basis:360px}}
+@media (max-width:720px){.cm-overlay{padding:0}.cm-dialog{width:100%;height:100%;border-radius:0}}
+.cm-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.cm-btn:hover{background:#F8FAFB}
+.cm-btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.cm-btn.primary:hover{background:#155E75}
+.cm-btn.small{min-height:34px;padding:5px 10px;font-size:12px}
+.cm-btn.dark{background:#13222F;border-color:#1F3A50;color:#C9D4DE}
+.cm-btn.dark:hover{background:#1F3A50;color:#FFFFFF}
+.cm-btn[disabled]{opacity:.45;cursor:not-allowed}
+.cm-method{display:flex;flex-direction:column;gap:2px;text-align:left;border:1.5px solid #DDE2E8;background:#FFFFFF;border-radius:10px;padding:10px 12px;font:inherit;cursor:pointer;color:#101828;min-height:44px;min-width:150px;flex:1 1 150px}
+.cm-method:hover{border-color:#98A2B3}
+.cm-method.on{border-color:#0E7490;box-shadow:0 0 0 3px #CFFAFE}
+.cm-method[disabled]{cursor:not-allowed;background:#F8FAFB;color:#667085}
+.cm-tpl{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+.cm-tpl:hover{background:#F3F5F7}
+.cm-x{width:40px;height:40px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#475467;display:inline-flex;align-items:center;justify-content:center}
+.cm-x:hover{background:#EEF2F6}
+.cm-link{border:0;background:transparent;font:inherit;font-size:12px;color:#0E7490;cursor:pointer;padding:4px 0;min-height:28px}
+.cm-icon{width:32px;height:32px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:#8FA3B5;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:12px}
+.cm-icon:hover{background:#1F3A50;color:#FFFFFF}
+</style>
+</helmet>
+<div class="{{overlayCls}}" style="position: fixed; inset: 0; z-index: 1000; background: rgba(14,26,36,.55); display: flex; align-items: center; justify-content: center; box-sizing: border-box; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828">
+<section role="dialog" aria-modal="true" aria-labelledby="cm-title" onKeyDown="{{onKey}}" class="{{dlgCls}}" style="background: #FFFFFF; box-shadow: 0 24px 64px rgba(14,26,36,.4); display: flex; flex-direction: column; overflow: hidden">
+
+<header style="display: flex; align-items: flex-start; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #E4E8EC; flex: none">
+<span style="width: 44px; height: 44px; border-radius: 12px; background: #ECFEFF; color: #0E7490; display: flex; align-items: center; justify-content: center; flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"></path></svg></span>
+<div style="flex: 1; min-width: 0">
+<h2 id="cm-title" style="margin: 0; font-size: 18px; font-weight: 600">Connect to <span class="cm-mono">{{d.host}}</span></h2>
+<div style="font-size: 13px; color: #475467; margin-top: 2px">{{d.vendor}} {{d.model}} · <span class="cm-mono">{{d.os}}</span> · <span class="cm-mono">{{d.ip}}</span> · {{platformLabel}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px">
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: {{relay.bg}}; color: {{relay.fg}}; font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{relay.dot}}"></span>{{relay.text}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #F3F5F7; color: #344054; font-weight: 500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>Read-only allow-list</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: {{store.bg}}; color: {{store.fg}}; font-weight: 500">Saves to {{store.short}}</span>
+</div>
+</div>
+<button class="cm-x" type="button" aria-label="{{maxLabel}}" title="{{maxLabel}}" onClick="{{toggleMax}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="{{maxIcon}}"></path></svg></button>
+<button class="cm-x" type="button" aria-label="Close" onClick="{{close}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</header>
+
+<sc-if value="{{showMethods}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 12px 20px; border-bottom: 1px solid #E4E8EC; flex: none; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline">
+<span style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">How to reach it · from what this device supports</span>
+<span style="font-size: 12px; color: #475467">Credential: <b style="font-weight: 600; color: #101828">{{cred}}</b></span>
+</div>
+<div role="radiogroup" aria-label="Connection method" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{methods}}" as="m" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{m.checked}}" class="{{m.cls}}" disabled="{{m.disabled}}" onClick="{{m.pick}}">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{m.dot}}"></span>{{m.label}}</span>
+<span style="font-size: 12px; color: #475467">{{m.detail}}</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{methodNote}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #854D0E; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 8px 10px">{{methodNote}}</div></sc-if>
+</div>
+</sc-if>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap; overflow: auto">
+<sc-if value="{{showLeft}}" hint-placeholder-val="{{ true }}">
+<div class="cm-left" style="min-width: 0; border-right: 1px solid #E4E8EC; padding: 14px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 100%">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">{{tplTitle}}</span><span style="display: flex; gap: 10px"><button class="cm-link" type="button" onClick="{{selectAll}}">All</button><button class="cm-link" type="button" onClick="{{selectNone}}">None</button></span></div>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+<div>
+<div style="font-size: 12px; font-weight: 600; color: #344054; padding: 0 10px 2px">{{g.name}}</div>
+<sc-for list="{{g.items}}" as="t" hint-placeholder-count="3">
+<label class="cm-tpl">
+<input type="checkbox" checked="{{t.on}}" onChange="{{t.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490; margin: 1px 0 0; flex: none">
+<span style="min-width: 0"><span class="cm-mono" style="display: block; font-size: 12px; color: #101828; word-break: break-word">{{t.cmd}}</span><span style="display: block; font-size: 11px; color: #475467">{{t.label}}</span></span>
+</label>
+</sc-for>
+</div>
+</sc-for>
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #E4E8EC; padding-top: 12px">
+<label for="cm-custom" style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Add your own command</label>
+<div style="display: flex; gap: 8px">
+<input id="cm-custom" type="text" class="cm-mono" value="{{custom}}" onInput="{{onCustom}}" onKeyDown="{{onCustomKey}}" placeholder="{{customPh}}" aria-invalid="{{customInvalid}}" style="flex: 1; min-width: 0; font-size: 12px; border: 1px solid {{customBorder}}; border-radius: 8px; padding: 10px; min-height: 44px; box-sizing: border-box">
+<button class="cm-btn" type="button" onClick="{{addCustom}}">Add</button>
+</div>
+<span style="font-size: 12px; color: {{customMsgColor}}">{{customMsg}}</span>
+</div>
+</div>
+</sc-if>
+
+<div style="flex: 999 1 460px; min-width: 0; padding: 14px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; max-height: 100%">
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: none">
+<button class="cm-btn primary" type="button" disabled="{{cantRun}}" onClick="{{run}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>{{runLabel}}</button>
+<span style="font-size: 13px; color: #475467; flex: 1 1 160px">{{selText}}</span>
+<button class="cm-btn small" type="button" aria-pressed="{{wideAttr}}" onClick="{{toggleWide}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="{{wideIcon}}"></path></svg>{{wideLabel}}</button>
+</div>
+
+<sc-if value="{{hasOutput}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: none">
+<label style="flex: 1 1 240px; display: flex; align-items: center; gap: 8px; background: #F3F5F7; border: 1px solid #E4E8EC; border-radius: 8px; padding: 0 10px; min-height: 40px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Filter output lines</span>
+<input type="search" class="cm-mono" value="{{filter}}" onInput="{{onFilter}}" placeholder="Filter lines, e.g. down, Te1/1, 10.10." style="border: 0; outline: none; background: transparent; font-size: 12px; width: 100%">
+</label>
+<span style="font-size: 12px; color: #475467">{{matchText}}</span>
+<button class="cm-btn small" type="button" onClick="{{expandAll}}">Expand all</button>
+<button class="cm-btn small" type="button" onClick="{{collapseAll}}">Collapse all</button>
+</div>
+</sc-if>
+
+<div style="flex: 1; min-height: 200px; background: #0E1A24; border-radius: 10px; overflow: auto; display: flex; flex-direction: column">
+<sc-if value="{{idle}}" hint-placeholder-val="{{ true }}">
+<div style="margin: auto; text-align: center; color: #8FA3B5; font-size: 13px; padding: 24px; line-height: 1.6">Pick commands and run them.<br>They go out as a job to <span class="cm-mono">{{collector}}</span>, which connects to the device and sends the full output back. Secrets are masked before anything leaves the collector.</div>
+</sc-if>
+<sc-if value="{{running}}" hint-placeholder-val="{{ false }}">
+<div class="cm-mono" style="color: #5EC4D6; font-size: 12px; padding: 14px 16px">{{runningText}}</div>
+</sc-if>
+<sc-for list="{{outputs}}" as="o" hint-placeholder-count="0">
+<div style="border-bottom: 1px solid #1F3A50">
+<div style="display: flex; gap: 10px; align-items: center; padding: 6px 8px 6px 14px; background: #13222F; position: sticky; top: 0">
+<button type="button" class="cm-icon" aria-expanded="{{o.expanded}}" aria-label="{{o.toggleLabel}}" onClick="{{o.toggle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="transform: rotate({{o.rot}}deg)"><path d="M9 6l6 6-6 6"></path></svg></button>
+<span class="cm-mono" style="color: #FFFFFF; font-size: 12px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{o.prompt}}</span>
+<span style="font-size: 11px; color: #8FA3B5; white-space: nowrap">{{o.lines}}</span>
+<span style="font-size: 11px; color: {{o.statusColor}}; white-space: nowrap">{{o.status}}</span>
+<button type="button" class="cm-icon" aria-label="Copy output of {{o.prompt}}" title="Copy" onClick="{{o.copy}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"></path></svg></button>
+<span style="font-size: 11px; color: #86EFAC; width: 44px">{{o.copied}}</span>
+</div>
+<sc-if value="{{o.open}}" hint-placeholder-val="{{ true }}">
+<pre class="cm-mono" style="margin: 0; padding: 10px 16px 14px; color: #C9D4DE; font-size: 12px; line-height: 1.6; white-space: pre; overflow-x: auto">{{o.text}}</pre>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<sc-if value="{{hasOutput}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex: none">
+<button class="cm-btn primary" type="button" disabled="{{savedAlready}}" onClick="{{save}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"></ellipse><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg>{{saveLabel}}</button>
+<button class="cm-btn" type="button" onClick="{{seed}}">Discover neighbors from here</button>
+<button class="cm-btn" type="button" onClick="{{download}}">Download .txt</button>
+<span role="status" style="font-size: 13px; color: #15803D">{{done}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{saved}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="flex: none; border: 1px solid {{store.border}}; background: {{store.panel}}; border-radius: 10px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; font-size: 13px">
+<div style="flex: 1 1 260px; min-width: 0">
+<div style="font-weight: 600; color: #101828">Saved to {{store.name}}</div>
+<div class="cm-mono" style="font-size: 12px; color: #475467; margin-top: 2px; word-break: break-all">{{store.path}}</div>
+<div style="color: #344054; margin-top: 6px; line-height: 1.5">{{savedSummary}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px">
+<sc-for list="{{savedRows}}" as="r" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: #475467">{{r.k}}</span><span style="font-weight: 600">{{r.v}}</span></div></sc-for>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-self: center"><a class="cm-btn small" href="Inventory.dc.html">Open in inventory</a><button class="cm-btn small" type="button" onClick="{{undo}}">Undo</button></div>
+</div>
+</sc-if>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"device":{"editor":null},"cust":{"editor":null},"onClose":{"editor":null},"$preview":{"width":1040,"height":760}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.blank();
+  }
+  blank() { return { method: null, picked: null, extra: [], custom: '', customMsg: '', phase: 'idle', done: '', key: this.devKey(), wide: false, max: false, filter: '', collapsed: {}, copied: null, saved: false, ran: [] }; }
+  devKey() { const d = this.props.device || {}; return (d.host || '') + '|' + (this.props.cust || ''); }
+  componentDidUpdate() { if (this.devKey() !== this.state.key) this.setState(this.blank()); }
+  componentWillUnmount() { clearTimeout(this.t); clearTimeout(this.c); }
+  out(id, x) {
+    const { H, M, OS, IP, SN, N, base, router, ios, fgModel, fgVer, col } = x;
+    const p = (s, n) => (String(s) + ' '.repeat(n)).slice(0, n);
+    const ip = (k) => base + k;
+    // Digest only; each call site writes the <masked:1:...> wrapper inline so the repo's secret scan sees a masked value.
+    const mk = (n) => ['7f3c9a1e', 'b204e6d0', '0d55e2a1', '4e0b77c2', '91aa04cf', 'c19f0b3d'][n % 6];
+    const xeVer = OS.replace('IOS-XE ', '');
+    const swPorts = (pre, n) => Array.from({ length: n }, (_, i) => pre + (i + 1));
+    const T = {
+      ver: () => (ios
+        ? ['Cisco IOS Software, ' + M + ' Software (' + M.split('-')[0] + '-UNIVERSALK9-M), Version ' + OS.replace('IOS ', '') + ', RELEASE SOFTWARE (fc2)', 'Technical Support: http://www.cisco.com/techsupport', 'Copyright (c) 1986-2022 by Cisco Systems, Inc.', '', 'ROM: Bootstrap program is ' + M + ' boot loader', '', H + ' uptime is 2 years, 11 weeks, 3 days, 7 hours, 2 minutes', 'System returned to ROM by power-on', 'System image file is "flash:' + M.toLowerCase().split('-')[0] + '-universalk9-mz.bin"', '', 'cisco ' + M + ' (APM86XXX) processor (revision B0) with 524288K bytes of memory.', 'Processor board ID ' + SN, 'Last reset from power-on', '1 Virtual Ethernet interface', '1 FastEthernet interface', '28 Gigabit Ethernet interfaces', '2 Ten Gigabit Ethernet interfaces', '512K bytes of flash-simulated non-volatile configuration memory.', '', 'Model number                    : ' + M, 'System serial number            : ' + SN, '', 'Switch Ports Model                     SW Version            SW Image', '------ ----- -----                     ----------            ----------', '*    1 28    ' + p(M, 26) + ' ' + p(OS.replace('IOS ', ''), 21) + ' C2960X-UNIVERSALK9-M', '', 'Configuration register is 0xF']
+        : ['Cisco IOS XE Software, Version ' + xeVer, 'Cisco IOS Software [' + (router ? 'Dublin' : 'Cupertino') + '], ' + (router ? 'Virtual XE' : 'Catalyst L3 Switch') + ' Software, Version ' + xeVer + ', RELEASE SOFTWARE (fc3)', 'Technical Support: http://www.cisco.com/techsupport', 'Copyright (c) 1986-2024 by Cisco Systems, Inc.', '', H + ' uptime is 12 weeks, 4 days, 3 hours, 18 minutes', 'Uptime for this control processor is 12 weeks, 4 days, 3 hours, 21 minutes', 'System returned to ROM by Reload Command', 'System image file is "' + (router ? 'bootflash:packages.conf' : 'flash:packages.conf') + '"', 'Last reload reason: Reload Command', '', 'cisco ' + M + ' (X86) processor with 1394219K/6147K bytes of memory.', 'Processor board ID ' + SN, router ? '4 Gigabit Ethernet interfaces' : '52 Gigabit Ethernet interfaces', router ? '' : '8 Ten Gigabit Ethernet interfaces', '2048K bytes of non-volatile configuration memory.', '16777216K bytes of physical memory.', '', 'Base Ethernet MAC Address          : 70:6d:15:••:••:80', 'Model Number                       : ' + M, 'System Serial Number               : ' + SN, '', router ? '' : 'Switch Ports Model              SW Version        SW Image              Mode', router ? '' : '------ ----- -----              ----------        ----------            ----', router ? '' : '*    1 56    ' + p(M, 18) + ' ' + p(xeVer, 17) + ' CAT9K_IOSXE           INSTALL', '', 'Configuration register is 0x102']).join('\n'),
+      inv: () => ['NAME: "Chassis", DESCR: "' + M + ' chassis"', 'PID: ' + M + '        , VID: V02  , SN: ' + SN, '', 'NAME: "Power Supply A", DESCR: "AC power supply, 715W"', 'PID: PWR-C1-715WAC     , VID: V02  , SN: DCB2421••••', '', 'NAME: "Power Supply B", DESCR: "AC power supply, 715W"', 'PID: PWR-C1-715WAC     , VID: V02  , SN: DCB2421••••', '', 'NAME: "Uplink Module 1", DESCR: "8x10G Uplink Module"', 'PID: C9300-NM-8X       , VID: V02  , SN: FOC2418••••', '', 'NAME: "Te1/1/1", DESCR: "SFP-10GBase-SR"', 'PID: SFP-10G-SR        , VID: V03  , SN: AVD2312••••', '', 'NAME: "Te1/1/2", DESCR: "SFP-10GBase-SR"', 'PID: SFP-10G-SR        , VID: V03  , SN: AVD2312••••', '', 'NAME: "Te1/1/3", DESCR: "SFP-10GBase-LR"', 'PID: SFP-10G-LR        , VID: V02  , SN: FNS2219••••', '', 'NAME: "Te1/1/4", DESCR: "SFP-10GBase-LR"', 'PID: SFP-10G-LR        , VID: V02  , SN: FNS2219••••'].join('\n'),
+      lic: () => ['License Usage:', '  License                 Entitlement Tag               Count Status', '  -----------------------------------------------------------------------------', '  network-advantage       (C9300-48 Network Advan...)       1 IN USE', '  dna-advantage           (C9300-48 DNA Advantage)          1 IN USE', '', 'Smart Licensing Using Policy: Enabled', 'Last report acknowledged: Oct 21 2026 03:12:44 UTC'].join('\n'),
+      ipbr: () => [p('Interface', 27) + p('IP-Address', 16) + 'OK? Method Status                Protocol'].concat(
+        [['Vlan1', 'unassigned', 'unset', 'administratively down', 'down'], ['Vlan10', IP, 'NVRAM', 'up', 'up'], ['Vlan20', ip(129), 'NVRAM', 'up', 'up'], ['Vlan30', ip(193), 'NVRAM', 'up', 'up'], ['Vlan99', 'unassigned', 'unset', 'administratively down', 'down'], [router ? 'GigabitEthernet1' : 'GigabitEthernet0/0', '10.10.0.2', 'NVRAM', 'up', 'up'], [router ? 'GigabitEthernet2' : 'TenGigabitEthernet1/1/1', '10.10.0.6', 'NVRAM', 'up', 'up'], [router ? 'GigabitEthernet3' : 'TenGigabitEthernet1/1/2', 'unassigned', 'unset', 'up', 'up'], [router ? 'GigabitEthernet4' : 'TenGigabitEthernet1/1/3', 'unassigned', 'unset', 'up', 'up'], [router ? 'Loopback0' : 'TenGigabitEthernet1/1/4', router ? ip(250) : 'unassigned', router ? 'NVRAM' : 'unset', 'up', 'up'], [router ? 'Tunnel10' : 'Port-channel1', 'unassigned', 'unset', 'up', 'up'], [router ? 'Tunnel11' : 'TenGigabitEthernet1/1/5', 'unassigned', 'unset', 'down', 'down']].map((r) => p(r[0], 27) + p(r[1], 16) + 'YES ' + p(r[2], 7) + p(r[3], 22) + r[4])).join('\n'),
+      stat: () => [p('Port', 10) + p('Name', 19) + p('Status', 13) + p('Vlan', 11) + p('Duplex', 7) + p('Speed', 7) + 'Type'].concat(
+        swPorts('Gi1/0/', 18).map((pt, i) => p(pt, 10) + p(i === 0 ? 'uplink-' + N[0] : i === 1 ? 'uplink-' + N[2] : i % 5 === 3 ? '' : i % 4 === 0 ? 'ap-' + (100 + i) : 'desk-' + (200 + i), 19) + p(i % 5 === 3 ? 'notconnect' : i === 11 ? 'err-disabled' : 'connected', 13) + p(i < 2 ? 'trunk' : i % 4 === 0 ? '30' : '10', 11) + p(i % 5 === 3 ? 'auto' : 'a-full', 7) + p(i % 5 === 3 ? 'auto' : i < 2 ? 'a-1000' : 'a-1000', 7) + '10/100/1000BaseTX'),
+        ['Te1/1/1   uplink-' + p(N[1], 12) + 'connected    trunk      full   10G    SFP-10GBase-SR', 'Te1/1/2   ' + p('', 19) + 'notconnect   1          full   10G    unknown', 'Po1       to-' + p(N[0], 16) + 'connected    trunk      a-full a-10G  N/A']).join('\n'),
+      err: () => [p('Port', 11) + p('Align-Err', 12) + p('FCS-Err', 12) + p('Xmit-Err', 12) + p('Rcv-Err', 12) + 'UnderSize'].concat(swPorts('Gi1/0/', 12).map((pt, i) => p(pt, 11) + p(i === 6 ? 14 : 0, 12) + p(i === 6 ? 2210 : i === 9 ? 37 : 0, 12) + p(0, 12) + p(i === 6 ? 2224 : i === 9 ? 37 : 0, 12) + '0'), ['', 'Gi1/0/7 shows FCS errors (2 210): check the cable or the far-end duplex.']).join('\n'),
+      cdp: () => N.slice(0, 3).map((n, i) => ['-------------------------', 'Device ID: ' + n, 'Entry address(es):', '  IP address: ' + ip(20 + i), 'Platform: ' + (i === 1 ? 'Fortinet FortiGate' : 'cisco ' + (router ? 'C9300-48P' : M)) + ',  Capabilities: ' + (i === 1 ? 'Router' : 'Router Switch IGMP'), 'Interface: ' + (router ? 'GigabitEthernet' + (i + 1) : 'TenGigabitEthernet1/1/' + (i + 1)) + ',  Port ID (outgoing port): ' + (i === 1 ? 'port2' : 'TenGigabitEthernet1/1/' + (i + 1)), 'Holdtime : ' + (140 - i * 13) + ' sec', '', 'Version :', i === 1 ? 'FortiGate ' + fgVer : 'Cisco IOS XE Software, Version 17.09.04a', '', 'advertisement version: 2', 'Native VLAN: 1', 'Duplex: full', 'Management address(es):', '  IP address: ' + ip(20 + i)].join('\n')).join('\n') + '\n\nTotal cdp entries displayed : 3',
+      lldp: () => N.slice(0, 2).map((n, i) => ['------------------------------------------------', 'Local Intf: ' + (router ? 'Gi' + (i + 1) : 'Te1/1/' + (i + 1)), 'Chassis id: 00:09:0f:••:••:' + (10 + i), 'Port id: ' + (i === 0 ? 'Te1/1/1' : 'port2'), 'Port Description: ' + (i === 0 ? 'uplink to ' + H : 'internal'), 'System Name: ' + n, '', 'System Description:', i === 0 ? 'Cisco IOS Software [Cupertino], Catalyst L3 Switch Software' : 'FortiGate ' + fgVer, '', 'Time remaining: ' + (101 - i * 7) + ' seconds', 'System Capabilities: B,R', 'Enabled Capabilities: B,R', 'Management Addresses:', '    IP: ' + ip(20 + i), 'Auto Negotiation - not supported', 'Vlan ID: - not advertised'].join('\n')).join('\n') + '\n\nTotal entries displayed: 2',
+      route: () => ['Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP', '       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area', '       N1 - OSPF NSSA external type 1, E1 - OSPF external type 1, E2 - OSPF external type 2', '', 'Gateway of last resort is 10.10.0.1 to network 0.0.0.0', '', 'O*E2  0.0.0.0/0 [110/1] via 10.10.0.1, 3w2d, ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), '      10.0.0.0/8 is variably subnetted, 14 subnets, 4 masks', 'C        10.10.0.0/30 is directly connected, ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), 'L        10.10.0.2/32 is directly connected, ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), 'C        10.10.0.4/30 is directly connected, ' + (router ? 'GigabitEthernet2' : 'TenGigabitEthernet1/1/2'), 'O        10.10.0.8/30 [110/2] via 10.10.0.1, 3w2d, ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), 'O        10.10.20.0/24 [110/3] via 10.10.0.5, 1w4d, ' + (router ? 'GigabitEthernet2' : 'TenGigabitEthernet1/1/2'), 'O        10.10.30.0/24 [110/3] via 10.10.0.5, 1w4d, ' + (router ? 'GigabitEthernet2' : 'TenGigabitEthernet1/1/2'), 'O IA     10.20.0.0/16 [110/12] via 10.10.0.1, 6d02h, ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), 'S        10.99.0.0/24 [1/0] via 10.10.0.1', '      ' + base + '0/24 is variably subnetted, 4 subnets, 2 masks', 'C        ' + base + '0/25 is directly connected, Vlan10', 'L        ' + IP + '/32 is directly connected, Vlan10', 'C        ' + base + '128/26 is directly connected, Vlan20', 'C        ' + base + '192/26 is directly connected, Vlan30'].join('\n'),
+      ospf: () => ['Neighbor ID     Pri   State           Dead Time   Address         Interface', p('10.255.0.1', 16) + '  1   FULL/DR         00:00:35    10.10.0.1       ' + (router ? 'GigabitEthernet1' : 'TenGigabitEthernet1/1/1'), p('10.255.0.3', 16) + '  1   FULL/BDR        00:00:31    10.10.0.5       ' + (router ? 'GigabitEthernet2' : 'TenGigabitEthernet1/1/2'), p('10.255.0.4', 16) + '  1   FULL/DROTHER    00:00:38    10.10.0.10      Port-channel1', '', 'Total neighbors: 3 · all FULL'].join('\n'),
+      bgp: () => (router ? ['BGP router identifier ' + ip(250) + ', local AS number 65010', 'BGP table version is 412, main routing table version 412', '18 network entries using 4464 bytes of memory', '22 path entries using 2992 bytes of memory', '', 'Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd', '203.0.113.1     4        64496  219877  201345      412    0    0 9w3d           12', '10.255.0.9      4        65010   44110   44102      412    0    0 9w3d            6'] : ['% BGP not active']).join('\n'),
+      run: () => ['Building configuration...', '', 'Current configuration : 14872 bytes', '!', 'version ' + (ios ? '15.2' : '17.9'), 'service timestamps debug datetime msec', 'service timestamps log datetime msec', 'service password-encryption', '!', 'hostname ' + H, '!', 'enable secret 9 <masked:1:' + mk(0) + '>', '!', 'username netops privilege 15 secret 9 <masked:1:' + mk(1) + '>', 'username ro-audit privilege 1 secret 9 <masked:1:' + mk(5) + '>', '!', 'aaa new-model', 'aaa authentication login default group tacacs+ local', 'tacacs server TAC1', ' address ipv4 10.99.0.20', ' key 7 <masked:1:' + mk(3) + '>', '!', 'ip domain name corp.example', 'ip ssh version 2', '!', 'interface Vlan10', ' description mgmt', ' ip address ' + IP + ' 255.255.255.128', '!', 'interface TenGigabitEthernet1/1/1', ' description uplink-' + N[1], ' switchport mode trunk', ' channel-group 1 mode active', '!', 'router ospf 1', ' router-id 10.255.0.2', ' passive-interface default', ' no passive-interface TenGigabitEthernet1/1/1', ' network 10.10.0.0 0.0.0.255 area 0', '!', 'snmp-server group ro-audit v3 priv read AUDIT', 'snmp-server user ro-audit ro-audit v3 auth sha <masked:1:' + mk(2) + '>' + ' priv aes 128 <masked:1:' + mk(4) + '>', 'snmp-server community <masked:1:' + mk(2) + '>' + ' RO', '!', 'ntp server 10.99.0.123', 'logging host 10.99.0.50', '!', 'line vty 0 4', ' access-class MGMT-ONLY in', ' transport input ssh', '!', 'end', '', '! ' + col + ': 7 secrets masked before upload · sha256 9c1e…4ab0'].join('\n'),
+      env: () => ['Switch  FAN     Speed   State   Airflow direction', '---------------------------------------------------', '  1     1     5600     OK     Front to Back', '  1     2     5600     OK     Front to Back', '  1     3     5520     OK     Front to Back', '', 'SW  PID                 Serial#     Status           Sys Pwr  PoE Pwr  Watts', '--  ------------------  ----------  ---------------  -------  -------  -----', '1A  PWR-C1-715WAC       DCB2421•••• OK               Good     Good     715', '1B  PWR-C1-715WAC       DCB2421•••• OK               Good     Good     715', '', 'Switch  Location          Reading   State   Yellow  Red', '----------------------------------------------------', '  1     Inlet              31 C      GREEN   46 C    56 C', '  1     Hotspot            44 C      GREEN   105 C   125 C'].join('\n'),
+      eigrp: () => ['EIGRP-IPv4 Neighbors for AS(10)', 'H   Address                 Interface              Hold Uptime   SRTT   RTO  Q  Seq', '                                                   (sec)         (ms)       Cnt Num', '0   ' + p(ip(1), 24) + 'Gi0/0                    12 3w2d       2   100  0  417', '1   ' + p(ip(10), 24) + 'Gi0/1                    13 1w0d       4   100  0  88'].join('\n'),
+      fstat: () => JSON.stringify({ http_method: 'GET', results: { model_name: 'FortiGate', model_number: fgModel, model: 'FGT' + fgModel.replace(/\D+/g, '') + 'F', hostname: H, version: 'v' + fgVer, build: 2702, serial: SN, ha_mode: 'a-p', ha_role: 'primary', log_disk_status: 'available' }, vdom: 'root', path: 'system', name: 'status', status: 'success', serial: SN, version: 'v' + fgVer }, null, 2),
+      fha: () => JSON.stringify({ results: [{ serial_no: SN, hostname: H, priority: 200, vcluster_id: 0, role: 'primary' }, { serial_no: SN.replace(/\d{2}$/, '07'), hostname: N[1], priority: 100, vcluster_id: 0, role: 'secondary' }], status: 'success' }, null, 2),
+      fif: () => JSON.stringify({ results: { port1: { name: 'port1', alias: 'wan1', ip: '203.0.113.2', mask: 30, link: true, speed: 1000, duplex: 1, tx_packets: 902114551, rx_packets: 1288031220, tx_errors: 0, rx_errors: 0 }, port2: { name: 'port2', alias: 'core-a', ip: '10.10.0.1', mask: 30, link: true, speed: 10000, duplex: 1, tx_errors: 0, rx_errors: 0 }, port3: { name: 'port3', alias: 'core-b', ip: '10.10.0.5', mask: 30, link: true, speed: 10000, duplex: 1, tx_errors: 0, rx_errors: 0 }, port4: { name: 'port4', alias: '', ip: '0.0.0.0', mask: 0, link: false, speed: 0, duplex: -1 }, ha1: { name: 'ha1', link: true, speed: 10000, duplex: 1 }, fortilink: { name: 'fortilink', ip: '169.254.1.1', mask: 24, link: true, speed: 10000 } }, status: 'success' }, null, 2),
+      flldp: () => JSON.stringify({ results: N.slice(0, 3).map((n, i) => ({ mac: '00:09:0f:••:••:' + (20 + i), chassis_id: '70:6d:15:••:••:' + (80 + i), port: 'port' + (i + 2), port_id: 'Te1/1/' + (i + 1), system_name: n, system_description: 'Cisco IOS Software, Catalyst L3 Switch', ttl: 120, addresses: [{ type: 'ipv4', address: ip(20 + i) }] })), status: 'success' }, null, 2),
+      fsw: () => JSON.stringify({ results: [{ name: 'S248EF••••', switch_id: N[2], status: 'Connected', os_version: 'S248EF-v7.2.6-build0459', connecting_from: '169.254.1.2', join_time: 1758003221, ports: 52 }, { name: 'S124FT••••', switch_id: N[3], status: 'Connected', os_version: 'S124FP-v7.0.4-build0071', connecting_from: '169.254.1.3', join_time: 1760511130, ports: 28 }], status: 'success' }, null, 2),
+      fap: () => JSON.stringify({ results: [{ name: 'FP231F••••', wtp_id: 'ap-01', os_version: 'FP231F-v7.2-build0397', status: 'connected', clients: 37, radio: [{ radio_id: 1, channel: 6, band: '802.11ax-2G' }, { radio_id: 2, channel: 44, band: '802.11ax-5G' }] }, { name: 'FP231F••••', wtp_id: 'ap-02', status: 'connected', clients: 22 }], status: 'success' }, null, 2),
+      froute: () => JSON.stringify({ results: [{ ip_mask: '0.0.0.0/0', gateway: '203.0.113.1', interface: 'port1', type: 'bgp', distance: 20 }, { ip_mask: '10.10.0.0/30', gateway: '0.0.0.0', interface: 'port2', type: 'connect' }, { ip_mask: '10.10.0.4/30', gateway: '0.0.0.0', interface: 'port3', type: 'connect' }, { ip_mask: '10.10.20.0/24', gateway: '10.10.0.2', interface: 'port2', type: 'ospf', distance: 110, metric: 2 }, { ip_mask: '10.10.30.0/24', gateway: '10.10.0.6', interface: 'port3', type: 'ospf', distance: 110, metric: 2 }, { ip_mask: base + '0/24', gateway: '10.10.0.2', interface: 'port2', type: 'ospf', distance: 110, metric: 3 }], status: 'success' }, null, 2),
+      fbak: () => ['#config-version=FGT' + fgModel.replace(/\D+/g, '') + 'F-' + fgVer + '-FW-build2702:opmode=0:vdom=0', '#conf_file_ver=88212455213', '#buildno=2702', 'config system global', '    set admintimeout 480', '    set hostname "' + H + '"', '    set timezone "America/New_York"', 'end', 'config system admin', '    edit "admin"', '        set accprofile "super_admin"', '        set password ENC <masked:1:' + mk(0) + '>', '    next', '    edit "cartio-ro"', '        set accprofile "read_only"', '        set password ENC <masked:1:' + mk(3) + '>', '    next', 'end', 'config system interface', '    edit "port2"', '        set ip 10.10.0.1 255.255.255.252', '        set allowaccess ping https http ssh', '        set alias "core-a"', '    next', 'end', 'config system ha', '    set group-name "cluster-1"', '    set mode a-p', '    set password ENC <masked:1:' + mk(5) + '>', 'end', 'config vpn ipsec phase1-interface', '    edit "to-branch"', '        set interface "port1"', '        set psksecret ENC <masked:1:' + mk(4) + '>', '    next', 'end', 'config system snmp community', '    edit 1', '        set name <masked:1:' + mk(2) + '>', '    next', 'end', '', '# ' + col + ': 5 secrets masked before upload · 4 812 lines · sha256 6b3c…d118'].join('\n'),
+      cstat: () => ['Version: FortiGate-' + fgModel.replace(/\D+/g, '') + 'F v' + fgVer + ',build2702,240724 (GA.M)', 'Firmware Signature: certified', 'Virus-DB: 92.08112(2026-10-28 06:31)', 'IPS-DB: 28.00889(2026-10-27 21:12)', 'Serial-Number: ' + SN, 'BIOS version: 05000007', 'Log hard disk: Available', 'Hostname: ' + H, 'Private Encryption: Disable', 'Operation Mode: NAT', 'Current virtual domain: root', 'Max number of virtual domains: 10', 'Virtual domains status: 1 in NAT mode, 0 in TP mode', 'Virtual domain configuration: disable', 'FIPS-CC mode: disable', 'Current HA mode: a-p, master', 'Cluster uptime: 88 days, 4 hours, 12 minutes, 9 seconds', 'Branch point: 2702', 'Release Version Information: GA', 'System time: Wed Oct 28 10:38:12 2026', 'Last reboot reason: power cycle'].join('\n'),
+      cha: () => ['HA Health Status: OK', 'Model: FortiGate-' + fgModel.replace(/\D+/g, '') + 'F', 'Mode: HA A-P', 'Group Name: cluster-1', 'Group ID: 0', 'Debug: 0', 'Cluster Uptime: 88 days 4:12:09', 'Cluster state change time: 2026-07-31 06:26:03', 'Primary selected using:', '    <2026/07/31 06:26:03> vcluster-1: ' + SN + ' is selected as the primary because it has the largest value of override priority.', 'ses_pickup: enable, ses_pickup_delay=disable', 'override: disable', 'Configuration Status:', '    ' + SN + '(updated 3 seconds ago): in-sync', '    ' + SN.replace(/\d{2}$/, '07') + '(updated 1 seconds ago): in-sync', 'System Usage stats:', '    ' + SN + '(updated 3 seconds ago):', '        sessions=18211, average-cpu-user/nice/system/idle=4%/0%/2%/94%, memory=41%', 'HBDEV stats:', '    ' + SN + '(updated 3 seconds ago):', '        ha1: physical/10000auto, up, rx-bytes/packets/dropped/errors=88123012/912201/0/0'].join('\n'),
+      cperf: () => ['CPU states: 3% user 2% system 0% nice 95% idle 0% iowait 0% irq 0% softirq', 'CPU0 states: 4% user 2% system 0% nice 94% idle', 'CPU1 states: 2% user 1% system 0% nice 97% idle', 'Memory: 8135072k total, 3335380k used (41.0%), 4529248k free (55.7%), 270444k freeable (3.3%)', 'Average network usage: 412310 / 380221 kbps in 1 minute, 398112 / 361002 kbps in 10 minutes', 'Average sessions: 18211 sessions in 1 minute, 17990 sessions in 10 minutes', 'Average session setup rate: 142 sessions per second in last 1 minute', 'Virus caught: 0 total in 1 minute', 'IPS attacks blocked: 3 total in 1 minute', 'Uptime: 88 days,  4 hours,  12 minutes'].join('\n'),
+      cif: () => ['== [onboard]', '        ==[port1]', '                mode: static', '                ip: 203.0.113.2 255.255.255.252', '                status: up', '                speed: 1000Mbps (Duplex: full)', '        ==[port2]', '                mode: static', '                ip: 10.10.0.1 255.255.255.252', '                status: up', '                speed: 10000Mbps (Duplex: full)', '        ==[port3]', '                mode: static', '                ip: 10.10.0.5 255.255.255.252', '                status: up', '                speed: 10000Mbps (Duplex: full)', '        ==[port4]', '                status: down', '                speed: n/a', '        ==[ha1]', '                status: up', '                speed: 10000Mbps (Duplex: full)'].join('\n'),
+      croute: () => ['Routing table for VRF=0', 'B*      0.0.0.0/0 [20/0] via 203.0.113.1 (recursive is directly connected, port1), 9w3d, [1/0]', 'C       10.10.0.0/30 is directly connected, port2', 'C       10.10.0.4/30 is directly connected, port3', 'O       10.10.0.8/30 [110/2] via 10.10.0.2, port2, 3w2d, [1/0]', 'O       10.10.20.0/24 [110/2] via 10.10.0.2, port2, 1w4d, [1/0]', 'O       10.10.30.0/24 [110/2] via 10.10.0.6, port3, 1w4d, [1/0]', 'O       ' + base + '0/24 [110/3] via 10.10.0.2, port2, 3w2d, [1/0]', 'S       10.99.0.0/24 [10/0] via 10.10.0.2, port2, [1/0]', 'C       169.254.1.0/24 is directly connected, fortilink', 'C       203.0.113.0/30 is directly connected, port1'].join('\n'),
+      cospf: () => ['OSPF process 0, VRF 0:', 'Neighbor ID     Pri   State           Dead Time   Address         Interface', '10.255.0.2        1   Full/DR         00:00:36    10.10.0.2       port2', '10.255.0.3        1   Full/DR         00:00:33    10.10.0.6       port3', '10.255.0.9        1   Full/Backup     00:00:39    10.10.0.13      port5'].join('\n'),
+      cbgp: () => ['VRF 0 BGP router identifier ' + IP + ', local AS number 65010', 'BGP table version is 88', '1 BGP AS-PATH entries', '0 BGP community entries', '', 'Neighbor        V         AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd', '203.0.113.1     4      64496  219877  201345       88    0    0 9w3d           12', '', 'Total number of neighbors 1'].join('\n'),
+      cshow: () => T.fbak(),
+      msw: () => JSON.stringify({ results: [{ switch_id: H, serial: SN, status: 'Connected', state: 'Authorized', os_version: OS, connecting_from: IP, fgt_peer_intf_name: 'fortilink', ports: 52, poe_budget: 740, poe_used: 312.4, uptime: 7603211 }], status: 'success' }, null, 2),
+      mport: () => JSON.stringify({ results: { port1: { status: 'up', speed: '1000full', vlan: 'ap-vlan', poe: { status: 'delivering', power: 13.8 }, crc_alignments: 0 }, port2: { status: 'up', speed: '1000full', vlan: 'ap-vlan', poe: { status: 'delivering', power: 14.2 }, crc_alignments: 0 }, port3: { status: 'down', speed: 'auto', vlan: 'default' }, port4: { status: 'up', speed: '100full', vlan: 'voice', poe: { status: 'delivering', power: 5.1 }, crc_alignments: 211 }, port49: { status: 'up', speed: '10000full', vlan: 'trunk', lldp_neighbor: N[0] }, port50: { status: 'up', speed: '10000full', vlan: 'trunk', lldp_neighbor: N[1] } }, status: 'success' }, null, 2),
+      mlldp: () => JSON.stringify({ results: [{ port: 'port49', system_name: N[0], port_id: 'Gi1/0/2', ttl: 120 }, { port: 'port50', system_name: N[1], port_id: 'Gi1/0/2', ttl: 120 }, { port: 'port1', system_name: 'ap-01', port_id: 'lan1', ttl: 120 }], status: 'success' }, null, 2),
+      map: () => JSON.stringify({ results: [{ wtp_id: H, serial: SN, os_version: OS, status: 'connected', connecting_from: IP, clients: 37, uptime: 7603190, wan_status: [{ interface: 'lan1', link_speed: 1000 }] }], status: 'success' }, null, 2),
+      mradio: () => JSON.stringify({ results: [{ wtp_id: H, radio: [{ radio_id: 1, band: '802.11ax-2G', channel: 6, tx_power: 14, clients: 9, channel_utilization: 41 }, { radio_id: 2, band: '802.11ax-5G', channel: 44, tx_power: 17, clients: 28, channel_utilization: 22 }] }], status: 'success' }, null, 2),
+      sysd: () => ['SNMPv2-MIB::sysDescr.0 = STRING: ' + x.sysDescr, 'SNMPv2-MIB::sysObjectID.0 = OID: ' + x.oid, 'SNMPv2-MIB::sysName.0 = STRING: ' + H, 'SNMPv2-MIB::sysUpTime.0 = Timeticks: (529011233) 61 days, 5:28:32.33', 'SNMPv2-MIB::sysContact.0 = STRING: noc@corp.example', 'SNMPv2-MIB::sysLocation.0 = STRING: Rack A3'].join('\n'),
+      ent: () => ['ENTITY-MIB::entPhysicalDescr.1 = STRING: ' + x.sysDescr, 'ENTITY-MIB::entPhysicalClass.1 = INTEGER: chassis(3)', 'ENTITY-MIB::entPhysicalName.1 = STRING: Chassis', 'ENTITY-MIB::entPhysicalHardwareRev.1 = STRING: B0', 'ENTITY-MIB::entPhysicalFirmwareRev.1 = STRING: ' + OS, 'ENTITY-MIB::entPhysicalSerialNum.1 = STRING: ' + SN, 'ENTITY-MIB::entPhysicalMfgName.1 = STRING: ' + x.vendor, 'ENTITY-MIB::entPhysicalModelName.1 = STRING: ' + M, 'ENTITY-MIB::entPhysicalDescr.2 = STRING: Power supply', 'ENTITY-MIB::entPhysicalClass.2 = INTEGER: powerSupply(6)', 'ENTITY-MIB::entPhysicalSerialNum.2 = STRING: PS21••••'].join('\n'),
+      ift: () => [1, 2, 3, 4].map((i) => ['IF-MIB::ifName.' + i + ' = STRING: ' + (i === 1 ? 'eth0' : i === 2 ? 'eth1' : i === 3 ? 'lo' : 'mgmt'), 'IF-MIB::ifHighSpeed.' + i + ' = Gauge32: ' + (i === 3 ? 0 : 1000), 'IF-MIB::ifOperStatus.' + i + ' = INTEGER: ' + (i === 2 ? 'down(2)' : 'up(1)'), 'IF-MIB::ifHCInOctets.' + i + ' = Counter64: ' + (88123012 * i), 'IF-MIB::ifAlias.' + i + ' = STRING: ' + (i === 1 ? 'to ' + N[0] : '')].join('\n')).join('\n'),
+      slldp: () => ['LLDP-MIB::lldpRemSysName.0.1.1 = STRING: ' + N[0], 'LLDP-MIB::lldpRemPortId.0.1.1 = STRING: Gi1/0/24', 'LLDP-MIB::lldpRemPortDesc.0.1.1 = STRING: ' + H, 'LLDP-MIB::lldpRemChassisId.0.1.1 = Hex-STRING: 70 6D 15 •• •• 81', 'LLDP-MIB::lldpRemSysDesc.0.1.1 = STRING: Cisco IOS Software [Cupertino], Catalyst L3 Switch Software', 'LLDP-MIB::lldpRemManAddrIfId.0.1.1.1.4.' + ip(21).replace(/\./g, '.') + ' = INTEGER: 10'].join('\n'),
+      scdp: () => ['CISCO-CDP-MIB::cdpCacheDeviceId.10101.1 = STRING: ' + N[0], 'CISCO-CDP-MIB::cdpCacheDevicePort.10101.1 = STRING: TenGigabitEthernet1/1/3', 'CISCO-CDP-MIB::cdpCachePlatform.10101.1 = STRING: cisco ' + M, 'CISCO-CDP-MIB::cdpCacheAddress.10101.1 = Hex-STRING: (' + ip(21) + ')', 'CISCO-CDP-MIB::cdpCacheDeviceId.10102.1 = STRING: ' + N[1], 'CISCO-CDP-MIB::cdpCacheDevicePort.10102.1 = STRING: port2', 'CISCO-CDP-MIB::cdpCachePlatform.10102.1 = STRING: Fortinet FortiGate'].join('\n'),
+      ups: () => ['UPS-MIB::upsIdentManufacturer.0 = STRING: ' + x.vendor, 'UPS-MIB::upsIdentModel.0 = STRING: ' + (x.vendor === 'APC' ? 'Smart-UPS 3000' : '9PX 3000'), 'UPS-MIB::upsBatteryStatus.0 = INTEGER: batteryNormal(2)', 'UPS-MIB::upsSecondsOnBattery.0 = INTEGER: 0 seconds', 'UPS-MIB::upsEstimatedMinutesRemaining.0 = INTEGER: 38 minutes', 'UPS-MIB::upsEstimatedChargeRemaining.0 = INTEGER: 100 percent', 'UPS-MIB::upsInputVoltage.1 = INTEGER: 121 RMS Volts', 'UPS-MIB::upsOutputPercentLoad.1 = INTEGER: 34 percent', 'UPS-MIB::upsAlarmsPresent.0 = Gauge32: 0'].join('\n'),
+      p22: () => ['Connecting to ' + IP + ':22 from ' + col + '…', 'Connected in 3 ms', 'Server banner: SSH-2.0-OpenSSH_7.4', 'Key exchange: curve25519-sha256 · host key ssh-ed25519 SHA256:pQ1x…f8Kd', '→ Something answers SSH, but the banner is not a network OS. Likely an endpoint.'].join('\n'),
+      p443: () => ['Connecting to ' + IP + ':443 from ' + col + '…', 'Connection refused (RST) after 2 ms', '→ No HTTPS or API service.'].join('\n'),
+      p161: () => ['snmpget -v3 -l authPriv ' + IP + ' sysDescr.0 → timeout (no SNMPv3 user)', 'snmpget -v2c ' + IP + ' sysDescr.0 → SNMPv2-MIB::sysDescr.0 = STRING: "Cisco IP Phone CP-8841, SIP 14.2(1)"', '', '→ Vendor guess: Cisco IP phone. Not a network device; add it as an endpoint or ignore it.'].join('\n'),
+      uver: () => ['Login succeeded as ro-audit, but the device did not accept the command:', '-sh: show: command not found', '→ Not Cisco IOS. The prompt looks like a Linux shell.'].join('\n'),
+      ufgt: () => ['-sh: get: command not found', '→ Not FortiOS.'].join('\n'),
+    };
+    return T[id] ? T[id]() : null;
+  }
+  renderVals() {
+    const s = this.state;
+    const raw = this.props.device || { host: 'core-sw-01', vendor: 'Cisco', model: 'C9300-48P', os: 'IOS-XE 17.9.4a', ip: '192.0.2.20', serial: 'FOC2419••••', source: 'Live · SSH via nw-hq-vm' };
+    const cust = this.props.cust || 'nw';
+    let vendor = raw.vendor || '';
+    let model = raw.model || '';
+    if (!vendor) { if (/^Cisco /.test(model)) { vendor = 'Cisco'; model = model.slice(6); } else if (/Forti/.test(model)) vendor = 'Fortinet'; else { const sp = model.split(' '); vendor = sp[0] || 'Unknown'; model = sp.slice(1).join(' ') || model; } }
+    const os = raw.os || '—';
+    const d = { host: raw.host, vendor, model, os, ip: raw.ip || '—' };
+    const src = (raw.source || '').toLowerCase();
+    let platform = 'snmp';
+    if (raw.kind === 'unk' || raw.kind === 'ext' || vendor === 'Unknown' || vendor === 'Provider') platform = 'unknown';
+    else if (vendor === 'Cisco') platform = /IOS-XE/.test(os) ? 'iosxe' : 'ios';
+    else if (vendor === 'Fortinet') platform = /FortiGate/.test(model) ? 'fortigate' : /FortiSwitch/.test(model) ? 'fortiswitch' : /FortiAP/.test(model) ? 'fortiap' : 'fortigate';
+    if ((raw.kind === 'snmp' || /^snmp|snmp only|via controller|controller ap table/.test(src)) && platform !== 'unknown' && vendor !== 'Cisco' && platform !== 'fortigate') platform = 'snmp';
+    const PL = { iosxe: 'Cisco IOS-XE templates', ios: 'Cisco IOS templates', fortigate: 'FortiOS templates', fortiswitch: 'FortiSwitch (managed) templates', fortiap: 'FortiAP (managed) templates', snmp: 'Generic SNMP templates', unknown: 'Not yet identified' };
+    const C = { nw: ['nw-hq-vm', 'fw-hq-01', 'ro-audit', 'FortiGate HQ API'], bp: ['bp-dc1-vm', 'bp-fw-01', 'ro-audit (held on bp-dc1-vm)', 'FortiGate DC1 API (held on bp-dc1-vm)'], lk: ['lk-vm-01', 'lk-fw-01', 'district ro-audit', 'FortiGate 100F API'], lab: ['lab-vm-a', 'lab-fgt-01', 'lab-ro', 'lab FortiGate API'], om: ['om-plant-vm', 'om-fw-01', 'plant ro (on site)', 'plant API (on site)'] }[cust] || ['collector', 'firewall', 'ro-audit', 'API token'];
+    const NB = { nw: ['core-sw-02', 'fw-hq-01', 'acc-fsw-11', 'acc-fsw-12', 'core-sw-01', 'dist-sw-03'], bp: ['bp-core-02', 'bp-fw-01', 'bp-acc-01', 'bp-acc-02', 'bp-core-01', 'bp-fsw-01'], lk: ['lk-core-02', 'lk-fw-01', 'lk-acc-101', 'lk-acc-102', 'lk-core-01', 'lk-wlc-01'], lab: ['lab-c8k-02', 'lab-fgt-01', 'lab-sw-a', 'lab-sw-b', 'lab-c8k-01', 'lab-iosv-01'], om: ['om-core-01', 'om-fw-01', 'om-sw-11', 'om-sw-12', 'om-core-02', 'om-sw-13'] }[cust] || ['neighbor-1', 'neighbor-2', 'neighbor-3', 'neighbor-4'];
+    const STORE = {
+      nw: ['Cartio database', 'Hosted', 'controller PostgreSQL · schema scoped to Northwind Clinics · Q4 2026 assessment'],
+      bp: ['Bluepeak’s on-site database', 'On site', 'postgresql://bp-db01.bluepeak.local/cartio · written by bp-dc1-vm · Annual review 2026'],
+      lk: ['Cartio database', 'Hosted', 'controller PostgreSQL · schema scoped to Larkfield School District · Wi-Fi refresh baseline'],
+      om: ['Ostrander’s on-site file share', 'On site', '\\\\om-files01\\cartio\\plant-network-review · written by om-plant-vm'],
+      lab: ['Cartio database', 'Hosted', 'controller PostgreSQL · schema scoped to ITCN Lab · Driver regression'],
+    }[cust] || ['Cartio database', 'Hosted', 'controller PostgreSQL'];
+    const onsite = STORE[1] === 'On site';
+    const viaMatch = (raw.source || '').match(/via ([a-z0-9-]+)/i);
+    const collector = raw.collector && raw.collector.indexOf('upload') !== 0 ? raw.collector : viaMatch && /vm|laptop/.test(viaMatch[1]) ? viaMatch[1] : C[0];
+    const offline = cust === 'lk';
+    const fromUpload = src.indexOf('upload') >= 0;
+    const M = {
+      ssh: ['SSH', 'port 22 · ' + C[2]], api: ['REST API', 'HTTPS GET · ' + C[3]], snmp: ['SNMPv3', 'get / walk · ' + C[2]], snmp2: ['SNMPv2c', 'get / walk · community'],
+      managed: ['Through ' + C[1], 'FortiGate API · managed device'], probe: ['Reachability probe', 'TCP 22, 443 · UDP 161'],
+    };
+    const methodsFor = { iosxe: ['ssh', 'snmp'], ios: ['ssh', 'snmp'], fortigate: ['api', 'ssh', 'snmp'], fortiswitch: ['managed', 'ssh'], fortiap: ['managed'], snmp: ['snmp', 'snmp2'], unknown: ['probe', 'ssh', 'snmp'] }[platform];
+    const disabledM = { fortiswitch: { ssh: true } }[platform] || {};
+    const method = s.method && methodsFor.indexOf(s.method) >= 0 ? s.method : methodsFor[0];
+    const T = {
+      'iosxe/ssh': [['ver', 'Inventory', 'Model, OS, uptime, serial', 'show version'], ['inv', 'Inventory', 'Chassis, modules, optics', 'show inventory'], ['lic', 'Inventory', 'Licence level', 'show license summary'], ['ipbr', 'Interfaces', 'L3 interfaces and state', 'show ip interface brief'], ['stat', 'Interfaces', 'Ports, VLAN, speed, duplex', 'show interfaces status'], ['err', 'Interfaces', 'Error counters', 'show interfaces counters errors'], ['cdp', 'Neighbors', 'CDP neighbors with platform and IP', 'show cdp neighbors detail'], ['lldp', 'Neighbors', 'LLDP neighbors', 'show lldp neighbors detail'], ['route', 'Routing', 'Routing table', 'show ip route'], ['ospf', 'Routing', 'OSPF adjacencies', 'show ip ospf neighbor'], ['bgp', 'Routing', 'BGP peers', 'show ip bgp summary'], ['run', 'Config', 'Running config (secrets masked)', 'show running-config'], ['env', 'Health', 'Power, fans, temperature', 'show environment all']],
+      'ios/ssh': [['ver', 'Inventory', 'Model, OS, uptime, serial', 'show version'], ['inv', 'Inventory', 'Chassis and modules', 'show inventory'], ['ipbr', 'Interfaces', 'L3 interfaces and state', 'show ip interface brief'], ['stat', 'Interfaces', 'Ports, VLAN, speed, duplex', 'show interfaces status'], ['err', 'Interfaces', 'Error counters', 'show interfaces counters errors'], ['cdp', 'Neighbors', 'CDP neighbors with platform and IP', 'show cdp neighbors detail'], ['lldp', 'Neighbors', 'LLDP neighbors', 'show lldp neighbors detail'], ['route', 'Routing', 'Routing table', 'show ip route'], ['eigrp', 'Routing', 'EIGRP neighbors', 'show ip eigrp neighbors'], ['run', 'Config', 'Running config (secrets masked)', 'show running-config']],
+      'fortigate/api': [['fstat', 'Inventory', 'Model, version, serial, HA mode', 'GET /api/v2/monitor/system/status'], ['fha', 'Inventory', 'HA peers', 'GET /api/v2/monitor/system/ha-peer'], ['fif', 'Interfaces', 'Interfaces and link state', 'GET /api/v2/monitor/system/interface'], ['flldp', 'Neighbors', 'LLDP neighbors', 'GET /api/v2/monitor/network/lldp/neighbors'], ['fsw', 'Neighbors', 'Managed FortiSwitches', 'GET /api/v2/monitor/switch-controller/managed-switch/status'], ['fap', 'Neighbors', 'Managed FortiAPs', 'GET /api/v2/monitor/wifi/managed_ap'], ['froute', 'Routing', 'IPv4 routing table', 'GET /api/v2/monitor/router/ipv4'], ['fbak', 'Config', 'Config backup (secrets masked)', 'GET /api/v2/monitor/system/config/backup?scope=global']],
+      'fortigate/ssh': [['cstat', 'Inventory', 'Model, version, serial', 'get system status'], ['cha', 'Inventory', 'HA status', 'get system ha status'], ['cperf', 'Health', 'CPU, memory, sessions', 'get system performance status'], ['cif', 'Interfaces', 'Physical interfaces', 'get system interface physical'], ['croute', 'Routing', 'Routing table', 'get router info routing-table all'], ['cospf', 'Routing', 'OSPF neighbors', 'get router info ospf neighbor'], ['cbgp', 'Routing', 'BGP summary', 'get router info bgp summary'], ['cshow', 'Config', 'Full config (secrets masked)', 'show full-configuration']],
+      'fortiswitch/managed': [['msw', 'Inventory', 'Model, serial, firmware, uplink', 'GET /api/v2/monitor/switch-controller/managed-switch/status?mkey=' + d.host], ['mport', 'Interfaces', 'Port status and PoE', 'GET /api/v2/monitor/switch-controller/managed-switch/port-stats?mkey=' + d.host], ['mlldp', 'Neighbors', 'LLDP seen by the switch', 'GET /api/v2/monitor/switch-controller/managed-switch/lldp?mkey=' + d.host]],
+      'fortiap/managed': [['map', 'Inventory', 'Model, serial, firmware, clients', 'GET /api/v2/monitor/wifi/managed_ap?wtp_id=' + d.host], ['mradio', 'Interfaces', 'Radios and channels', 'GET /api/v2/monitor/wifi/managed_ap?wtp_id=' + d.host + '&format=radio']],
+      'snmp': [['sysd', 'Inventory', 'sysDescr, sysObjectID, sysName', 'get 1.3.6.1.2.1.1.1.0 1.3.6.1.2.1.1.2.0 1.3.6.1.2.1.1.5.0'], ['ent', 'Inventory', 'ENTITY-MIB: model and serial', 'walk 1.3.6.1.2.1.47.1.1.1'], ['ift', 'Interfaces', 'IF-MIB interface table', 'walk 1.3.6.1.2.1.31.1.1'], ['slldp', 'Neighbors', 'LLDP-MIB remote table', 'walk 1.0.8802.1.1.2.1.4.1'], ['scdp', 'Neighbors', 'CISCO-CDP-MIB cache (Cisco only)', 'walk 1.3.6.1.4.1.9.9.23.1.2.1']],
+      'unknown/probe': [['p22', 'Reachability', 'Is SSH open?', 'tcp-connect ' + d.ip + ':22'], ['p443', 'Reachability', 'Is an HTTPS/API port open?', 'tcp-connect ' + d.ip + ':443'], ['p161', 'Reachability', 'Does it answer SNMP sysDescr?', 'snmp-get ' + d.ip + ' 1.3.6.1.2.1.1.1.0']],
+    };
+    const key = method === 'snmp' || method === 'snmp2' ? 'snmp' : platform + '/' + method;
+    let tpls = (T[key] || T['iosxe/ssh']).slice();
+    if (key === 'snmp' && vendor !== 'Cisco') tpls = tpls.filter((t) => t[0] !== 'scdp');
+    if (key === 'snmp' && /APC|Eaton/.test(vendor)) tpls.push(['ups', 'Power', 'UPS-MIB battery and load', 'walk 1.3.6.1.2.1.33.1']);
+    if (platform === 'unknown' && method === 'ssh') tpls = [['uver', 'Identify', 'Try a Cisco banner', 'show version'], ['ufgt', 'Identify', 'Try a FortiOS banner', 'get system status']];
+    if (platform === 'unknown' && method === 'snmp') tpls = T.snmp.slice(0, 3);
+    const defaultPick = {}; tpls.slice(0, 3).forEach((t) => { defaultPick[t[0]] = true; });
+    const picked = s.picked || defaultPick;
+    const all = tpls.concat(s.extra);
+    const sel = all.filter((t) => picked[t[0]]);
+    const groupsMap = {}; const order = [];
+    all.forEach((t) => { if (!groupsMap[t[1]]) { groupsMap[t[1]] = []; order.push(t[1]); } groupsMap[t[1]].push(t); });
+    const isApi = key.indexOf('/api') > 0 || key.indexOf('/managed') > 0;
+    const isSnmp = key === 'snmp';
+    const isForti = platform === 'fortigate' && method === 'ssh';
+    const check = (c) => {
+      c = c.trim(); if (!c) return 'Type a command first';
+      if (/[;>]|\|\s*(redirect|append|tee)|\btclsh\b/i.test(c)) return 'Rejected: redirects, chained commands and scripting are not allowed';
+      if (isApi) return /^GET \/api\/v2\/(monitor|cmdb)\//.test(c) ? null : 'Rejected: only GET requests to /api/v2/monitor or /api/v2/cmdb are allowed';
+      if (isSnmp || (platform === 'unknown' && method === 'snmp')) return /^(get|walk) [0-9.\s]+$/.test(c) ? null : 'Rejected: only SNMP get or walk of numeric OIDs';
+      if (isForti || platform === 'fortiswitch') return /^(get|show) [a-z0-9 \-_.]+$/i.test(c) && !/\b(execute|config|diagnose)\b/.test(c) ? null : 'Rejected: only get and show commands are on the FortiOS allow-list';
+      if (/^(conf|configure|reload|write|copy|clear|debug|delete|erase|format|enable|undebug|request|terminal)\b/i.test(c)) return 'Rejected: “' + c.split(' ')[0] + '” changes the device and is not on the read-only allow-list (ADR-0004)';
+      return /^show [a-z0-9 \-/._:]+(\s\|\s(include|exclude|begin|section|count) .+)?$/i.test(c) ? null : 'Rejected: only show commands (optionally piped to include, exclude, begin, section or count)';
+    };
+    const addCustom = () => {
+      const err = check(s.custom); if (err) return this.setState({ customMsg: err });
+      const id = 'x' + (s.extra.length + 1);
+      this.setState({ extra: s.extra.concat([[id, 'Your commands', 'Allowed by the read-only check', s.custom.trim()]]), picked: { ...picked, [id]: true }, custom: '', customMsg: 'Added' });
+    };
+    const ipBase = /^\d+\.\d+\.\d+\.\d+$/.test(d.ip) ? d.ip.replace(/\d+$/, '') : '10.0.0.';
+    const fgModel = /FortiGate/.test(model) ? model.replace('FortiGate', '').trim() || 'VM64' : '200F';
+    const fgVer = /FortiOS/.test(os) ? os.replace('FortiOS ', '') : '7.2.8';
+    const OIDS = { Cisco: '1.3.6.1.4.1.9.1.2494', Fortinet: '1.3.6.1.4.1.12356.101.1.2000', APC: '1.3.6.1.4.1.318.1.3.4.5', Eaton: '1.3.6.1.4.1.534.1', Aruba: '1.3.6.1.4.1.14823.1.1.32', Linux: '1.3.6.1.4.1.8072.3.2.10' };
+    const ctxX = { H: d.host, M: model, OS: os, IP: d.ip, SN: raw.serial && raw.serial !== '—' ? raw.serial : 'SN••••', N: NB.filter((n) => n !== d.host), base: ipBase,
+      router: /ISR|8000|CSR|IOSv$|^IOSv/.test(model) || raw.kind === 'rtr', ios: platform === 'ios', fgModel, fgVer, col: collector, vendor,
+      sysDescr: (vendor + ' ' + model + ' ' + (os === '—' ? '' : os)).trim(), oid: OIDS[vendor] || '1.3.6.1.4.1.8072.3.2.10' };
+    const outFor = (t) => {
+      const known = this.out(t[0], ctxX);
+      if (known) return known;
+      const body = isApi ? JSON.stringify({ http_method: 'GET', results: [{ name: d.host, status: 'ok' }], status: 'success' }, null, 2) : t[3].indexOf('arp') >= 0 ? ['Protocol  Address          Age (min)  Hardware Addr   Type   Interface', 'Internet  ' + ipBase + '1        0   0009.0f••.••01  ARPA   Vlan10', 'Internet  ' + d.ip + '     -   706d.15••.••80  ARPA   Vlan10', 'Internet  ' + ipBase + '35       4   00e0.4c••.••22  ARPA   Vlan10', 'Internet  ' + ipBase + '36      12   00e0.4c••.••23  ARPA   Vlan10'].join('\n') : ['! Output of “' + t[3] + '” on ' + d.host, '! 1 section, parsed by the generic text parser', '', d.host + '#' + t[3], '  (device output shown here exactly as returned)'].join('\n');
+      return body;
+    };
+    const prompt = (t) => (isApi ? t[3] : isSnmp ? 'snmp ' + t[3] : platform === 'unknown' && method === 'probe' ? t[3] : d.host + (isForti ? ' # ' : '# ') + t[3]);
+    const run = () => {
+      if (offline) return this.setState({ phase: 'queued', done: '', saved: false });
+      this.setState({ phase: 'running', done: '', saved: false, collapsed: {}, filter: '' });
+      this.t = setTimeout(() => this.setState({ phase: 'done', ran: sel.map((t) => t[0]) }), 1100);
+    };
+    const ran = s.phase === 'done' ? all.filter((t) => s.ran.indexOf(t[0]) >= 0) : [];
+    const q = s.filter.trim().toLowerCase();
+    let totalLines = 0, matchLines = 0;
+    const outputs = s.phase === 'queued' ? sel.map((t) => ({ prompt: prompt(t), status: 'Queued · waits for ' + collector, statusColor: '#FCD34D', lines: '', text: collector + ' is offline. This command runs when it reconnects; you’ll see the output in Collectors & jobs.', open: true, expanded: 'true', rot: 90, toggleLabel: 'Collapse', toggle: () => {}, copy: () => {}, copied: '' }))
+      : ran.map((t, i) => {
+        const lines = outFor(t).split('\n');
+        totalLines += lines.length;
+        const numbered = lines.map((l, n) => [String(n + 1).padStart(3, ' ') + '  ' + l, l]);
+        const shown = q ? numbered.filter((x) => x[1].toLowerCase().indexOf(q) >= 0) : numbered;
+        matchLines += shown.length;
+        const isOpen = !s.collapsed[t[0]];
+        return { prompt: prompt(t), lines: q ? shown.length + ' of ' + lines.length + ' lines' : lines.length + ' lines',
+          status: (t[0] === 'p443' ? 'closed · ' : 'ok · ') + (0.3 + (i % 4) * 0.2).toFixed(1) + ' s', statusColor: t[0] === 'p443' ? '#FDBA74' : '#86EFAC',
+          text: shown.length ? shown.map((x) => x[0]).join('\n') : '  (no lines match “' + s.filter + '”)',
+          open: isOpen, expanded: isOpen ? 'true' : 'false', rot: isOpen ? 90 : 0, toggleLabel: isOpen ? 'Collapse output' : 'Expand output',
+          toggle: () => this.setState({ collapsed: { ...s.collapsed, [t[0]]: isOpen } }),
+          copy: () => { this.setState({ copied: t[0] }); clearTimeout(this.c); this.c = setTimeout(() => this.setState({ copied: null }), 1500); },
+          copied: s.copied === t[0] ? 'Copied' : '' };
+      });
+    const counts = { Inventory: ['device record', 'device records', 1], Interfaces: ['interface', 'interfaces', 28], Neighbors: ['neighbor link', 'neighbor links', 4], Routing: ['route or adjacency', 'routes and adjacencies', 14], Config: ['config snapshot', 'config snapshots', 1], Health: ['health reading', 'health readings', 6], Power: ['power reading', 'power readings', 9], Reachability: ['reachability result', 'reachability results', 1], Identify: ['identification attempt', 'identification attempts', 1], 'Your commands': ['raw output', 'raw outputs', 1] };
+    const agg = {}; ran.forEach((t) => { agg[t[1]] = (agg[t[1]] || 0) + (counts[t[1]] ? counts[t[1]][2] : 1); });
+    const savedRows = Object.keys(agg).map((g) => ({ k: g, v: agg[g] + ' ' + (counts[g] ? (agg[g] === 1 ? counts[g][0] : counts[g][1]) : 'records') }));
+    const methodNote = platform === 'fortiswitch' ? 'Managed FortiSwitches are read through ' + C[1] + '. Direct SSH to the switch is turned off by FortiLink.'
+      : fromUpload ? 'This device came from an uploaded file; no live access was granted at the time. Try a method below; if it fails, ask the customer for read-only access.'
+      : platform === 'unknown' ? 'Not identified yet. Start with a reachability probe, then try SSH or SNMP to identify it.' : '';
+    return {
+      d, platformLabel: PL[platform], collector,
+      overlayCls: s.max ? 'cm-overlay max' : 'cm-overlay', dlgCls: s.max ? 'cm-dialog max' : 'cm-dialog',
+      maxLabel: s.max ? 'Restore size' : 'Maximize', maxIcon: s.max ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+      toggleMax: () => this.setState({ max: !s.max }),
+      showMethods: !s.wide, showLeft: !s.wide,
+      wideAttr: s.wide ? 'true' : 'false', wideLabel: s.wide ? 'Show commands' : 'Output only', wideIcon: s.wide ? 'M4 6h6v12H4zM14 6h6 M14 12h6 M14 18h6' : 'M4 6h16v12H4z',
+      toggleWide: () => this.setState({ wide: !s.wide }),
+      relay: offline ? { text: 'Via ' + collector + ' · offline', bg: '#FEF3C7', fg: '#854D0E', dot: '#F59E0B' } : { text: 'Via ' + collector + ' · online, outbound channel', bg: '#DCFCE7', fg: '#166534', dot: '#22C55E' },
+      store: { name: STORE[0], short: onsite ? STORE[0].replace('’s', '’s') : 'Cartio database (Hosted)', path: STORE[2], bg: onsite ? '#EDE9FE' : '#E0F2FE', fg: onsite ? '#5B21B6' : '#075985', panel: onsite ? '#F5F3FF' : '#F0F9FF', border: onsite ? '#DDD6FE' : '#BAE6FD' },
+      cred: method === 'api' || method === 'managed' ? C[3] : method === 'snmp2' ? 'community (write-only)' : method === 'probe' ? 'none needed' : C[2],
+      methods: methodsFor.map((m) => ({ label: M[m][0], detail: disabledM[m] ? 'Not available for managed switches' : M[m][1], dot: disabledM[m] ? '#CBD5E1' : '#22C55E', disabled: !!disabledM[m], checked: method === m ? 'true' : 'false', cls: method === m ? 'cm-method on' : 'cm-method', pick: () => this.setState({ method: m, picked: null, extra: [], phase: 'idle', done: '', customMsg: '', saved: false, ran: [] }) })),
+      methodNote,
+      tplTitle: PL[platform].replace(' templates', '') + ' · ' + M[method][0],
+      groups: order.map((name) => ({ name, items: groupsMap[name].map((t) => ({ cmd: t[3], label: t[2], on: !!picked[t[0]], toggle: () => this.setState({ picked: { ...picked, [t[0]]: !picked[t[0]] } }) })) })),
+      selectAll: () => { const p = {}; all.forEach((t) => { p[t[0]] = true; }); this.setState({ picked: p }); },
+      selectNone: () => this.setState({ picked: {} }),
+      custom: s.custom, onCustom: (e) => this.setState({ custom: e.target.value, customMsg: '' }),
+      onCustomKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } },
+      addCustom,
+      customPh: isApi ? 'GET /api/v2/monitor/…' : isSnmp ? 'walk 1.3.6.1.2.1.4.20' : isForti ? 'get system arp' : 'show ip arp | include Vlan10',
+      customInvalid: s.customMsg && s.customMsg !== 'Added' ? 'true' : 'false',
+      customBorder: s.customMsg && s.customMsg !== 'Added' ? '#F04438' : '#D0D5DD',
+      customMsg: s.customMsg || 'Checked against the read-only allow-list before it runs.',
+      customMsgColor: s.customMsg === 'Added' ? '#15803D' : s.customMsg ? '#B42318' : '#475467',
+      cantRun: sel.length === 0 || s.phase === 'running',
+      runLabel: s.phase === 'running' ? 'Running…' : offline ? 'Queue ' + sel.length + ' for ' + collector : 'Run ' + sel.length + (sel.length === 1 ? ' command' : ' commands'),
+      run,
+      selText: sel.length ? 'One read-only session · parsed with the same parsers as discovery' : 'Select at least one command',
+      idle: s.phase === 'idle', running: s.phase === 'running', runningText: collector + ' → ' + d.ip + ' · connecting with ' + M[method][0] + '…',
+      outputs, hasOutput: s.phase === 'done',
+      filter: s.filter, onFilter: (e) => this.setState({ filter: e.target.value }),
+      matchText: q ? matchLines + ' of ' + totalLines + ' lines match' : totalLines + ' lines in ' + ran.length + (ran.length === 1 ? ' output' : ' outputs'),
+      expandAll: () => this.setState({ collapsed: {} }),
+      collapseAll: () => { const c = {}; ran.forEach((t) => { c[t[0]] = true; }); this.setState({ collapsed: c }); },
+      saveLabel: s.saved ? 'Saved' : 'Save to ' + (onsite ? 'on-site store' : 'database'), savedAlready: s.saved,
+      save: () => this.setState({ saved: true, done: '' }),
+      saved: s.saved && s.phase === 'done',
+      savedSummary: 'Raw output and parsed records for ' + d.host + ', tagged Source = manual collection by Yandy R. and linked to the engagement. Secrets were masked on ' + collector + '. ' + (onsite ? 'Nothing was written to the controller; it only recorded that the save succeeded.' : 'Visible now in Inventory, Site map and Findings.') + ' Logged in the audit log.',
+      savedRows,
+      undo: () => this.setState({ saved: false, done: 'Save undone · the records were removed' }),
+      seed: () => this.setState({ done: 'Discovery queued with ' + d.host + ' as the seed' }),
+      download: () => this.setState({ done: 'Downloaded ' + d.host + '_' + method + '.txt (secrets masked)' }),
+      close: () => { if (this.props.onClose) this.props.onClose(); },
+      onKey: (e) => { if (e.key === 'Escape' && this.props.onClose) this.props.onClose(); },
+    };
+  }
+}
+</script>
+</body>
+</html>

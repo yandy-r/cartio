@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Site map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.seg{border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;padding:8px 14px;border-radius:7px;color:#475467;cursor:pointer;min-height:36px}
+.seg:hover{color:#101828}
+.seg.on{background:#FFFFFF;color:#101828;box-shadow:0 1px 2px rgba(16,24,40,.1)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.icon-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#344054}
+.icon-btn:hover{background:#EEF2F6}
+.node{position:absolute;width:112px;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;transition:opacity .15s}
+.node:focus-visible .nb{outline:3px solid #0E7490;outline-offset:3px}
+.node:hover .nb{transform:translateY(-2px);box-shadow:0 8px 18px rgba(14,26,36,.18)}
+.nb{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#FFFFFF;transition:transform .15s,box-shadow .15s;position:relative;box-sizing:border-box}
+.link{position:absolute;height:14px;transform-origin:0 50%;display:flex;align-items:center;cursor:pointer;border:0;background:transparent;padding:0}
+.link:hover span,.link:focus span{filter:brightness(.7)}
+.dtab{border:0;background:transparent;font:inherit;font-size:13px;padding:10px 2px;margin-right:18px;color:#475467;cursor:pointer;border-bottom:2px solid transparent;min-height:40px}
+.dtab.on{color:#101828;font-weight:600;border-bottom-color:#0E7490}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;border:0;background:transparent;font:inherit;font-size:14px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#101828;text-align:left;min-height:44px}
+.menu button:hover{background:#F3F5F7}
+.sitetab{border:1px solid transparent;background:transparent;font:inherit;font-size:14px;padding:8px 14px;border-radius:999px;color:#475467;cursor:pointer;min-height:40px;display:inline-flex;gap:8px;align-items:center}
+.sitetab:hover{background:#E9EDF1}
+.sitetab.on{background:#0E1A24;color:#FFFFFF}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a class="on" href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> / {{ename}}</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Site map</h1>
+</div>
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: relative">
+<span style="font-size: 13px; color: #475467">{{discovered}}</span>
+<button class="btn" type="button" disabled="{{readOnly}}" onClick="{{rediscover}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7M20 4v5h-5"></path></svg>Re-discover</button>
+<button class="btn primary" type="button" aria-haspopup="menu" aria-expanded="{{exportExpanded}}" onClick="{{toggleExport}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>Export map ▾</button>
+<sc-if value="{{exportOpen}}" hint-placeholder-val="{{ false }}">
+<div class="menu" role="menu" style="position: absolute; z-index: 40; right: 0; top: 52px; width: 300px; background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 12px; padding: 6px; box-shadow: 0 16px 40px rgba(16,24,40,.16)">
+<sc-for list="{{exports}}" as="x" hint-placeholder-count="5">
+<button role="menuitem" type="button" onClick="{{x.pick}}">
+<span class="mono" style="font-size: 11px; width: 44px; color: #0E7490; font-weight: 500">{{x.ext}}</span>
+<span><span style="display: block; font-weight: 500">{{x.label}}</span><span style="display: block; font-size: 12px; color: #475467">{{x.hint}}</span></span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{locked}}" hint-placeholder-val="{{ false }}">
+<dc-import name="OnsiteLocked" screen="The site map" customer="{{cname}}" hint-size="100%,420px"></dc-import>
+</sc-if>
+
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<div role="tablist" aria-label="Sites" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{sites}}" as="s" hint-placeholder-count="3">
+<button role="tab" type="button" class="{{s.cls}}" aria-selected="{{s.selected}}" onClick="{{s.pick}}">{{s.name}} <span style="font-size: 12px; opacity: .75">{{s.meta}}</span></button>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<section aria-label="Topology" style="flex: 999 1 620px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; overflow: hidden">
+<sc-if value="{{showMap}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #E4E8EC">
+<div role="radiogroup" aria-label="Layer" style="display: flex; background: #EEF2F6; padding: 3px; border-radius: 9px">
+<button type="button" role="radio" aria-checked="{{l2Checked}}" class="{{l2Cls}}" onClick="{{setL2}}">L2 · LLDP/CDP</button>
+<button type="button" role="radio" aria-checked="{{l3Checked}}" class="{{l3Cls}}" onClick="{{setL3}}">L3 · routing</button>
+</div>
+<label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #344054; min-height: 40px; cursor: pointer"><input type="checkbox" checked="{{overlay}}" onChange="{{toggleOverlay}}" style="width: 18px; height: 18px; accent-color: #0E7490">Findings overlay</label>
+<label style="display: inline-flex; align-items: center; gap: 8px; background: #F3F5F7; border-radius: 8px; padding: 0 10px; min-height: 40px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find a device</span>
+<input type="search" placeholder="Find hostname, IP, serial" value="{{query}}" onInput="{{onSearch}}" style="border: 0; outline: none; background: transparent; font: inherit; font-size: 13px; width: 180px">
+</label>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; align-items: center; gap: 2px; border: 1px solid #E4E8EC; border-radius: 10px">
+<button class="icon-btn" type="button" aria-label="Zoom out" onClick="{{zoomOut}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<span class="mono" style="font-size: 12px; width: 44px; text-align: center; color: #475467">{{zoomLabel}}</span>
+<button class="icon-btn" type="button" aria-label="Zoom in" onClick="{{zoomIn}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button class="icon-btn" type="button" aria-label="Fit to view" onClick="{{zoomFit}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg></button>
+</div>
+</div>
+
+<div ref="{{mapRef}}" onClick="{{bgClick}}" style="overflow: auto; height: {{viewH}}px; display: flex; background-color: #FAFBFC; background-image: radial-gradient(#DCE2E8 1px, transparent 1px); background-size: 20px 20px">
+<div style="width: {{mapW}}px; height: {{mapH}}px; position: relative; margin: auto; flex: none">
+<div style="position: absolute; left: 0; top: 0; width: 980px; height: 620px; transform: scale({{zoom}}); transform-origin: 0 0">
+<sc-for list="{{links}}" as="l" hint-placeholder-count="12">
+<button type="button" class="link" aria-label="{{l.aria}}" onMouseEnter="{{l.enter}}" onMouseLeave="{{leave}}" onFocus="{{l.enter}}" onBlur="{{leave}}" style="left: {{l.x}}px; top: {{l.y}}px; width: {{l.w}}px; transform: rotate({{l.a}}deg); opacity: {{l.op}}">
+<span style="display: block; width: 100%; border-top: {{l.weight}}px {{l.dash}} {{l.color}}"></span>
+</button>
+</sc-for>
+<sc-for list="{{linkLabels}}" as="t" hint-placeholder-count="0">
+<span class="mono" style="position: absolute; left: {{t.x}}px; top: {{t.y}}px; transform: translate(-50%, -50%); font-size: 10px; background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 4px; padding: 1px 5px; color: #344054; pointer-events: none; white-space: nowrap">{{t.text}}</span>
+</sc-for>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="12">
+<button type="button" class="node" aria-label="{{n.aria}}" aria-pressed="{{n.pressed}}" onMouseEnter="{{n.enter}}" onMouseLeave="{{leave}}" onFocus="{{n.enter}}" onBlur="{{leave}}" onClick="{{n.pin}}" style="left: {{n.left}}px; top: {{n.top}}px; opacity: {{n.op}}">
+<span class="nb" style="border: {{n.bw}}px {{n.bstyle}} {{n.bc}}; background: {{n.bg}}">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{n.ic}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+<sc-if value="{{n.badge}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; top: -8px; right: -8px; min-width: 20px; height: 20px; border-radius: 10px; background: {{n.badgeBg}}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #FFFFFF; box-sizing: border-box; padding: 0 4px">{{n.badge}}</span>
+</sc-if>
+</span>
+<span class="mono" style="font-size: 11px; font-weight: 500; color: #101828; background: {{n.labelBg}}; padding: 1px 6px; border-radius: 4px; white-space: nowrap">{{n.host}}</span>
+<span style="font-size: 10px; color: #475467; margin-top: -4px; white-space: nowrap">{{n.sub}}</span>
+</button>
+</sc-for>
+
+<sc-if value="{{pop}}" hint-placeholder-val="{{ false }}">
+<div role="tooltip" style="position: absolute; z-index: 30; left: {{pop.left}}px; top: {{pop.top}}px; width: 300px; background: #0E1A24; color: #E6EDF3; border-radius: 12px; padding: 14px 16px; box-shadow: 0 16px 40px rgba(14,26,36,.32); font-size: 12px; line-height: 1.45; pointer-events: none">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: flex-start">
+<div><div class="mono" style="font-size: 14px; color: #FFFFFF; font-weight: 500">{{pop.host}}</div><div style="color: #C9D4DE">{{pop.vendor}} {{pop.model}}</div></div>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {{pop.osBg}}; color: {{pop.osFg}}; white-space: nowrap">{{pop.osState}}</span>
+</div>
+<div style="display: grid; grid-template-columns: 84px 1fr; gap: 3px 10px; margin-top: 10px">
+<span style="color: #8FA3B5">Role</span><span>{{pop.roleText}}</span>
+<span style="color: #8FA3B5">OS</span><span class="mono">{{pop.os}}</span>
+<span style="color: #8FA3B5">Mgmt IP</span><span class="mono">{{pop.ip}}</span>
+<span style="color: #8FA3B5">Serial</span><span class="mono">{{pop.serial}}</span>
+<span style="color: #8FA3B5">Interfaces</span><span>{{pop.ifText}}</span>
+<span style="color: #8FA3B5">Source</span><span>{{pop.source}}</span>
+<span style="color: #8FA3B5">Collected</span><span>{{pop.collected}}</span>
+</div>
+<sc-if value="{{pop.hasFindings}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1F3A50; display: flex; flex-direction: column; gap: 5px">
+<sc-for list="{{pop.findings}}" as="f" hint-placeholder-count="1">
+<div style="display: flex; gap: 8px; align-items: baseline"><span style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: {{f.bg}}; color: {{f.fg}}; text-transform: uppercase; letter-spacing: .04em">{{f.sev}}</span><span>{{f.title}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+<div style="margin-top: 10px; color: #8FA3B5; font-size: 11px">Click to pin details →</div>
+</div>
+</sc-if>
+
+<sc-if value="{{linkPop}}" hint-placeholder-val="{{ false }}">
+<div role="tooltip" style="position: absolute; z-index: 30; left: {{linkPop.left}}px; top: {{linkPop.top}}px; width: 270px; background: #0E1A24; color: #E6EDF3; border-radius: 12px; padding: 12px 14px; box-shadow: 0 16px 40px rgba(14,26,36,.32); font-size: 12px; line-height: 1.5; pointer-events: none">
+<div style="font-weight: 600; color: #FFFFFF; margin-bottom: 6px">{{linkPop.title}}</div>
+<div class="mono" style="font-size: 11px">{{linkPop.a}}</div>
+<div class="mono" style="font-size: 11px">{{linkPop.b}}</div>
+<div style="margin-top: 6px; color: #C9D4DE">{{linkPop.detail}}</div>
+<div style="margin-top: 4px; color: {{linkPop.seenColor}}">{{linkPop.seen}}</div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 16px; border-top: 1px solid #E4E8EC; font-size: 12px; color: #475467; align-items: center">
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 28px; border-top: 2px solid #64748B"></span>Seen from both ends</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 28px; border-top: 2px dashed #E8590C"></span>Seen from one end only</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 4px; border: 3px solid #B42318; box-sizing: border-box"></span>Critical finding</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 4px; border: 3px solid #E8590C; box-sizing: border-box"></span>High finding</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 4px; border: 2px dashed #98A2B3; box-sizing: border-box"></span>Not yet collected</span>
+</div>
+</sc-if>
+
+<sc-if value="{{showMsg}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 64px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; min-height: 420px; justify-content: center; box-sizing: border-box">
+<div style="font-size: 18px; font-weight: 600">{{msg.title}}</div>
+<div style="font-size: 14px; color: #475467; max-width: 480px; line-height: 1.55">{{msg.text}}</div>
+<sc-if value="{{msg.hasProgress}}" hint-placeholder-val="{{ false }}">
+<div style="width: 360px; max-width: 100%; height: 8px; background: #EEF2F6; border-radius: 4px; overflow: hidden"><div style="width: {{msg.progress}}%; height: 100%; background: #0E7490"></div></div>
+<div class="mono" style="font-size: 12px; color: #475467">{{msg.progressText}}</div>
+</sc-if>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center"><a class="btn primary" href="Collectors.dc.html">Collectors &amp; jobs</a><a class="btn" href="Inventory.dc.html">Import files</a></div>
+</div>
+</sc-if>
+</section>
+
+<aside aria-label="{{asideLabel}}" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{noSel}}" hint-placeholder-val="{{ true }}">
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Site summary</div>
+<h2 style="margin: 2px 0 0; font-size: 18px; font-weight: 600">{{sum.site}}</h2>
+<div style="font-size: 13px; color: #475467">{{sum.sub}}</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{sum.tiles}}" as="t" hint-placeholder-count="6">
+<div style="border: 1px solid #E4E8EC; border-radius: 10px; padding: 10px"><div style="font-size: 20px; font-weight: 600">{{t.n}}</div><div style="font-size: 12px; color: #475467">{{t.label}}</div></div>
+</sc-for>
+</div>
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Findings at this site</div>
+<div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #EEF2F6; gap: 2px" aria-hidden="true"><span style="flex: {{sum.sev.c}} 1 0; background: #B42318"></span><span style="flex: {{sum.sev.h}} 1 0; background: #E8590C"></span><span style="flex: {{sum.sev.m}} 1 0; background: #F5B53F"></span><span style="flex: {{sum.sev.l}} 1 0; background: #98A2B3"></span></div>
+<div style="font-size: 12px; color: #475467; margin-top: 6px">{{sum.sevText}}</div>
+</div>
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 6px">Needs attention · click to select</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{sum.attention}}" as="a" hint-placeholder-count="4">
+<button type="button" onClick="{{a.pick}}" style="display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; font: inherit; border: 1px solid #E4E8EC; background: #FFFFFF; border-radius: 10px; padding: 9px 10px; cursor: pointer; color: #101828; min-height: 44px">
+<span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: {{a.bg}}; color: {{a.fg}}; text-transform: uppercase; letter-spacing: .04em; flex: none; margin-top: 2px">{{a.tag}}</span>
+<span style="min-width: 0"><span class="mono" style="display: block; font-size: 12px; font-weight: 500">{{a.host}}</span><span style="display: block; font-size: 12px; color: #475467">{{a.text}}</span></span>
+</button>
+</sc-for>
+</div>
+</div>
+<div style="font-size: 13px; color: #475467; background: #F8FAFB; border-radius: 10px; padding: 10px 12px; display: flex; gap: 8px; align-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none"><path d="M5 3l14 9-6 1-3 6z"></path></svg>Select a device on the map for its details, interfaces, config and Connect.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto">
+<a class="btn" href="Inventory.dc.html">Open inventory</a>
+<a class="btn" href="Findings.dc.html">All findings</a>
+</div>
+</sc-if>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 12px; align-items: center">
+<span style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #CBD5E1; display: flex; align-items: center; justify-content: center; flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E1A24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sel.icon}}"></path></svg></span>
+<div style="min-width: 0; flex: 1">
+<div class="mono" style="font-size: 16px; font-weight: 500">{{sel.host}}</div>
+<div style="font-size: 13px; color: #475467">{{sel.vendor}} {{sel.model}} · {{sel.roleText}}</div>
+</div>
+<button class="icon-btn" type="button" aria-label="Clear selection and show the site summary" title="Back to site summary" onClick="{{clearSel}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div role="tablist" aria-label="Device detail" style="display: flex; border-bottom: 1px solid #E4E8EC">
+<sc-for list="{{dtabs}}" as="t" hint-placeholder-count="3">
+<button role="tab" type="button" class="{{t.cls}}" aria-selected="{{t.selected}}" onClick="{{t.pick}}">{{t.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{tabOverview}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; font-size: 13px">
+<span style="color: #475467">OS version</span><span><span class="mono">{{sel.os}}</span> <span style="font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: {{sel.osBgL}}; color: {{sel.osFgL}}">{{sel.osState}}</span></span>
+<span style="color: #475467">Mgmt IP</span><span class="mono">{{sel.ip}}</span>
+<span style="color: #475467">Serial</span><span class="mono">{{sel.serial}}</span>
+<span style="color: #475467">Interfaces</span><span>{{sel.ifText}}</span>
+<span style="color: #475467">Neighbors</span><span>{{sel.nbText}}</span>
+<span style="color: #475467">Source</span><span>{{sel.source}}</span>
+<span style="color: #475467">Collected</span><span>{{sel.collected}}</span>
+</div>
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Findings on this device</div>
+<sc-if value="{{sel.hasFindings}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{sel.findings}}" as="f" hint-placeholder-count="2">
+<a href="Findings.dc.html" style="display: flex; gap: 10px; align-items: baseline; text-decoration: none; color: #101828; font-size: 13px; padding: 10px 12px; border: 1px solid #E4E8EC; border-radius: 10px"><span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: {{f.bgL}}; color: {{f.fgL}}; text-transform: uppercase; letter-spacing: .04em; flex: none">{{f.sev}}</span>{{f.title}}</a>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{sel.noFindings}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; color: #15803D; display: flex; gap: 8px; align-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Passes all 5 checks</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{tabIfaces}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{sel.hasIfaces}}" hint-placeholder-val="{{ true }}">
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; font-size: 12px">
+<thead><tr style="text-align: left; color: #475467"><th style="padding: 6px 8px 6px 0; font-weight: 500">Port</th><th style="padding: 6px 8px; font-weight: 500">State</th><th style="padding: 6px 8px; font-weight: 500">Neighbor</th></tr></thead>
+<tbody>
+<sc-for list="{{sel.ifaces}}" as="i" hint-placeholder-count="5">
+<tr style="border-top: 1px solid #EEF2F6"><td class="mono" style="padding: 7px 8px 7px 0">{{i.port}}</td><td style="padding: 7px 8px; color: {{i.color}}">{{i.state}}</td><td class="mono" style="padding: 7px 8px">{{i.nb}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+<sc-if value="{{sel.noIfaces}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #475467">{{sel.ifText}} · open Inventory for the full interface list.</div></sc-if>
+</sc-if>
+
+<sc-if value="{{tabConfig}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: #475467">{{sel.cfgHeader}}</div>
+<pre class="mono" style="margin: 0; background: #0E1A24; color: #C9D4DE; border-radius: 10px; padding: 12px 14px; font-size: 11.5px; line-height: 1.6; overflow-x: auto; white-space: pre">{{sel.config}}</pre>
+<div style="font-size: 12px; color: #475467">Values like <span class="mono" style="color: #155E75">&lt;masked:1:…&gt;</span> are keyed digests. A changed secret shows as changed in a diff. Its value is never stored or shown.</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto">
+<button class="btn primary" type="button" onClick="{{openConnect}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"></path></svg>Connect to…</button>
+<a class="btn" href="Inventory.dc.html">Open in inventory</a>
+<a class="btn" href="Compare.dc.html">Compare engagements</a>
+</div>
+</sc-if>
+</aside>
+</div>
+</sc-if>
+</main>
+<sc-if value="{{connectOpen}}" hint-placeholder-val="{{ false }}">
+<dc-import name="ConnectModal" device="{{connectDev}}" cust="{{ctx.cust}}" on-close="{{closeConnect}}" hint-size="0px,0px"></dc-import>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), layer: 'l2', hover: null, hoverLink: null, pinned: null, overlay: true, zoom: null, fit: 1, viewH: 640, query: '', site: 0, exportOpen: false, toast: '', dtab: 'overview' };
+    // The map fills the space left on screen and scales to fit it; zoom buttons override the fit.
+    this.measure = this.measure.bind(this);
+    this.mapRef = (el) => {
+      if (this.ro) { this.ro.disconnect(); this.ro = null; }
+      this.mapEl = el;
+      if (el && typeof ResizeObserver !== 'undefined') { this.ro = new ResizeObserver(this.measure); this.ro.observe(el); }
+      if (el) setTimeout(this.measure, 0);
+    };
+  }
+  measure() {
+    const el = this.mapEl;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + (window.scrollY || 0);
+    const viewH = Math.max(480, Math.round((window.innerHeight || 900) - top - 92));
+    const w = el.clientWidth || 980;
+    const fit = Math.max(0.5, Math.min(1.8, Math.floor(Math.min((w - 32) / 980, (viewH - 32) / 620) * 100) / 100));
+    if (viewH !== this.state.viewH || fit !== this.state.fit) this.setState({ viewH, fit });
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    window.addEventListener('resize', this.measure);
+    this.timer = setInterval(() => { const v = this.readCtx(); if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) this.setCtx(v); }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); window.removeEventListener('resize', this.measure); if (this.ro) this.ro.disconnect(); }
+  setCtx(v) { this.setState({ ctx: v, site: 0, pinned: null, hover: null, hoverLink: null, query: '', toast: '', exportOpen: false, connect: null }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment', 'Apr 14, 2026'], 'nw-q4-25': ['Q4 2025 assessment', 'Nov 3, 2025'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025', 'Nov 12, 2025'], 'lk-wifi': ['Wi-Fi refresh baseline', 'Oct 24, 2026'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const completed = ENGS[eng][1];
+    const parts = [];
+    if (META[cust][1] === 'live') parts.push(['Live view from bp-dc1-vm.', 'Data is relayed through the controller in memory and never stored there. Exports are saved to Bluepeak’s on-site store.']);
+    if (completed) parts.push(['Completed engagement.', 'Showing data as collected on ' + completed + '. Read-only.']);
+    if (cust === 'lk') parts.push(['Collector lk-vm-01 is offline.', 'This data can’t be refreshed until it reconnects.']);
+    const live = META[cust][1] === 'live';
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: live ? '#F5F3FF' : '#F8FAFB', border: live ? '#DDD6FE' : '#DDE2E8', fg: live ? '#4C1D95' : '#344054' };
+
+    const ICON = {
+      fw: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z M8 11h8 M8 15h8 M12 11v4',
+      sw: 'M3 8h18v8H3z M7 12h.01 M11 12h.01 M15 12h.01 M18 12h.01',
+      rtr: 'M12 3a9 9 0 110 18 9 9 0 010-18z M8 9l4-3 4 3 M16 15l-4 3-4-3 M12 6v12',
+      ap: 'M4.5 10a11 11 0 0115 0 M7.5 13.2a6.5 6.5 0 019 0 M12 17.5h.01',
+      snmp: 'M4 5h16v14H4z M8 9h8 M8 13h5',
+      ext: 'M7 18h10a4 4 0 000-8 6 6 0 00-11.6 1.5A3.5 3.5 0 007 18z',
+      unk: 'M9.5 9a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5 M12 17h.01 M4 4h16v16H4z',
+    };
+    const ROLE = { fw: 'Firewall', sw: 'Switch', rtr: 'Router', ap: 'Access point', snmp: 'SNMP-only device', ext: 'Provider edge', unk: 'Unknown neighbor' };
+    const SEV = { critical: ['#FDA29B', '#3A0A06', '#FEE4E2', '#912018'], high: ['#FDBA74', '#3B1405', '#FFEDD5', '#9A3412'], medium: ['#FCD34D', '#3A2A05', '#FEF3C7', '#854D0E'], low: ['#CBD5E1', '#1E293B', '#EEF2F6', '#344054'] };
+    const ifs = (rows) => rows.map(([port, state, nb]) => ({ port, state, nb, color: state === 'up' ? '#15803D' : state === 'down' ? '#B42318' : '#475467' }));
+    // [id, host, role, vendor, model, os, osState, ip, serial, source, collected, x, y, l3, sub, findings, ifUp, ifTotal, neighbors, uncollected, ifaces, config]
+    const mk = (a) => ({ id: a[0], host: a[1], role: a[2], vendor: a[3], model: a[4], os: a[5], osState: a[6], ip: a[7], serial: a[8], source: a[9], collected: a[10], x: a[11], y: a[12], l3: a[13], sub: a[14], f: a[15] || [], ifUp: a[16] || 0, ifTotal: a[17] || 0, nb: a[18] || 1, uncollected: !!a[19], ifaces: a[20] ? ifs(a[20]) : [], config: a[21] });
+
+    const T = {
+      nw: {
+        discovered: 'Last discovery 10:42 · nw-hq-vm · 58 devices', pin: 'rtr-wan-01',
+        sites: [['HQ data center', '13 devices', 'map'], ['Clinic East', 'discovering', 'msg', 'Discovery running on nw-east-vm', 'Walking LLDP/CDP and routing neighbors from 2 seeds within 198.51.100.0/24. 7 devices found so far. The map draws once the run finishes.', 61, '61% · hop 3 of 5 · 14 SSH, 3 SNMP, 1 API sessions'], ['Clinic West', 'not enrolled', 'msg', 'No collector reaches Clinic West yet', 'nw-west-vm was created but hasn’t enrolled. You can still import show outputs, configs or a CSV device list for this site.']],
+        D: [
+          mk(['isp', 'isp-pe', 'ext', 'Provider', 'edge', '—', 'Outside scope', '203.0.113.1', '—', 'Seen in BGP and CDP from rtr-wan-01', '—', 490, 34, true, 'AS 64496', [], 0, 0, 1, true]),
+          mk(['rtr-wan-01', 'rtr-wan-01', 'rtr', 'Cisco', 'ISR4331', 'IOS-XE 16.9.8', 'End of support', '192.0.2.1', 'FDO2213••••', 'Live · SSH via nw-hq-vm', 'Today 10:39', 490, 130, true, 'WAN router', [['critical', 'IOS-XE 16.9 is past end of software maintenance'], ['high', 'Telnet enabled on VTY 0 4'], ['medium', 'No syslog server configured']], 4, 6, 4, false,
+            [['Gi0/0/0', 'up', 'isp-pe'], ['Gi0/0/1', 'up', 'fw-hq-01 port1'], ['Gi0/0/2', 'up', 'fw-hq-02 port1'], ['Gi0/1/0', 'up', '198.51.100.40'], ['Gi0/1/1', 'down', '—']],
+            'hostname rtr-wan-01\nenable secret <masked:1:7f3c9a1e>\nusername netops privilege 15 secret <masked:1:b204e6d0>\nsnmp-server community <masked:1:0d55e2a1> RO\n!\nline vty 0 4\n transport input telnet ssh\n!\nrouter bgp 65010\n neighbor 203.0.113.1 remote-as 64496\n neighbor 203.0.113.1 password <masked:1:91aa04cf>']),
+          mk(['unk', '198.51.100.40', 'unk', 'Unknown', '(CDP: Cisco IP Phone?)', '—', 'Not collected', '198.51.100.40', '—', 'CDP from rtr-wan-01 only', '—', 770, 130, false, 'seen once', [], 0, 0, 1, true]),
+          mk(['fw-hq-01', 'fw-hq-01', 'fw', 'Fortinet', 'FortiGate 200F', 'FortiOS 7.2.8', 'Supported', '192.0.2.10', 'FG200F••••4821', 'Live · REST API (read-only user)', 'Today 10:38', 380, 236, true, 'HA primary', [['medium', 'HTTP admin access allowed on port2']], 9, 18, 5, false,
+            [['port1', 'up', 'rtr-wan-01 Gi0/0/1'], ['port2', 'up', 'core-sw-01 Te1/1/1'], ['port3', 'up', 'core-sw-02 Te1/1/1'], ['ha1', 'up', 'fw-hq-02 ha1']],
+            'config system admin\n    edit "ro-audit"\n        set accprofile "read_only"\n        set password <masked:1:4e0b77c2>\n    next\nend\nconfig system interface\n    edit "port2"\n        set allowaccess ping https http ssh\n    next\nend']),
+          mk(['fw-hq-02', 'fw-hq-02', 'fw', 'Fortinet', 'FortiGate 200F', 'FortiOS 7.2.8', 'Supported', '192.0.2.11', 'FG200F••••4907', 'Live · REST API (read-only user)', 'Today 10:38', 600, 236, true, 'HA secondary', [], 7, 18, 3]),
+          mk(['core-sw-01', 'core-sw-01', 'sw', 'Cisco', 'C9300-48P', 'IOS-XE 17.9.4a', 'Supported', '192.0.2.20', 'FOC2419••••', 'Live · SSH via nw-hq-vm', 'Today 10:40', 380, 346, true, 'Core', [['low', 'NTP has one server; two recommended']], 31, 52, 6, false, null,
+            'hostname core-sw-01\nntp server 192.0.2.123\nsnmp-server group ro-audit v3 priv read AUDIT\nsnmp-server user ro-audit ro-audit v3 auth sha <masked:1:22d1e0aa> priv aes 128 <masked:1:5c6b19fe>']),
+          mk(['core-sw-02', 'core-sw-02', 'sw', 'Cisco', 'C9300-48P', 'IOS-XE 17.6.5', 'Drift', '192.0.2.21', 'FOC2420••••', 'Live · SSH via nw-hq-vm', 'Today 10:40', 600, 346, true, 'Core', [['high', 'Firmware drift: same model as core-sw-01 on a different release'], ['medium', 'SNMPv2c enabled alongside SNMPv3']], 28, 52, 6]),
+          mk(['pdu', 'pdu-rack-a', 'snmp', 'APC', '(from sysObjectID)', 'AOS 6.9', 'Basic inventory', '192.0.2.60', '5A18••••', 'Live · SNMPv3 walk', 'Today 10:41', 840, 346, false, 'SNMP only', [], 1, 1, 1]),
+          mk(['dist-sw-03', 'dist-sw-03', 'sw', 'Cisco', 'C9200L-24P', 'IOS-XE 17.9.4a', 'Supported', '192.0.2.23', 'JAE2511••••', 'Upload · show outputs by A. Chen', 'Oct 26', 160, 460, false, 'Imaging wing', [['medium', 'No syslog server configured']], 14, 28, 2]),
+          mk(['acc-fsw-11', 'acc-fsw-11', 'sw', 'Fortinet', 'FortiSwitch 248E-FPOE', 'FortiSwitchOS 7.2.6', 'Supported', '169.254.1.2', 'S248EF••••', 'Live · via fw-hq-01 API (managed)', 'Today 10:38', 490, 460, false, 'Managed by fw-hq-01', [], 22, 50, 4]),
+          mk(['acc-fsw-12', 'acc-fsw-12', 'sw', 'Fortinet', 'FortiSwitch 124F', 'FortiSwitchOS 7.0.4', 'Drift', '169.254.1.3', 'S124FT••••', 'Live · via fw-hq-01 API (managed)', 'Today 10:38', 760, 460, false, 'Managed by fw-hq-01', [['medium', 'Runs 7.0.4; the other FortiSwitch runs 7.2.6']], 9, 26, 1]),
+          mk(['ap-hq-01', 'ap-hq-01', 'ap', 'Fortinet', 'FortiAP 231F', 'FortiAP 7.2.3', 'Supported', '169.254.2.10', 'FP231F••••', 'Live · via fw-hq-01 API (managed)', 'Today 10:38', 410, 566, false, '2nd floor', [], 1, 2, 1]),
+          mk(['ap-hq-02', 'ap-hq-02', 'ap', 'Fortinet', 'FortiAP 231F', 'FortiAP 7.2.3', 'Supported', '169.254.2.11', 'FP231F••••', 'Live · via fw-hq-01 API (managed)', 'Today 10:38', 570, 566, false, '3rd floor', [], 1, 2, 1]),
+        ],
+        L2: [['isp', 'rtr-wan-01', 'Gi0/0/0', '—', 'CDP from rtr-wan-01 · 1G', false], ['rtr-wan-01', 'fw-hq-01', 'Gi0/0/1', 'port1', 'LLDP · 1G', true], ['rtr-wan-01', 'fw-hq-02', 'Gi0/0/2', 'port1', 'LLDP · 1G', true], ['rtr-wan-01', 'unk', 'Gi0/1/0', '?', 'CDP from rtr-wan-01 only', false], ['fw-hq-01', 'fw-hq-02', 'ha1', 'ha1', 'HA heartbeat · 10G', true], ['fw-hq-01', 'core-sw-01', 'port2', 'Te1/1/1', 'LLDP · 10G', true], ['fw-hq-01', 'core-sw-02', 'port3', 'Te1/1/1', 'LLDP · 10G', true], ['fw-hq-02', 'core-sw-02', 'port3', 'Te1/1/2', 'LLDP · 10G', true], ['core-sw-01', 'core-sw-02', 'Po1 (Te1/1/3-4)', 'Po1 (Te1/1/3-4)', 'CDP + LLDP · 2×10G port-channel', true], ['core-sw-01', 'dist-sw-03', 'Gi1/0/1', 'Gi1/1/1', 'CDP · dist side from uploaded file', true], ['core-sw-01', 'acc-fsw-11', 'Gi1/0/2', 'port49', 'LLDP · 1G', true], ['core-sw-02', 'acc-fsw-11', 'Gi1/0/2', 'port50', 'LLDP · 1G', true], ['core-sw-02', 'acc-fsw-12', 'Gi1/0/3', 'port25', 'LLDP · 1G', true], ['core-sw-02', 'pdu', 'Gi1/0/24', 'eth0', 'LLDP from core-sw-02 only', false], ['acc-fsw-11', 'ap-hq-01', 'port1', 'lan1', 'FortiLink · PoE', true], ['acc-fsw-11', 'ap-hq-02', 'port2', 'lan1', 'FortiLink · PoE', true]],
+        L3: [['isp', 'rtr-wan-01', '203.0.113.2', '203.0.113.1', 'eBGP · AS 65010 ↔ AS 64496 · Established', false, 'eBGP'], ['rtr-wan-01', 'fw-hq-01', '192.0.2.1', '192.0.2.10', 'OSPF area 0 · Full', true, 'OSPF 0'], ['fw-hq-01', 'core-sw-01', '10.10.0.1', '10.10.0.2', 'OSPF area 0 · Full', true, 'OSPF 0'], ['fw-hq-01', 'core-sw-02', '10.10.0.5', '10.10.0.6', 'OSPF area 0 · Full', true, 'OSPF 0'], ['core-sw-01', 'core-sw-02', '10.10.0.9', '10.10.0.10', 'OSPF area 0 · Full', true, 'OSPF 0'], ['fw-hq-01', 'fw-hq-02', 'HA', 'HA', 'Active-passive · secondary forms no adjacency', true, 'HA']],
+      },
+      bp: {
+        discovered: 'Live view · bp-dc1-vm · 12 devices at DC1', pin: 'bp-dmz-sw-01',
+        sites: [['DC1', '12 devices', 'map'], ['Branch 7', 'results queued offline', 'msg', 'Results waiting on bp-branch-laptop', 'The laptop collector finished discovery at Branch 7 but has been out of contact for 3 hours. 2 results are queued on it and upload, without duplicates, when it reconnects.']],
+        D: [
+          mk(['bp-isp', 'bp-isp-pe', 'ext', 'Provider', 'edge', '—', 'Outside scope', '203.0.113.65', '—', 'Seen in BGP from bp-fw-01', '—', 490, 34, true, 'AS 64500', [], 0, 0, 1, true]),
+          mk(['bp-fw-01', 'bp-fw-01', 'fw', 'Fortinet', 'FortiGate 400F', 'FortiOS 7.4.4', 'Supported', '10.40.0.1', 'FG4H0F••••2210', 'Live view · REST API (read-only)', 'Today 09:58', 380, 140, true, 'HA primary', [['medium', 'Admin idle timeout is 480 minutes; PCI DSS expects 15']], 12, 24, 5, false,
+            [['port1', 'up', 'bp-isp-pe'], ['port3', 'up', 'bp-core-01 Te1/0/1'], ['port4', 'up', 'bp-core-02 Te1/0/1'], ['ha1', 'up', 'bp-fw-02 ha1'], ['fortilink', 'up', 'bp-fsw-01']],
+            'config system global\n    set admintimeout 480\nend\nconfig system admin\n    edit "cartio-ro"\n        set accprofile "read_only"\n        set password <masked:1:61c0aa3e>\n    next\nend']),
+          mk(['bp-fw-02', 'bp-fw-02', 'fw', 'Fortinet', 'FortiGate 400F', 'FortiOS 7.4.4', 'Supported', '10.40.0.2', 'FG4H0F••••2274', 'Live view · REST API (read-only)', 'Today 09:58', 600, 140, true, 'HA secondary', [['high', 'HTTP admin access allowed on the mgmt interface']], 10, 24, 3, false, null,
+            'config system interface\n    edit "mgmt"\n        set allowaccess ping https http ssh\n    next\nend']),
+          mk(['bp-core-01', 'bp-core-01', 'sw', 'Cisco', 'C9500-24Y4C', 'IOS-XE 17.9.5', 'Supported', '10.40.1.1', 'FDO2532••••', 'Live view · SSH via bp-dc1-vm', 'Today 09:59', 380, 260, true, 'Core', [['low', 'Login banner lacks the authorized-use warning']], 22, 28, 7]),
+          mk(['bp-core-02', 'bp-core-02', 'sw', 'Cisco', 'C9500-24Y4C', 'IOS-XE 17.9.5', 'Supported', '10.40.1.2', 'FDO2532••••', 'Live view · SSH via bp-dc1-vm', 'Today 09:59', 600, 260, true, 'Core', [], 21, 28, 7]),
+          mk(['bp-dmz-sw-01', 'bp-dmz-sw-01', 'sw', 'Cisco', 'C9300-24T', 'IOS-XE 17.9.5', 'Supported', '10.40.5.2', 'FOC2601••••', 'Live view · SSH via bp-dc1-vm', 'Today 09:59', 840, 260, false, 'DMZ', [['high', 'SNMPv2c community matches a well-known default'], ['medium', 'No syslog server configured']], 9, 28, 2, false,
+            [['Te1/1/1', 'up', 'bp-core-02 Te1/0/8'], ['Gi1/0/1', 'up', '—'], ['Gi1/0/2', 'up', '—']],
+            'hostname bp-dmz-sw-01\nsnmp-server community <masked:1:3b7e0d90> RO\n! digest matches the shared default-community list\nline vty 0 4\n transport input ssh']),
+          mk(['bp-unk', '10.40.9.15', 'unk', 'Unknown', '(LLDP: IP camera?)', '—', 'Not collected', '10.40.9.15', '—', 'LLDP from bp-core-01 only', '—', 140, 260, false, 'seen once', [], 0, 0, 1, true]),
+          mk(['bp-acc-01', 'bp-acc-01', 'sw', 'Cisco', 'C9200L-48P', 'IOS-XE 17.9.5', 'Supported', '10.40.2.11', 'JAE2604••••', 'Live view · SSH', 'Today 10:00', 240, 390, false, 'Teller floor', [['medium', 'No syslog server configured']], 33, 52, 2]),
+          mk(['bp-acc-02', 'bp-acc-02', 'sw', 'Cisco', 'C9200L-48P', 'IOS-XE 17.6.4', 'Drift', '10.40.2.12', 'JAE2604••••', 'Live view · SSH', 'Today 10:00', 490, 390, false, 'Back office', [['high', 'Firmware drift: other C9200L switches run 17.9.5']], 29, 52, 2]),
+          mk(['bp-fsw-01', 'bp-fsw-01', 'sw', 'Fortinet', 'FortiSwitch 148F', 'FortiSwitchOS 7.4.2', 'Supported', '169.254.1.2', 'S148FP••••', 'Live view · via bp-fw-01 API', 'Today 09:58', 740, 390, false, 'Managed by bp-fw-01', [], 12, 52, 3]),
+          mk(['bp-ap-01', 'bp-ap-01', 'ap', 'Fortinet', 'FortiAP 431F', 'FortiAP 7.4.1', 'Supported', '169.254.2.10', 'FP431F••••', 'Live view · via bp-fw-01 API', 'Today 09:58', 660, 520, false, 'Lobby', [], 1, 2, 1]),
+          mk(['bp-ups-01', 'bp-ups-01', 'snmp', 'Eaton', '(from sysObjectID)', '—', 'Basic inventory', '10.40.9.20', '—', 'Live view · SNMPv3', 'Today 10:00', 860, 520, false, 'SNMP only', [], 1, 1, 1]),
+        ],
+        L2: [['bp-isp', 'bp-fw-01', 'port1', '—', 'Provider handoff · no LLDP from the provider', false], ['bp-fw-01', 'bp-fw-02', 'ha1', 'ha1', 'HA heartbeat · 10G', true], ['bp-fw-01', 'bp-core-01', 'port3', 'Te1/0/1', 'LLDP · 10G', true], ['bp-fw-02', 'bp-core-02', 'port3', 'Te1/0/1', 'LLDP · 10G', true], ['bp-core-01', 'bp-core-02', 'Po10 (Hu1/0/25-26)', 'Po10 (Hu1/0/25-26)', 'CDP + LLDP · 2×100G', true], ['bp-core-02', 'bp-dmz-sw-01', 'Te1/0/8', 'Te1/1/1', 'CDP · 10G', true], ['bp-core-01', 'bp-unk', 'Gi1/0/40', '?', 'LLDP from bp-core-01 only', false], ['bp-core-01', 'bp-acc-01', 'Te1/0/4', 'Te1/1/1', 'CDP · 10G', true], ['bp-core-01', 'bp-acc-02', 'Te1/0/5', 'Te1/1/1', 'CDP · 10G', true], ['bp-core-02', 'bp-acc-02', 'Te1/0/5', 'Te1/1/2', 'CDP · 10G', true], ['bp-fw-01', 'bp-fsw-01', 'fortilink', 'port49', 'FortiLink', true], ['bp-fsw-01', 'bp-ap-01', 'port1', 'lan1', 'FortiLink · PoE', true], ['bp-fsw-01', 'bp-ups-01', 'port24', 'eth0', 'LLDP from bp-fsw-01 only', false]],
+        L3: [['bp-isp', 'bp-fw-01', '203.0.113.66', '203.0.113.65', 'eBGP · AS 65040 ↔ AS 64500 · Established', false, 'eBGP'], ['bp-fw-01', 'bp-core-01', '10.40.0.1', '10.40.0.9', 'OSPF area 0 · Full', true, 'OSPF 0'], ['bp-fw-01', 'bp-core-02', '10.40.0.5', '10.40.0.13', 'OSPF area 0 · Full', true, 'OSPF 0'], ['bp-core-01', 'bp-core-02', '10.40.0.17', '10.40.0.18', 'OSPF area 0 · Full', true, 'OSPF 0'], ['bp-core-02', 'bp-dmz-sw-01', '10.40.5.1', '10.40.5.2', 'Static default route on bp-dmz-sw-01', true, 'Static'], ['bp-fw-01', 'bp-fw-02', 'HA', 'HA', 'Active-passive', true, 'HA']],
+      },
+      lk: {
+        discovered: 'Completed Oct 24 · lk-vm-01 (offline) · 118 devices across 5 sites', pin: 'lk-acc-103',
+        sites: [['District office', '11 devices', 'map'], ['Roosevelt High', '38 devices', 'msg', 'Roosevelt High: 38 devices, collected Oct 23', 'This site’s map is in the completed report. It can’t be redrawn from fresh data while lk-vm-01 is offline.'], ['3 more sites', 'in the report', 'msg', 'Lincoln Elementary, Jefferson Middle and Bus depot', '69 devices collected Oct 21–23. Open the completed report for their maps, or re-run discovery when the collector is back.']],
+        D: [
+          mk(['lk-isp', 'lk-isp-pe', 'ext', 'Provider', 'edge', '—', 'Outside scope', '203.0.113.129', '—', 'Seen in BGP from lk-fw-01', '—', 490, 34, true, 'AS 64501', [], 0, 0, 1, true]),
+          mk(['lk-fw-01', 'lk-fw-01', 'fw', 'Fortinet', 'FortiGate 100F', 'FortiOS 7.2.8', 'Supported', '10.60.0.1', 'FG100F••••7731', 'Live · REST API via lk-vm-01', 'Oct 24 14:02', 490, 130, true, 'District edge', [['medium', 'Two admin accounts have no trusted hosts']], 8, 22, 3]),
+          mk(['lk-core-01', 'lk-core-01', 'sw', 'Cisco', 'C9500-16X', 'IOS-XE 17.9.4a', 'Supported', '10.60.1.1', 'FCW2441••••', 'Live · SSH via lk-vm-01', 'Oct 24 14:03', 380, 250, true, 'Core', [['low', 'Only one NTP server configured']], 12, 16, 6]),
+          mk(['lk-core-02', 'lk-core-02', 'sw', 'Cisco', 'C9500-16X', 'IOS-XE 17.9.4a', 'Supported', '10.60.1.2', 'FCW2441••••', 'Live · SSH via lk-vm-01', 'Oct 24 14:03', 600, 250, true, 'Core', [['low', 'Only one NTP server configured']], 11, 16, 5]),
+          mk(['lk-unk', '10.60.250.2', 'unk', 'Unknown', '(OSPF neighbor)', '—', 'Not collected', '10.60.250.2', '—', 'OSPF from lk-core-01 only', '—', 140, 250, true, 'bus depot?', [], 0, 0, 1, true]),
+          mk(['lk-wlc', 'lk-wlc-01', 'snmp', 'Aruba', '7030 controller (from sysObjectID)', 'AOS 8.10', 'Basic inventory', '10.60.1.40', 'CW00••••', 'Live · SNMPv3 via lk-vm-01', 'Oct 24 14:04', 840, 250, false, 'Wireless controller', [['medium', 'SNMPv2c also enabled']], 2, 8, 3]),
+          mk(['lk-acc-101', 'lk-acc-101', 'sw', 'Cisco', 'C9200L-48P', 'IOS-XE 17.6.5', 'Drift', '10.60.2.11', 'JAE2509••••', 'Live · SSH via lk-vm-01', 'Oct 24 14:05', 220, 380, false, 'Admin wing', [['high', 'Telnet allowed on VTY lines'], ['medium', 'No syslog server configured']], 40, 52, 2]),
+          mk(['lk-acc-102', 'lk-acc-102', 'sw', 'Cisco', 'C9200L-48P', 'IOS-XE 17.9.4a', 'Supported', '10.60.2.12', 'JAE2509••••', 'Live · SSH via lk-vm-01', 'Oct 24 14:05', 420, 380, false, 'Board room', [['high', 'SNMPv2c community matches a well-known default']], 31, 52, 2]),
+          mk(['lk-acc-103', 'lk-acc-103', 'sw', 'Cisco', 'C2960X-48FPS', 'IOS 15.2(7)E8', 'End of support', '10.60.2.13', 'FOC2011••••', 'Upload · show tech from the district IT team', 'Oct 22', 620, 380, false, 'IT office', [['high', 'Telnet allowed on VTY lines'], ['medium', 'Hardware end of sale; support ends Oct 2027']], 44, 52, 1, false,
+            [['Gi1/0/49', 'up', 'lk-core-02 Te1/0/6'], ['Gi1/0/1', 'up', '—'], ['Gi1/0/2', 'down', '—']],
+            'hostname lk-acc-103\n! imported from show tech-support\nenable secret <masked:1:0c9e44d1>\nline vty 0 15\n transport input all']),
+          mk(['lk-ap-01', 'lk-ap-101', 'ap', 'Aruba', 'AP-515 (via controller)', 'AOS 8.10', 'Basic inventory', '10.60.3.21', '—', 'From lk-wlc-01 AP table', 'Oct 24', 760, 510, false, 'Library', [], 1, 1, 1]),
+          mk(['lk-ap-02', 'lk-ap-102', 'ap', 'Aruba', 'AP-515 (via controller)', 'AOS 8.10', 'Basic inventory', '10.60.3.22', '—', 'From lk-wlc-01 AP table', 'Oct 24', 900, 510, false, 'Gym', [], 1, 1, 1]),
+        ],
+        L2: [['lk-isp', 'lk-fw-01', 'wan1', '—', 'Provider handoff', false], ['lk-fw-01', 'lk-core-01', 'port1', 'Te1/0/1', 'LLDP · 10G', true], ['lk-fw-01', 'lk-core-02', 'port2', 'Te1/0/1', 'LLDP · 10G', true], ['lk-core-01', 'lk-core-02', 'Po1 (Te1/0/15-16)', 'Po1 (Te1/0/15-16)', 'CDP · 2×10G', true], ['lk-core-02', 'lk-wlc', 'Te1/0/9', 'gi0/0/0', 'LLDP from lk-core-02 only', false], ['lk-core-01', 'lk-acc-101', 'Te1/0/4', 'Te1/1/1', 'CDP · 10G', true], ['lk-core-01', 'lk-acc-102', 'Te1/0/5', 'Te1/1/1', 'CDP · 10G', true], ['lk-core-02', 'lk-acc-102', 'Te1/0/5', 'Te1/1/2', 'CDP · 10G', true], ['lk-core-02', 'lk-acc-103', 'Te1/0/6', 'Gi1/0/49', 'CDP · acc side from uploaded file', true], ['lk-wlc', 'lk-ap-01', 'tunnel', '—', 'From the controller AP table', false], ['lk-wlc', 'lk-ap-02', 'tunnel', '—', 'From the controller AP table', false]],
+        L3: [['lk-isp', 'lk-fw-01', '203.0.113.130', '203.0.113.129', 'eBGP · AS 65060 ↔ AS 64501', false, 'eBGP'], ['lk-fw-01', 'lk-core-01', '10.60.0.1', '10.60.0.2', 'OSPF area 0 · Full', true, 'OSPF 0'], ['lk-fw-01', 'lk-core-02', '10.60.0.5', '10.60.0.6', 'OSPF area 0 · Full', true, 'OSPF 0'], ['lk-core-01', 'lk-core-02', '10.60.0.9', '10.60.0.10', 'OSPF area 0 · Full', true, 'OSPF 0'], ['lk-core-01', 'lk-unk', '10.60.250.1', '10.60.250.2', 'OSPF area 10 · seen from lk-core-01 only', false, 'OSPF 10']],
+      },
+      lab: {
+        discovered: 'Last discovery 10:20 · lab-vm-a + lab-vm-b · 9 devices', pin: 'lab-iosv-01',
+        sites: [['Lab sites A and B', '9 devices', 'map']],
+        D: [
+          mk(['lab-fgt-01', 'lab-fgt-01', 'fw', 'Fortinet', 'FortiGate-VM64', 'FortiOS 7.4.5', 'Supported', '172.16.0.1', 'FGVM02••••', 'Live · REST API via lab-vm-a', 'Today 10:18', 490, 110, true, 'Lab edge', [['medium', 'HTTPS admin open on the outside port (lab only)']], 4, 10, 3]),
+          mk(['lab-c8k-01', 'lab-c8k-01', 'rtr', 'Cisco', 'Catalyst 8000V', 'IOS-XE 17.12.3', 'Supported', '172.16.1.1', '9KZ3••••', 'Live · SSH via lab-vm-a', 'Today 10:19', 300, 230, true, 'Site A router', [], 3, 4, 3]),
+          mk(['lab-c8k-02', 'lab-c8k-02', 'rtr', 'Cisco', 'Catalyst 8000V', 'IOS-XE 17.12.3', 'Supported', '172.16.2.1', '9KZ4••••', 'Live · SSH via lab-vm-b', 'Today 10:19', 680, 230, true, 'Site B router', [['low', 'No login banner']], 3, 4, 3]),
+          mk(['lab-iosv-01', 'lab-iosv-01', 'rtr', 'Cisco', 'IOSv', 'IOS 15.9(3)M8', 'End of support', '172.16.1.5', '9V1N••••', 'Live · SSH via lab-vm-a', 'Today 10:19', 300, 360, true, 'Legacy fixture', [['critical', 'IOS 15.9M flagged as end of support (expected fixture)'], ['high', 'Telnet allowed (negative-test fixture)']], 2, 4, 2, false,
+            [['Gi0/0', 'up', 'lab-c8k-01 Gi2'], ['Gi0/1', 'up', 'lab-sw-a Gi0/0'], ['Gi0/2', 'admin down', '—']],
+            'hostname lab-iosv-01\n! deliberately insecure fixture for checks CHK-01 and CHK-03\nenable secret <masked:1:a1f0e2c4>\nline vty 0 4\n transport input telnet ssh\nrouter eigrp 10\n network 172.16.1.0 0.0.0.255']),
+          mk(['lab-fsw-01', 'lab-fsw-01', 'sw', 'Fortinet', 'FortiSwitch 108F', 'FortiSwitchOS 7.4.2', 'Supported', '169.254.1.2', 'S108FF••••', 'Live · via lab-fgt-01 API', 'Today 10:18', 680, 360, false, 'Managed by lab-fgt-01', [], 4, 10, 2]),
+          mk(['lab-sw-a', 'lab-sw-a', 'sw', 'Cisco', 'IOSvL2', 'IOS 15.2(2020)', 'Supported', '172.16.1.10', '9L2A••••', 'Live · SSH via lab-vm-a', 'Today 10:19', 180, 490, false, 'Site A access', [['medium', 'No syslog server configured']], 4, 16, 2]),
+          mk(['lab-snmp', 'lab-snmp-01', 'snmp', 'Linux', 'net-snmp host', '—', 'Basic inventory', '172.16.1.50', '—', 'Live · SNMPv3 via lab-vm-a', 'Today 10:20', 380, 490, false, 'SNMP only', [], 1, 1, 1]),
+          mk(['lab-sw-b', 'lab-sw-b', 'sw', 'Cisco', 'IOSvL2', 'IOS 15.2(2020)', 'Supported', '172.16.2.10', '9L2B••••', 'Live · SSH via lab-vm-b', 'Today 10:19', 560, 490, false, 'Site B access', [], 3, 16, 1]),
+          mk(['lab-fap-01', 'lab-fap-01', 'ap', 'Fortinet', 'FortiAP 231F', 'FortiAP 7.4.1', 'Supported', '169.254.2.10', 'FP231F••••', 'Live · via lab-fgt-01 API', 'Today 10:18', 820, 490, false, 'Bench', [], 1, 2, 1]),
+        ],
+        L2: [['lab-fgt-01', 'lab-c8k-01', 'port2', 'Gi1', 'LLDP', true], ['lab-fgt-01', 'lab-c8k-02', 'port3', 'Gi1', 'LLDP', true], ['lab-c8k-01', 'lab-iosv-01', 'Gi2', 'Gi0/0', 'CDP', true], ['lab-iosv-01', 'lab-sw-a', 'Gi0/1', 'Gi0/0', 'CDP', true], ['lab-sw-a', 'lab-snmp', 'Gi0/3', 'eth0', 'LLDP from lab-sw-a only', false], ['lab-c8k-02', 'lab-sw-b', 'Gi2', 'Gi0/0', 'CDP', true], ['lab-fgt-01', 'lab-fsw-01', 'fortilink', 'port8', 'FortiLink', true], ['lab-fsw-01', 'lab-fap-01', 'port1', 'lan1', 'FortiLink · PoE', true]],
+        L3: [['lab-fgt-01', 'lab-c8k-01', '172.16.0.1', '172.16.0.2', 'OSPF area 0 · Full', true, 'OSPF 0'], ['lab-fgt-01', 'lab-c8k-02', '172.16.0.5', '172.16.0.6', 'OSPF area 0 · Full', true, 'OSPF 0'], ['lab-c8k-01', 'lab-c8k-02', '172.16.9.1', '172.16.9.2', 'iBGP · AS 65099 · Established', true, 'iBGP'], ['lab-c8k-01', 'lab-iosv-01', '172.16.1.1', '172.16.1.5', 'EIGRP 10', true, 'EIGRP']],
+      },
+    };
+
+    const locked = META[cust][1] === 'locked';
+    const topo = T[cust] || T.nw;
+    const siteIdx = Math.min(s.site, topo.sites.length - 1);
+    const site = topo.sites[siteIdx];
+    const showMap = !locked && site[2] === 'map';
+    const D = topo.D;
+    const byId = {}; D.forEach((d) => { byId[d.id] = d; });
+    const l3 = s.layer === 'l3';
+    const q = s.query.trim().toLowerCase();
+    const match = (d) => !q || (d.host + ' ' + d.ip + ' ' + d.serial + ' ' + d.model).toLowerCase().includes(q);
+    const worst = (d) => (d.f.find((x) => x[0] === 'critical') ? 'critical' : d.f.find((x) => x[0] === 'high') ? 'high' : null);
+    const decorate = (d) => {
+      const findings = d.f.map(([sev, title]) => ({ sev, title, bg: SEV[sev][0], fg: SEV[sev][1], bgL: SEV[sev][2], fgL: SEV[sev][3] }));
+      const osMap = { Supported: ['#BBF7D0', '#052E16', '#DCFCE7', '#166534'], 'End of support': ['#FDA29B', '#3A0A06', '#FEE4E2', '#912018'], Drift: ['#FDBA74', '#3B1405', '#FFEDD5', '#9A3412'] };
+      const o = osMap[d.osState] || ['#CBD5E1', '#1E293B', '#EEF2F6', '#344054'];
+      return { ...d, icon: ICON[d.role], roleText: ROLE[d.role], findings, hasFindings: findings.length > 0, noFindings: findings.length === 0,
+        osBg: o[0], osFg: o[1], osBgL: o[2], osFgL: o[3],
+        ifText: d.ifTotal ? d.ifUp + ' up of ' + d.ifTotal : '—', nbText: String(d.nb),
+        hasIfaces: d.ifaces.length > 0, noIfaces: d.ifaces.length === 0,
+        cfgHeader: d.config ? 'Latest snapshot · masked on the collector' : 'No config in this view',
+        config: d.config || (d.uncollected ? '(not collected)' : '(open Inventory › Config for the full snapshot)') };
+    };
+    const nodes = D.map((d) => {
+      const w = s.overlay ? worst(d) : null;
+      const dim = (l3 && !d.l3) || !match(d);
+      const pinnedId = s.pinned;
+      return { ...d, left: d.x - 56, top: d.y - 24, op: dim ? 0.22 : 1,
+        icon: ICON[d.role], ic: d.uncollected ? '#667085' : '#0E1A24',
+        bw: w ? 3 : d.uncollected ? 2 : 1, bstyle: d.uncollected ? 'dashed' : 'solid',
+        bc: w === 'critical' ? '#B42318' : w === 'high' ? '#E8590C' : pinnedId === d.id ? '#0E7490' : d.uncollected ? '#98A2B3' : '#CBD5E1',
+        bg: pinnedId === d.id ? '#ECFEFF' : '#FFFFFF',
+        badge: s.overlay && d.f.length ? String(d.f.length) : '', badgeBg: w === 'critical' ? '#B42318' : w === 'high' ? '#C2410C' : '#475467',
+        labelBg: pinnedId === d.id ? '#CFFAFE' : 'rgba(255,255,255,.9)',
+        aria: d.host + ', ' + ROLE[d.role] + ', ' + d.f.length + ' findings',
+        pressed: pinnedId === d.id ? 'true' : 'false',
+        enter: () => this.setState({ hover: d.id, hoverLink: null }),
+        pin: () => this.setState({ pinned: d.id, dtab: 'overview' }) };
+    });
+    const src = l3 ? topo.L3 : topo.L2;
+    const links = src.map((r, i) => {
+      const a = byId[r[0]], b = byId[r[1]];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const both = r[5];
+      return { x: a.x, y: a.y - 7, w: Math.round(Math.sqrt(dx * dx + dy * dy)), a: (Math.atan2(dy, dx) * 180) / Math.PI,
+        dash: both ? 'solid' : 'dashed', color: both ? (l3 ? '#0E7490' : '#64748B') : '#E8590C', weight: l3 ? 3 : r[2].indexOf('Po') === 0 ? 4 : 2,
+        op: !match(a) && !match(b) ? 0.2 : 0.9, aria: 'Link ' + a.host + ' to ' + b.host,
+        enter: () => this.setState({ hoverLink: i, hover: null }) };
+    });
+    const linkLabels = l3 ? topo.L3.map((r) => { const a = byId[r[0]], b = byId[r[1]]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, text: r[6] }; }) : [];
+    let pop = null;
+    if (s.hover && byId[s.hover]) {
+      const d = decorate(byId[s.hover]);
+      pop = { ...d, left: d.x > 620 ? d.x - 56 - 312 : d.x + 64, top: d.y > 380 ? d.y - 250 : Math.max(8, d.y - 30) };
+    }
+    let linkPop = null;
+    if (s.hoverLink !== null && src[s.hoverLink]) {
+      const r = src[s.hoverLink]; const a = byId[r[0]], b = byId[r[1]];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      linkPop = { left: mx > 620 ? mx - 290 : mx + 16, top: my + 12, title: a.host + ' ↔ ' + b.host, a: a.host + '  ' + r[2], b: b.host + '  ' + r[3], detail: r[4],
+        seen: r[5] ? 'Confirmed from both ends' : 'Seen from one end only: collect or import the other side', seenColor: r[5] ? '#86EFAC' : '#FDBA74' };
+    }
+    const hasSel = !!(s.pinned && byId[s.pinned]);
+    const sel = decorate(hasSel ? byId[s.pinned] : D[0]);
+    // Shown in the side panel when nothing is selected.
+    const SEVK = { critical: ['#FEE4E2', '#912018'], high: ['#FFEDD5', '#9A3412'], medium: ['#FEF3C7', '#854D0E'], low: ['#EEF2F6', '#344054'] };
+    const real = D.filter((d) => d.role !== 'ext');
+    const allF = []; real.forEach((d) => d.f.forEach(([sev, title]) => allF.push({ sev, title, d })));
+    const sevN = (k) => allF.filter((x) => x.sev === k).length;
+    const rank = { critical: 0, high: 1, medium: 2, low: 3 };
+    const oneSided = topo.L2.filter((r) => !r[5] && byId[r[0]].role !== 'ext' && byId[r[1]].role !== 'ext');
+    const pickDev = (id) => () => this.setState({ pinned: id, dtab: 'overview', hover: null });
+    const attention = allF.filter((x) => x.sev === 'critical' || x.sev === 'high').sort((a, b) => rank[a.sev] - rank[b.sev]).slice(0, 4)
+      .map((x) => ({ tag: x.sev, bg: SEVK[x.sev][0], fg: SEVK[x.sev][1], host: x.d.host, text: x.title, pick: pickDev(x.d.id) }))
+      .concat(real.filter((d) => d.uncollected).map((d) => ({ tag: 'unknown', bg: '#EEF2F6', fg: '#344054', host: d.host, text: d.source + ' · not collected yet', pick: pickDev(d.id) })))
+      .concat(oneSided.filter((r) => !byId[r[1]].uncollected).slice(0, 2).map((r) => ({ tag: 'link', bg: '#FFEDD5', fg: '#9A3412', host: byId[r[0]].host + ' ↔ ' + byId[r[1]].host, text: r[4], pick: pickDev(r[1]) })));
+    const roleN = (role) => real.filter((d) => d.role === role && !d.uncollected).length;
+    const sum = !showMap ? { site: site[0], sub: site[1], tiles: [], sev: { c: 0, h: 0, m: 0, l: 0 }, sevText: 'Nothing drawn for this site yet: ' + (site[3] || site[1]).toLowerCase() + '.', attention: [] } : {
+      site: site[0], sub: real.length + ' devices · ' + topo.L2.length + ' links · ' + oneSided.length + ' seen from one end',
+      tiles: [['Firewalls', roleN('fw')], ['Switches', roleN('sw')], ['Routers', roleN('rtr')], ['Access points', roleN('ap')], ['SNMP only', roleN('snmp')], ['Not collected', real.filter((d) => d.uncollected).length]].map(([label, n]) => ({ label, n })),
+      sev: { c: sevN('critical'), h: sevN('high'), m: sevN('medium'), l: sevN('low') },
+      sevText: allF.length ? sevN('critical') + ' critical · ' + sevN('high') + ' high · ' + sevN('medium') + ' medium · ' + sevN('low') + ' low' : 'No findings on devices at this site',
+      attention,
+    };
+    const zoomed = (n) => Math.round(n * 100) / 100;
+    const z = s.zoom === null ? s.fit : s.zoom;
+    const onsite = live;
+    const slug = cust === 'nw' ? 'northwind' : cust === 'bp' ? 'bluepeak' : cust === 'lk' ? 'larkfield' : 'itcn-lab';
+    const exportDefs = [['PNG', '.png', 'Image for the report, 2× resolution'], ['SVG', '.svg', 'Vector, editable in Visio or draw.io'], ['Links table', '.csv', 'Every link with ports and how it was seen'], ['Graph', '.json', 'Nodes and links for other tools'], ['Add to report', '→', 'Place this view in the ' + ENGS[eng][0] + ' report']];
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], ename: ENGS[eng][0], banner,
+      locked, unlocked: !locked, readOnly: !!completed || cust === 'lk',
+      discovered: topo.discovered,
+      sites: topo.sites.map((x, i) => ({ name: x[0], meta: x[1], cls: siteIdx === i ? 'sitetab on' : 'sitetab', selected: siteIdx === i ? 'true' : 'false', pick: () => this.setState({ site: i, hover: null, hoverLink: null, pinned: null }) })),
+      showMap, showMsg: !locked && site[2] === 'msg',
+      msg: { title: site[3] || '', text: site[4] || '', hasProgress: typeof site[5] === 'number', progress: site[5] || 0, progressText: site[6] || '' },
+      l2Cls: l3 ? 'seg' : 'seg on', l3Cls: l3 ? 'seg on' : 'seg', l2Checked: l3 ? 'false' : 'true', l3Checked: l3 ? 'true' : 'false',
+      setL2: () => this.setState({ layer: 'l2', hoverLink: null }), setL3: () => this.setState({ layer: 'l3', hoverLink: null }),
+      overlay: s.overlay, toggleOverlay: () => this.setState({ overlay: !s.overlay }),
+      query: s.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      zoom: z, zoomLabel: s.zoom === null ? 'Fit' : Math.round(z * 100) + '%', mapW: Math.round(980 * z), mapH: Math.round(620 * z), viewH: s.viewH, mapRef: this.mapRef,
+      zoomIn: () => this.setState({ zoom: zoomed(Math.min(2.4, z + 0.1)) }), zoomOut: () => this.setState({ zoom: zoomed(Math.max(0.4, z - 0.1)) }), zoomFit: () => this.setState({ zoom: null }),
+      nodes, links, linkLabels, pop, linkPop,
+      leave: () => this.setState({ hover: null, hoverLink: null }),
+      sel,
+      hasSel: hasSel && showMap, noSel: !(hasSel && showMap), sum, asideLabel: hasSel ? 'Device details' : 'Site summary',
+      clearSel: () => this.setState({ pinned: null, connect: null }),
+      bgClick: (e) => { const t = e && e.target; if (t && t.closest && !t.closest('button') && s.pinned) this.setState({ pinned: null }); },
+      connectOpen: !!s.connect && !!byId[s.connect],
+      connectDev: s.connect && byId[s.connect] ? { host: byId[s.connect].host, vendor: byId[s.connect].vendor, model: byId[s.connect].model, os: byId[s.connect].os, ip: byId[s.connect].ip, serial: byId[s.connect].serial, source: byId[s.connect].source, kind: byId[s.connect].role } : null,
+      openConnect: () => this.setState({ connect: sel.id, hover: null }),
+      closeConnect: () => this.setState({ connect: null }),
+      dtabs: [['overview', 'Overview'], ['ifaces', 'Interfaces'], ['config', 'Config']].map(([id, label]) => ({ label, cls: s.dtab === id ? 'dtab on' : 'dtab', selected: s.dtab === id ? 'true' : 'false', pick: () => this.setState({ dtab: id }) })),
+      tabOverview: s.dtab === 'overview', tabIfaces: s.dtab === 'ifaces', tabConfig: s.dtab === 'config',
+      exportOpen: s.exportOpen, exportExpanded: s.exportOpen ? 'true' : 'false',
+      toggleExport: () => this.setState({ exportOpen: !s.exportOpen }),
+      exports: exportDefs.map(([label, ext, hint]) => ({ label, ext, hint, pick: () => this.setState({ exportOpen: false,
+        toast: ext === '→' ? (l3 ? 'L3' : 'L2') + ' map of ' + site[0] + ' added to the ' + ENGS[eng][0] + ' report' : onsite ? 'Saved ' + slug + '-' + s.layer + ext + ' to Bluepeak’s on-site store' : 'Exported ' + slug + '-' + s.layer + ext }) })),
+      toast: s.toast,
+      rediscover: () => this.setState({ toast: 'Discovery queued · the collector picks it up on its next poll' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

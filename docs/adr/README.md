@@ -12,6 +12,7 @@ request as the code it affects.
 | [0004](0004-v1-is-read-only.md) | v1 is read-only | Accepted |
 | [0005](0005-on-site-live-view-and-inside-access.md) | On site mode: live view and inside access | Accepted |
 | [0006](0006-tech-stack.md) | Tech stack | Accepted |
+| [0007](0007-ui-design-reference.md) | The B1 design is the reference for the engineer UI | Accepted |
 
 Statuses are Proposed, Accepted, Superseded by ADR-NNNN, or Rejected. Each ADR marks which
 parts Yandy decided and which are proposals.

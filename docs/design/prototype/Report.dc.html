@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Serif:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.sec{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;min-height:44px;box-sizing:border-box}
+.sec:hover{background:#F3F5F7}
+.fmt{flex:1;border:1px solid #D0D5DD;background:#FFFFFF;border-radius:10px;padding:12px;font:inherit;cursor:pointer;text-align:left;color:#101828}
+.fmt.on{border-color:#0E7490;box-shadow:0 0 0 2px #A5E3EE}
+.thumb{border:1px solid #DDE2E8;background:#FFFFFF;border-radius:6px;width:64px;height:84px;padding:6px;box-sizing:border-box;cursor:pointer;font:inherit;font-size:9px;color:#475467;display:flex;flex-direction:column;gap:3px;text-align:left}
+.thumb.on{border-color:#0E7490;box-shadow:0 0 0 2px #A5E3EE}
+.serif{font-family:'IBM Plex Serif',Georgia,serif}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a class="on" href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<header>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> / {{ename}}</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Assessment report</h1>
+</header>
+
+<sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; gap: 10px; align-items: flex-start; background: {{banner.bg}}; border: 1px solid {{banner.border}}; color: {{banner.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span><b>{{banner.title}}</b> {{banner.text}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{locked}}" hint-placeholder-val="{{ false }}">
+<dc-import name="OnsiteLocked" screen="Reports" customer="{{cname}}" hint-size="100%,420px"></dc-import>
+</sc-if>
+
+<sc-if value="{{unlocked}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-label="Report builder" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 18px">
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 6px">Sections</div>
+<sc-for list="{{sections}}" as="x" hint-placeholder-count="7">
+<label class="sec">
+<input type="checkbox" checked="{{x.on}}" disabled="{{x.disabled}}" onChange="{{x.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490; flex: none">
+<span style="flex: 1"><span style="display: block; font-weight: 500">{{x.label}}</span><span style="display: block; font-size: 12px; color: #475467">{{x.hint}}</span></span>
+<span class="mono" style="font-size: 11px; color: #475467">{{x.pages}}</span>
+</label>
+</sc-for>
+</div>
+
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Lowest severity to include</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{sevs}}" as="v" hint-placeholder-count="4">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.pressed}}" style="border: 1px solid {{v.border}}; background: {{v.bg}}; color: #101828; font: inherit; font-size: 13px; padding: 8px 12px; border-radius: 8px; cursor: pointer; min-height: 40px">{{v.label}}</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #475467; margin-top: 8px">{{findingCount}} findings included{{manualText}} · <a href="Findings.dc.html">Edit findings</a></div>
+</div>
+
+<div>
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Format</div>
+<div style="display: flex; gap: 10px">
+<button type="button" class="{{pdfCls}}" aria-pressed="{{pdfPressed}}" onClick="{{setPdf}}"><span style="display: block; font-weight: 600">PDF</span><span style="display: block; font-size: 12px; color: #475467">Ready to send</span></button>
+<button type="button" class="{{docxCls}}" aria-pressed="{{docxPressed}}" onClick="{{setDocx}}"><span style="display: block; font-weight: 600">DOCX</span><span style="display: block; font-size: 12px; color: #475467">Edit before sending</span></button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button class="btn primary" type="button" onClick="{{generate}}" style="width: 100%"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>{{genLabel}}</button>
+<sc-if value="{{busy}}" hint-placeholder-val="{{ false }}">
+<div style="height: 6px; background: #EEF2F6; border-radius: 3px; overflow: hidden"><div style="width: 64%; height: 100%; background: #0E7490"></div></div>
+<div style="font-size: 12px; color: #475467">{{busyText}}</div>
+</sc-if>
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; gap: 10px; align-items: center; background: #ECFDF3; border: 1px solid #ABEFC6; border-radius: 10px; padding: 10px 12px; font-size: 13px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+<span style="flex: 1"><span class="mono">{{fileName}}</span> · {{pageCount}} pages{{doneSuffix}}</span>
+<sc-if value="{{canDownload}}" hint-placeholder-val="{{ true }}"><a href="Report.dc.html" style="font-size: 13px">Download</a></sc-if>
+</div>
+</sc-if>
+<div style="font-size: 12px; color: #475467; line-height: 1.5">{{whereText}}</div>
+</div>
+
+<div style="border-top: 1px solid #E4E8EC; padding-top: 14px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467; margin-bottom: 8px">Previous exports</div>
+<sc-for list="{{history}}" as="h" hint-placeholder-count="2">
+<div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0"><span class="mono" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{h.file}}</span><span style="color: #475467; flex: none">{{h.when}}</span></div>
+</sc-for>
+<sc-if value="{{noHistory}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #475467">None yet.</div></sc-if>
+</div>
+</section>
+
+<section aria-label="Preview" style="flex: 999 1 560px; min-width: 0; display: flex; gap: 14px; align-items: flex-start">
+<div role="tablist" aria-label="Pages" style="display: flex; flex-direction: column; gap: 10px; flex: none">
+<sc-for list="{{thumbs}}" as="t" hint-placeholder-count="4">
+<button type="button" role="tab" class="{{t.cls}}" aria-selected="{{t.selected}}" aria-label="Page {{t.n}}: {{t.label}}" onClick="{{t.pick}}"><span style="font-weight: 600; color: #101828">{{t.n}}</span><span>{{t.label}}</span><span style="height: 3px; width: 70%; background: #E4E8EC"></span><span style="height: 3px; width: 90%; background: #E4E8EC"></span><span style="height: 3px; width: 50%; background: #E4E8EC"></span></button>
+</sc-for>
+</div>
+<div style="flex: 1; min-width: 0; overflow-x: auto">
+<article style="width: 612px; min-height: 792px; margin: 0 auto; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,40,.08), 0 12px 32px rgba(16,24,40,.08); border-radius: 4px; padding: 56px 60px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #475467; border-bottom: 1px solid #E4E8EC; padding-bottom: 10px; gap: 10px">
+<span style="display: inline-flex; gap: 8px; align-items: center; font-weight: 600; color: #0E1A24; flex: none"><svg width="16" height="16" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#0E7490" stroke-width="2.5"></circle><circle cx="14" cy="14" r="3" fill="#0E7490"></circle></svg>IT Cloud Network</span>
+<span style="text-align: right">{{cname}} · {{ename}} · {{r.date}}</span>
+</div>
+
+<sc-if value="{{pg1}}" hint-placeholder-val="{{ true }}">
+<div class="serif" style="font-size: 30px; font-weight: 600; line-height: 1.2; margin-top: 18px">Network assessment<br>{{cname}}</div>
+<div style="font-size: 13px; color: #475467">Prepared by Yandy R. · IT Cloud Network · {{r.month}}</div>
+<h2 class="serif" style="font-size: 17px; margin: 18px 0 0">Summary</h2>
+<p style="font-size: 12px; line-height: 1.7; margin: 0; color: #1D2939">{{r.summary}}</p>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px">
+<sc-for list="{{sevSummary}}" as="m" hint-placeholder-count="4">
+<div style="border: 1px solid #E4E8EC; border-top: 4px solid {{m.color}}; border-radius: 6px; padding: 10px"><div style="font-size: 22px; font-weight: 600">{{m.n}}</div><div style="font-size: 11px; color: #475467">{{m.label}}</div></div>
+</sc-for>
+</div>
+<sc-if value="{{incScope}}" hint-placeholder-val="{{ true }}">
+<h2 class="serif" style="font-size: 17px; margin: 14px 0 0">Scope and method</h2>
+<p style="font-size: 12px; line-height: 1.7; margin: 0; color: #1D2939">{{r.scope}}</p>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{pg2}}" hint-placeholder-val="{{ false }}">
+<h2 class="serif" style="font-size: 17px; margin: 0">Topology · {{r.mapSite}} (L2)</h2>
+<div role="img" aria-label="{{mapAria}}" style="border: 1px solid #E4E8EC; border-radius: 6px; height: 318px; background-color: #FAFBFC; background-image: radial-gradient(#E4E8EC 1px, transparent 1px); background-size: 12px 12px; position: relative; overflow: hidden">
+<sc-for list="{{miniLinks}}" as="l" hint-placeholder-count="10">
+<span aria-hidden="true" style="position: absolute; left: {{l.x}}px; top: {{l.y}}px; width: {{l.w}}px; height: 0; border-top: {{l.weight}}px {{l.dash}} {{l.color}}; transform: rotate({{l.a}}deg); transform-origin: 0 50%"></span>
+</sc-for>
+<sc-for list="{{miniNodes}}" as="n" hint-placeholder-count="10">
+<span aria-hidden="true" style="position: absolute; left: {{n.left}}px; top: {{n.top}}px; width: 72px; display: flex; flex-direction: column; align-items: center; gap: 2px">
+<span style="width: 24px; height: 24px; border-radius: 6px; background: #FFFFFF; border: {{n.bw}}px {{n.bs}} {{n.c}}; display: flex; align-items: center; justify-content: center; box-sizing: border-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{n.ic}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.icon}}"></path></svg></span>
+<span class="mono" style="font-size: 7.5px; line-height: 1.2; background: rgba(255,255,255,.92); padding: 0 3px; border-radius: 2px; white-space: nowrap; color: #101828">{{n.h}}</span>
+</span>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 9.5px; color: #475467; align-items: center">
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 18px; border-top: 1.5px solid #64748B"></span>Link seen from both ends</span>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 18px; border-top: 1.5px dashed #E8590C"></span>Seen from one end</span>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border: 2px solid #B42318; border-radius: 3px; box-sizing: border-box"></span>Critical</span>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border: 2px solid #E8590C; border-radius: 3px; box-sizing: border-box"></span>High</span>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border: 1.5px dashed #98A2B3; border-radius: 3px; box-sizing: border-box"></span>Not collected</span>
+</div>
+<div style="font-size: 11px; color: #475467">Figure 1. Layer 2 topology of {{r.mapSite}} from LLDP and CDP. Exported from Cartio’s site map at 2× resolution.</div>
+</sc-if>
+
+<sc-if value="{{pg3}}" hint-placeholder-val="{{ false }}">
+<h2 class="serif" style="font-size: 17px; margin: 0">Findings</h2>
+<sc-for list="{{reportFindings}}" as="f" hint-placeholder-count="4">
+<div style="border-top: 1px solid #E4E8EC; padding-top: 10px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 8px; align-items: baseline"><span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; background: {{f.bg}}; color: {{f.fg}}; text-transform: uppercase; letter-spacing: .04em">{{f.sev}}</span><span style="font-size: 13px; font-weight: 600">{{f.title}}</span></div>
+<div style="font-size: 11px; color: #475467">Affected: <span class="mono">{{f.devices}}</span></div>
+<div style="font-size: 12px; line-height: 1.6; color: #1D2939">{{f.rec}}</div>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{pg4}}" hint-placeholder-val="{{ false }}">
+<h2 class="serif" style="font-size: 17px; margin: 0">Changes since the last assessment</h2>
+<table style="width: 100%; border-collapse: collapse; font-size: 11px">
+<thead><tr style="text-align: left; color: #475467"><th style="padding: 6px 0; font-weight: 500">Change</th><th style="padding: 6px 0; font-weight: 500">Count</th><th style="padding: 6px 0; font-weight: 500">Examples</th></tr></thead>
+<tbody>
+<sc-for list="{{changeRows}}" as="c" hint-placeholder-count="4">
+<tr style="border-top: 1px solid #E4E8EC"><td style="padding: 8px 0">{{c.k}}</td><td>{{c.n}}</td><td class="mono">{{c.ex}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+
+<sc-if value="{{pg5}}" hint-placeholder-val="{{ false }}">
+<h2 class="serif" style="font-size: 17px; margin: 0">Capacity and availability</h2>
+<div style="font-size: 11px; color: #475467">From the customer’s own monitoring: {{cap.sources}}. 30-day window ending {{r.date}}.</div>
+<sc-if value="{{cap.hasUtil}}" hint-placeholder-val="{{ true }}">
+<div style="font-size: 12px; font-weight: 600; margin-top: 4px">Busiest links (95th percentile)</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 10.5px">
+<thead><tr style="text-align: left; color: #475467"><th style="padding: 5px 0; font-weight: 500">Interface</th><th style="font-weight: 500">Speed</th><th style="font-weight: 500">In</th><th style="font-weight: 500">Out</th><th style="font-weight: 500">Peak</th></tr></thead>
+<tbody>
+<sc-for list="{{cap.util}}" as="u" hint-placeholder-count="4">
+<tr style="border-top: 1px solid #E4E8EC"><td class="mono" style="padding: 6px 0">{{u.name}}</td><td>{{u.speed}}</td><td><span style="display: inline-flex; align-items: center; gap: 5px"><span style="display: inline-block; width: 44px; height: 5px; background: #EEF2F6; border-radius: 3px; overflow: hidden"><span style="display: block; height: 100%; width: {{u.inPct}}%; background: {{u.inColor}}"></span></span>{{u.inText}}</span></td><td>{{u.out}}</td><td>{{u.peak}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<sc-if value="{{cap.hasAvail}}" hint-placeholder-val="{{ true }}">
+<div style="font-size: 12px; font-weight: 600; margin-top: 6px">Availability</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 10.5px">
+<thead><tr style="text-align: left; color: #475467"><th style="padding: 5px 0; font-weight: 500">Monitor</th><th style="font-weight: 500">Uptime</th><th style="font-weight: 500">Outages</th><th style="font-weight: 500">Latency p95</th></tr></thead>
+<tbody>
+<sc-for list="{{cap.avail}}" as="a" hint-placeholder-count="3">
+<tr style="border-top: 1px solid #E4E8EC"><td class="mono" style="padding: 6px 0">{{a.name}}</td><td style="color: {{a.color}}; font-weight: 600">{{a.up}}</td><td>{{a.out}}</td><td>{{a.lat}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<sc-if value="{{cap.hasNotes}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; font-weight: 600; margin-top: 6px">Noted from integrations</div>
+<sc-for list="{{cap.notes}}" as="n" hint-placeholder-count="2">
+<div style="border-top: 1px solid #E4E8EC; padding-top: 6px; font-size: 11px; line-height: 1.55; color: #1D2939"><b style="font-weight: 600">{{n.title}}</b> <span style="color: #475467">({{n.source}})</span><br>{{n.text}}</div>
+</sc-for>
+</sc-if>
+<sc-if value="{{cap.none}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: #475467">No monitoring integration is connected for {{cname}}. Connect one on the Integrations page to fill this section.</div>
+</sc-if>
+</sc-if>
+
+<div style="flex-grow: 1"></div>
+<div style="display: flex; justify-content: space-between; font-size: 10px; color: #667085; border-top: 1px solid #E4E8EC; padding-top: 8px"><span>Confidential · prepared for {{cname}}</span><span>Page {{page}} of {{pageCount}}</span></div>
+</article>
+</div>
+</section>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), on: { summary: true, scope: true, inv: true, topo: true, findings: true, compare: true, capacity: true, appendix: true }, minSev: 'low', fmt: 'docx', page: 1, gen: 'idle' };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      const v = this.readCtx();
+      if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) return this.setCtx(v);
+      const b = this.readOverride(v.cust) + '|' + this.readExtra(v.cust);
+      if (b !== this._rb) { this._rb = b; this.forceUpdate(); }
+    }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  readOverride(cust) { try { return window.localStorage.getItem('cartio.report.' + cust) || ''; } catch (e) { return ''; } }
+  readExtra(cust) { try { return window.localStorage.getItem('cartio.reportExtra.' + cust) || ''; } catch (e) { return ''; } }
+  setCtx(v) { this.setState({ ctx: v, page: 1, gen: 'idle', minSev: 'low' }); }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const ENGS = { 'nw-q4': ['Q4 2026 assessment'], 'nw-q2': ['Q2 2026 assessment', 'Apr 14, 2026'], 'nw-q4-25': ['Q4 2025 assessment', 'Nov 3, 2025'], 'bp-26': ['Annual review 2026'], 'bp-25': ['Annual review 2025', 'Nov 12, 2025'], 'lk-wifi': ['Wi-Fi refresh baseline', 'Oct 24, 2026'], 'om-plant': ['Plant network review'], 'lab-drv': ['Driver regression'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const eng = ENGS[s.ctx.eng] && s.ctx.eng.indexOf(cust) === 0 ? s.ctx.eng : Object.keys(ENGS).find((k) => k.indexOf(cust) === 0);
+    const completed = ENGS[eng][1];
+    const live = META[cust][1] === 'live';
+    const locked = META[cust][1] === 'locked';
+    const parts = [];
+    if (live) parts.push(['Built on Bluepeak’s collector.', 'bp-dc1-vm builds the report from on-site data and saves it to Bluepeak’s file share. The controller only sees “saved” or “failed”; the preview is relayed in memory.']);
+    if (completed) parts.push(['Completed engagement.', 'This report was finalised on ' + completed + '. Regenerating it creates a new version; the sent one is kept.']);
+    const banner = { show: parts.length > 0, title: parts.map((p) => p[0]).join(' '), text: parts.map((p) => p[1]).join(' '), bg: live ? '#F5F3FF' : '#F8FAFB', border: live ? '#DDD6FE' : '#DDE2E8', fg: live ? '#4C1D95' : '#344054' };
+    const SEV = { critical: ['#FEE4E2', '#912018', '#B42318'], high: ['#FFEDD5', '#9A3412', '#E8590C'], medium: ['#FEF3C7', '#854D0E', '#F5B53F'], low: ['#EEF2F6', '#344054', '#98A2B3'] };
+    const R = {
+      nw: { date: 'Oct 28, 2026', month: 'October 2026', slug: 'Northwind', mapSite: 'HQ data center', compare: true,
+        summary: 'We discovered 58 devices across three sites, from live read-only access and from files your team sent. Two areas need attention first. The WAN router and the Clinic East firewall run software past end of support. Telnet and SNMPv2c are still enabled on parts of the core. Seven issues from the Q2 assessment are fixed.',
+        scope: 'Sites: HQ data center, Clinic East, Clinic West. Collection used read-only accounts over SSH, the FortiOS REST API and SNMPv3. No changes were made to any device. Secrets in configurations were masked before leaving your network.',
+        sev: [2, 3, 2, 1],
+        F: [['critical', 'Routers and firewalls run OS versions past end of support', 'rtr-wan-01, east-fw-01', 'Upgrade rtr-wan-01 to a supported IOS-XE release and move east-fw-01 to FortiOS 7.2 or later.'], ['critical', 'Access switch hardware is end of sale', 'east-sw-01', 'Budget a replacement within 12 months.'], ['high', 'Firmware drift on core switches', 'core-sw-02', 'Align core-sw-02 with core-sw-01 on IOS-XE 17.9.4a.'], ['high', 'Telnet allowed on VTY lines', 'rtr-wan-01, east-sw-01', 'Allow SSH only and restrict VTY access to the management subnet.'], ['high', 'SNMPv2c community enabled on the core', 'core-sw-02, rtr-wan-01', 'Remove the v2c community; SNMPv3 is already configured.'], ['medium', 'No syslog server configured', 'rtr-wan-01, dist-sw-03', 'Send logs to the existing log collector.'], ['medium', 'FortiSwitch firmware differs', 'acc-fsw-12', 'Upgrade from the FortiGate managed switch page.'], ['low', 'Only one NTP server configured', 'core-sw-01', 'Add a second NTP source.']],
+        nodes: [['rtr-wan-01', 246, 34, '#B42318'], ['fw-hq-01', 180, 90, '#CBD5E1'], ['fw-hq-02', 312, 90, '#CBD5E1'], ['core-sw-01', 180, 150, '#CBD5E1'], ['core-sw-02', 312, 150, '#E8590C'], ['dist-sw-03', 70, 214, '#CBD5E1'], ['acc-fsw-11', 246, 214, '#CBD5E1'], ['acc-fsw-12', 410, 214, '#CBD5E1'], ['ap-hq-01', 200, 270, '#CBD5E1'], ['ap-hq-02', 292, 270, '#CBD5E1']],
+        changes: [['Findings fixed', 7, 'Telnet off on core-sw-01, SNMPv3 on dist-sw-03'], ['New findings', 3, 'core-sw-02 drift, east-fw-01 EoS'], ['OS upgrades', 6, 'fw-hq-01 7.2.5 → 7.2.8'], ['Devices added / removed', '4 / 1', 'east-sw-legacy not seen']],
+        history: [['Northwind_Q2-2026_Network-Assessment.pdf', 'Apr 18 · sent'], ['Northwind_Q2-2026_draft.docx', 'Apr 16']] },
+      bp: { date: 'Oct 28, 2026', month: 'October 2026', slug: 'Bluepeak', mapSite: 'DC1', compare: true,
+        summary: 'We assessed 41 devices at DC1 and Branch 7 through Bluepeak’s on-site collector. All network data and this report stay on Bluepeak’s network. There are no critical findings. Three high findings need action before the next PCI DSS assessment: a default SNMPv2c community in the cardholder-data DMZ, HTTP administration on one firewall, and an access switch left on older firmware. Four issues from 2025 are fixed.',
+        scope: 'Sites: DC1 and Branch 7. Collection used read-only accounts over SSH, the FortiOS REST API and SNMPv3, run by the on-site collector. Data was stored only in Bluepeak’s on-site store; engineers viewed it through live view, which stores nothing on our controller. No changes were made to any device.',
+        sev: [0, 3, 2, 1],
+        F: [['high', 'Default SNMPv2c community in the cardholder-data DMZ', 'bp-dmz-sw-01', 'Remove the v2c community and use SNMPv3 authPriv (PCI DSS 2.2.2).'], ['high', 'HTTP admin access on the firewall management interface', 'bp-fw-02', 'Remove HTTP so both HA members match.'], ['high', 'Firmware drift on C9200L access switches', 'bp-acc-02', 'Upgrade bp-acc-02 to IOS-XE 17.9.5.'], ['medium', 'Admin idle timeout is 480 minutes', 'bp-fw-01, bp-fw-02', 'Set it to 15 minutes (PCI DSS 8.2.8).'], ['medium', 'No syslog server configured', 'bp-dmz-sw-01, bp-acc-01', 'Send logs to the SIEM collector (PCI DSS 10).'], ['low', 'Core switches use different NTP servers', 'bp-core-01, bp-core-02', 'Use both NTP servers on both cores.']],
+        nodes: [['bp-fw-01', 180, 40, '#CBD5E1'], ['bp-fw-02', 312, 40, '#E8590C'], ['bp-core-01', 180, 110, '#CBD5E1'], ['bp-core-02', 312, 110, '#CBD5E1'], ['bp-dmz-sw-01', 430, 110, '#E8590C'], ['bp-acc-01', 120, 190, '#CBD5E1'], ['bp-acc-02', 246, 190, '#E8590C'], ['bp-fsw-01', 370, 190, '#CBD5E1'], ['bp-ap-01', 330, 262, '#CBD5E1'], ['bp-ups-01', 430, 262, '#CBD5E1']],
+        changes: [['Findings fixed', 4, 'Telnet off on bp-core-01, SNMPv3 on bp-core-02'], ['New findings', 2, 'bp-dmz-sw-01 default community'], ['OS upgrades', 5, 'bp-fw-01 7.2.7 → 7.4.4'], ['Devices added / removed', '3 / 0', 'bp-dmz-sw-01 new']],
+        history: [['Bluepeak_Annual-Review-2025.pdf', 'Nov 20, 2025 · on-site store']] },
+      lk: { date: 'Oct 24, 2026', month: 'October 2026', slug: 'Larkfield', mapSite: 'District office', compare: false,
+        summary: 'We assessed 118 devices across five sites to set a baseline before the Wi-Fi refresh. The core and firewall are current and healthy. The access layer needs work before new access points go in: six Catalyst 2960X switches can’t supply the multigigabit PoE the new APs need, and the district switch template still enables Telnet and a default SNMP community.',
+        scope: 'Sites: District office, Roosevelt High, Lincoln Elementary, Jefferson Middle and the bus depot. Collection used read-only SSH, the FortiOS REST API and SNMP from one collector at the district office, plus files from the district IT team for switches we could not reach.',
+        sev: [0, 3, 3, 1],
+        F: [['high', 'Telnet allowed on VTY lines at 3 sites', 'lk-acc-101, lk-acc-103, rhs-acc-07 +16', 'Allow SSH only and fix the district switch template.'], ['high', 'Default SNMPv2c community', 'lk-acc-102, lk-wlc-01', 'Move monitoring to SNMPv3 authPriv.'], ['high', 'Access switches run 2 IOS-XE releases', '12 switches on 17.6.5', 'Upgrade during the summer break window.'], ['medium', 'C2960X hardware end of sale', '6 switches', 'Include them in the Wi-Fi refresh budget.'], ['medium', 'Wireless controller only answers SNMPv2c', 'lk-wlc-01', 'Create a read-only SNMPv3 user.'], ['medium', 'No syslog server configured', '30 switches', 'Send switch logs to the firewall’s log server.'], ['low', 'Only one NTP server on the core', 'lk-core-01, lk-core-02', 'Add a second NTP source.']],
+        nodes: [['lk-fw-01', 246, 34, '#CBD5E1'], ['lk-core-01', 180, 100, '#CBD5E1'], ['lk-core-02', 312, 100, '#CBD5E1'], ['lk-wlc-01', 430, 100, '#CBD5E1'], ['lk-acc-101', 110, 180, '#E8590C'], ['lk-acc-102', 230, 180, '#E8590C'], ['lk-acc-103', 350, 180, '#E8590C'], ['lk-ap-101', 380, 260, '#CBD5E1'], ['lk-ap-102', 470, 260, '#CBD5E1']],
+        changes: [],
+        history: [['Larkfield_WiFi-Refresh-Baseline.pdf', 'Oct 27 · sent'], ['Larkfield_WiFi-Refresh-Baseline.docx', 'Oct 25']] },
+      lab: { date: 'Oct 28, 2026', month: 'October 2026', slug: 'ITCN-Lab', mapSite: 'Lab sites A and B', compare: false,
+        summary: 'Driver regression run against the internal lab. All nine devices were discovered from two seeds. The deliberately insecure fixtures produced the expected critical and high findings, so the checks behave as designed. One real issue: HTTPS admin is open on the lab FortiGate’s outside port.',
+        scope: 'Lab sites A and B, collected by lab-vm-a and lab-vm-b with read-only accounts. Fixtures under tests/fixtures/sanitized were imported to test the parsers.',
+        sev: [1, 1, 2, 1],
+        F: [['critical', 'IOS 15.9M fixture flagged as end of support (expected)', 'lab-iosv-01', 'Expected result. No action.'], ['high', 'Telnet allowed (negative-test fixture)', 'lab-iosv-01', 'Expected result. No action.'], ['medium', 'HTTPS admin open on the outside port', 'lab-fgt-01', 'Restrict admin access to the management port.'], ['medium', 'No syslog server configured', 'lab-sw-a', 'Point lab switches at the lab log host.'], ['low', 'No login banner', 'lab-c8k-02', 'Add the standard banner.']],
+        nodes: [['lab-fgt-01', 246, 34, '#CBD5E1'], ['lab-c8k-01', 150, 100, '#CBD5E1'], ['lab-c8k-02', 340, 100, '#CBD5E1'], ['lab-iosv-01', 150, 170, '#B42318'], ['lab-fsw-01', 340, 170, '#CBD5E1'], ['lab-sw-a', 90, 250, '#CBD5E1'], ['lab-snmp-01', 190, 250, '#CBD5E1'], ['lab-sw-b', 290, 250, '#CBD5E1'], ['lab-fap-01', 410, 250, '#CBD5E1']],
+        changes: [],
+        history: [] },
+    };
+    const r0 = R[cust] || R.nw;
+    // From connected integrations (Integrations page). [interface, speed, p95 in, p95 out, peak] and [monitor, uptime, outages, latency p95].
+    const CAP = {
+      nw: { sources: 'SolarWinds (interface load) and Site24x7 (availability)',
+        util: [['core-sw-02 Te1/1/1 → fw-hq-01', '10G', '92%', '41%', '99% Oct 22'], ['fw-hq-01 port1 (ISP-A)', '1G', '71%', '38%', '96% Oct 21'], ['core-sw-01 Te1/1/1 → fw-hq-01', '10G', '64%', '30%', '88% Oct 22'], ['east-fw-01 wan1', '200M', '58%', '22%', '91% Oct 14']],
+        avail: [['rtr-wan-01 (HQ WAN)', '99.92%', '3 brownouts', '38 ms'], ['fw-hq-01', '100%', '—', '2 ms'], ['east-fw-01 (Clinic East)', '99.89%', '2 · 47 min', '24 ms'], ['core-sw-01', '100%', '—', '1 ms']] },
+      bp: { sources: 'Site24x7 (availability), run on bp-dc1-vm',
+        util: [], avail: [['bp-fw-01 WAN (DC1)', '99.97%', '2 · 15 min', '19 ms'], ['bp-fw-02', '100%', '—', '2 ms'], ['bp-core-01', '100%', '—', '1 ms'], ['bp-dmz-sw-01', '100%', '—', '1 ms']] },
+      lk: { sources: 'ManageEngine OpManager (last good sync Oct 24)',
+        util: [['lk-core-01 Te1/0/1 → lk-fw-01', '10G', '38%', '12%', '61% Oct 20'], ['lk-fw-01 wan1 (ISP)', '1G', '83%', '19%', '97% Oct 22'], ['rhs-core-01 uplink', '1G', '77%', '24%', '94% Oct 23']], avail: [] },
+      lab: { sources: 'LibreNMS (ports)', util: [['lab-c8k-01 Gi1 → lab-fgt-01', '1G', '6%', '4%', '31% Oct 28']], avail: [] },
+    }[cust] || null;
+    // Findings edited, added or dismissed on the Findings page replace the defaults.
+    let ov = null;
+    try { ov = JSON.parse(this.readOverride(cust) || 'null'); } catch (e) { ov = null; }
+    const r = Array.isArray(ov) ? { ...r0, F: ov.map((x) => [x[0], x[1], x[2], x[3], x[4]]), sev: ['critical', 'high', 'medium', 'low'].map((k) => ov.filter((x) => x[0] === k).length), fromFindings: true, manualCount: ov.filter((x) => x[4]).length } : r0;
+    // Same layout and L2 links as the site map, drawn at half scale. [id, host, role, x, y, worst severity, not collected]
+    const TOPO = {
+      nw: { n: [['isp', 'isp-pe', 'ext', 490, 34, '', 1], ['rtr', 'rtr-wan-01', 'rtr', 490, 130, 'c'], ['unk', '198.51.100.40', 'unk', 770, 130, '', 1], ['fw1', 'fw-hq-01', 'fw', 380, 236, 'm'], ['fw2', 'fw-hq-02', 'fw', 600, 236, ''], ['c1', 'core-sw-01', 'sw', 380, 346, 'l'], ['c2', 'core-sw-02', 'sw', 600, 346, 'h'], ['pdu', 'pdu-rack-a', 'snmp', 840, 346, ''], ['d3', 'dist-sw-03', 'sw', 160, 460, 'm'], ['f11', 'acc-fsw-11', 'sw', 490, 460, ''], ['f12', 'acc-fsw-12', 'sw', 760, 460, 'm'], ['ap1', 'ap-hq-01', 'ap', 410, 566, ''], ['ap2', 'ap-hq-02', 'ap', 570, 566, '']],
+        l: [['isp', 'rtr', 0], ['rtr', 'fw1', 1], ['rtr', 'fw2', 1], ['rtr', 'unk', 0], ['fw1', 'fw2', 1], ['fw1', 'c1', 1], ['fw1', 'c2', 1], ['fw2', 'c2', 1], ['c1', 'c2', 2], ['c1', 'd3', 1], ['c1', 'f11', 1], ['c2', 'f11', 1], ['c2', 'f12', 1], ['c2', 'pdu', 0], ['f11', 'ap1', 1], ['f11', 'ap2', 1]] },
+      bp: { n: [['isp', 'bp-isp-pe', 'ext', 490, 34, '', 1], ['fw1', 'bp-fw-01', 'fw', 380, 140, 'm'], ['fw2', 'bp-fw-02', 'fw', 600, 140, 'h'], ['c1', 'bp-core-01', 'sw', 380, 260, 'l'], ['c2', 'bp-core-02', 'sw', 600, 260, ''], ['dmz', 'bp-dmz-sw-01', 'sw', 840, 260, 'h'], ['unk', '10.40.9.15', 'unk', 140, 260, '', 1], ['a1', 'bp-acc-01', 'sw', 240, 390, 'm'], ['a2', 'bp-acc-02', 'sw', 490, 390, 'h'], ['fsw', 'bp-fsw-01', 'sw', 740, 390, ''], ['ap', 'bp-ap-01', 'ap', 660, 520, ''], ['ups', 'bp-ups-01', 'snmp', 860, 520, '']],
+        l: [['isp', 'fw1', 0], ['fw1', 'fw2', 1], ['fw1', 'c1', 1], ['fw2', 'c2', 1], ['c1', 'c2', 2], ['c2', 'dmz', 1], ['c1', 'unk', 0], ['c1', 'a1', 1], ['c1', 'a2', 1], ['c2', 'a2', 1], ['fw1', 'fsw', 1], ['fsw', 'ap', 1], ['fsw', 'ups', 0]] },
+      lk: { n: [['isp', 'lk-isp-pe', 'ext', 490, 34, '', 1], ['fw', 'lk-fw-01', 'fw', 490, 130, 'm'], ['c1', 'lk-core-01', 'sw', 380, 250, 'l'], ['c2', 'lk-core-02', 'sw', 600, 250, 'l'], ['unk', '10.60.250.2', 'unk', 140, 250, '', 1], ['wlc', 'lk-wlc-01', 'snmp', 840, 250, 'm'], ['a1', 'lk-acc-101', 'sw', 220, 380, 'h'], ['a2', 'lk-acc-102', 'sw', 420, 380, 'h'], ['a3', 'lk-acc-103', 'sw', 620, 380, 'h'], ['ap1', 'lk-ap-101', 'ap', 760, 510, ''], ['ap2', 'lk-ap-102', 'ap', 900, 510, '']],
+        l: [['isp', 'fw', 0], ['fw', 'c1', 1], ['fw', 'c2', 1], ['c1', 'c2', 2], ['c2', 'wlc', 0], ['c1', 'a1', 1], ['c1', 'a2', 1], ['c2', 'a2', 1], ['c2', 'a3', 1], ['wlc', 'ap1', 0], ['wlc', 'ap2', 0], ['c1', 'unk', 0]] },
+      lab: { n: [['fgt', 'lab-fgt-01', 'fw', 490, 110, 'm'], ['k1', 'lab-c8k-01', 'rtr', 300, 230, ''], ['k2', 'lab-c8k-02', 'rtr', 680, 230, 'l'], ['iosv', 'lab-iosv-01', 'rtr', 300, 360, 'c'], ['fsw', 'lab-fsw-01', 'sw', 680, 360, ''], ['swa', 'lab-sw-a', 'sw', 180, 490, 'm'], ['snmp', 'lab-snmp-01', 'snmp', 380, 490, ''], ['swb', 'lab-sw-b', 'sw', 560, 490, ''], ['fap', 'lab-fap-01', 'ap', 820, 490, '']],
+        l: [['fgt', 'k1', 1], ['fgt', 'k2', 1], ['k1', 'iosv', 1], ['iosv', 'swa', 1], ['swa', 'snmp', 0], ['k2', 'swb', 1], ['fgt', 'fsw', 1], ['fsw', 'fap', 1]] },
+    };
+    const ICON = {
+      fw: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z M8 11h8 M8 15h8 M12 11v4',
+      sw: 'M3 8h18v8H3z M7 12h.01 M11 12h.01 M15 12h.01 M18 12h.01',
+      rtr: 'M12 3a9 9 0 110 18 9 9 0 010-18z M8 9l4-3 4 3 M16 15l-4 3-4-3 M12 6v12',
+      ap: 'M4.5 10a11 11 0 0115 0 M7.5 13.2a6.5 6.5 0 019 0 M12 17.5h.01',
+      snmp: 'M4 5h16v14H4z M8 9h8 M8 13h5',
+      ext: 'M7 18h10a4 4 0 000-8 6 6 0 00-11.6 1.5A3.5 3.5 0 007 18z',
+      unk: 'M9.5 9a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5 M12 17h.01 M4 4h16v16H4z',
+    };
+    const topo = TOPO[cust] || TOPO.nw;
+    const K = 0.5;
+    const pos = {}; topo.n.forEach((n) => { pos[n[0]] = [n[3] * K + 1, n[4] * K + 4]; });
+    const miniNodes = topo.n.map(([id, h, role, , , sev, unc]) => {
+      const [cx, cy] = pos[id];
+      return { h, left: cx - 36, top: cy - 12, icon: ICON[role], ic: unc ? '#667085' : '#0E1A24',
+        c: sev === 'c' ? '#B42318' : sev === 'h' ? '#E8590C' : unc ? '#98A2B3' : '#94A3B8', bw: sev === 'c' || sev === 'h' ? 2 : 1.5, bs: unc ? 'dashed' : 'solid' };
+    });
+    const miniLinks = topo.l.map(([a, b, kind]) => {
+      const [x1, y1] = pos[a], [x2, y2] = pos[b];
+      const dx = x2 - x1, dy = y2 - y1;
+      return { x: x1, y: y1, w: Math.round(Math.sqrt(dx * dx + dy * dy)), a: (Math.atan2(dy, dx) * 180) / Math.PI,
+        weight: kind === 2 ? 2.5 : 1.5, dash: kind === 0 ? 'dashed' : 'solid', color: kind === 0 ? '#E8590C' : '#64748B' };
+    });
+    const defs = [
+      ['summary', 'Executive summary', 'Key risks and what was fixed', 1], ['scope', 'Scope and method', 'Sites, access used, read-only statement', 1],
+      ['inv', 'Inventory summary', 'Devices by vendor, model and OS', 2], ['topo', 'Topology per site', 'Maps exported from the site map', 3],
+      ['findings', 'Findings and recommendations', 'Grouped by severity, with evidence', 4], ['compare', 'Changes since last assessment', r.compare ? 'From Compare' : 'Needs an earlier engagement', 1],
+      ['capacity', 'Capacity and availability', CAP ? 'From ' + CAP.sources : 'Needs a monitoring integration', 1],
+      ['appendix', 'Device appendix', 'Every device with serial and OS', 3],
+    ];
+    const on = { ...s.on, compare: s.on.compare && r.compare, capacity: s.on.capacity && !!CAP };
+    const order = ['critical', 'high', 'medium', 'low'];
+    const cut = order.indexOf(s.minSev);
+    const inc = r.F.filter((f) => order.indexOf(f[0]) <= cut);
+    const pageCount = 1 + defs.reduce((n, d) => n + (on[d[0]] ? d[3] : 0), 0);
+    const thumbDefs = [[1, 'Summary', true], [2, 'Topology', on.topo], [3, 'Findings', on.findings], [4, 'Changes', on.compare], [5, 'Capacity', on.capacity]].filter((t) => t[2]);
+    const page = thumbDefs.find((t) => t[0] === s.page) ? s.page : 1;
+    const ext = s.fmt === 'pdf' ? '.pdf' : '.docx';
+    const engSlug = ENGS[eng][0].replace(/[^A-Za-z0-9]+/g, '-');
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng }, onCtx: (v) => this.setCtx(v),
+      cname: META[cust][0], ename: ENGS[eng][0], banner, locked, unlocked: !locked, r,
+      sections: defs.map(([id, label, hint, p]) => ({ label, hint, pages: on[id] ? p + ' p' : '—', on: on[id], disabled: id === 'compare' && !r.compare, toggle: () => this.setState({ on: { ...s.on, [id]: !s.on[id] }, gen: 'idle' }) })),
+      sevs: order.map((k) => ({ label: k[0].toUpperCase() + k.slice(1) + (k === 'critical' ? ' only' : ' +'), pressed: s.minSev === k ? 'true' : 'false', border: s.minSev === k ? '#0E7490' : '#D0D5DD', bg: s.minSev === k ? '#ECFEFF' : '#FFFFFF', pick: () => this.setState({ minSev: k, gen: 'idle' }) })),
+      findingCount: inc.length,
+      manualText: r.fromFindings ? ' (with your edits' + (r.manualCount ? ', ' + r.manualCount + ' added by an engineer' : '') + ')' : '',
+      pdfCls: s.fmt === 'pdf' ? 'fmt on' : 'fmt', docxCls: s.fmt === 'docx' ? 'fmt on' : 'fmt', pdfPressed: s.fmt === 'pdf' ? 'true' : 'false', docxPressed: s.fmt === 'docx' ? 'true' : 'false',
+      setPdf: () => this.setState({ fmt: 'pdf', gen: 'idle' }), setDocx: () => this.setState({ fmt: 'docx', gen: 'idle' }),
+      genLabel: s.gen === 'busy' ? 'Generating…' : live ? 'Generate ' + s.fmt.toUpperCase() + ' on bp-dc1-vm' : 'Generate ' + s.fmt.toUpperCase(),
+      generate: () => { this.setState({ gen: 'busy' }); setTimeout(() => this.setState({ gen: 'done' }), 1200); },
+      busy: s.gen === 'busy', done: s.gen === 'done',
+      busyText: live ? 'Building on the collector and writing to Bluepeak’s file share…' : 'Building the report…',
+      fileName: r.slug + '_' + engSlug + ext, pageCount,
+      doneSuffix: live ? ' · saved to \\\\bp-files01\\cartio\\reports' : '', canDownload: !live,
+      whereText: live ? 'Bluepeak is an On site customer: the report never leaves their network. Open it from their file share.' : 'Exports are stored with the engagement and can be regenerated at any time.',
+      history: r.history.map(([file, when]) => ({ file, when })), noHistory: r.history.length === 0,
+      thumbs: thumbDefs.map(([n, label]) => ({ n, label, cls: page === n ? 'thumb on' : 'thumb', selected: page === n ? 'true' : 'false', pick: () => this.setState({ page: n }) })),
+      page, pg1: page === 1, pg2: page === 2, pg3: page === 3, pg4: page === 4, pg5: page === 5, incScope: on.scope,
+      cap: (() => {
+        let extra = []; try { extra = JSON.parse(this.readExtra(cust) || '[]'); } catch (e) { extra = []; }
+        const c = CAP || { sources: 'none connected', util: [], avail: [] };
+        const pct = (t) => parseInt(t, 10) || 0;
+        return { sources: c.sources,
+          util: c.util.map(([name, speed, inT, out, peak]) => ({ name, speed, inText: inT, inPct: pct(inT), inColor: pct(inT) >= 85 ? '#B42318' : pct(inT) >= 70 ? '#E8590C' : '#0E7490', out, peak })),
+          avail: c.avail.map(([name, up, out, lat]) => ({ name, up, out, lat, color: parseFloat(up) < 99.9 ? '#9A3412' : '#166534' })),
+          hasUtil: c.util.length > 0, hasAvail: c.avail.length > 0,
+          notes: extra.map(([source, title, text]) => ({ source, title, text })), hasNotes: extra.length > 0, none: !CAP };
+      })(),
+      sevSummary: [['Critical', '#B42318'], ['High', '#E8590C'], ['Medium', '#F5B53F'], ['Low', '#98A2B3']].map(([label, color], i) => ({ n: r.sev[i], label, color })),
+      reportFindings: inc.map(([sev, title, devices, rec]) => ({ sev, title, devices, rec, bg: SEV[sev][0], fg: SEV[sev][1] })),
+      miniNodes, miniLinks,
+      mapAria: 'Layer 2 topology of ' + r.mapSite + ': ' + topo.n.length + ' devices and ' + topo.l.length + ' links',
+      changeRows: r.changes.map(([k, n, ex]) => ({ k, n, ex })),
+    };
+  }
+}
+</script>
+</body>
+</html>

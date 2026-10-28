@@ -10,6 +10,10 @@ into [docs/adr](docs/adr/README.md). Branches, target releases and backports fol
 [customer onboarding checklist](docs/onboarding/customer-checklist.md). The stack is Python for both the collector and the
 controller (ADR-0006).
 
+The engineer UI is built from the B1 design in [docs/design](docs/design/README.md)
+(ADR-0007): [DESIGN.md](docs/design/DESIGN.md) is the spec for every screen. Agents working in
+this repo get the same pointer from [CLAUDE.md](CLAUDE.md).
+
 `.claude/settings.json` enables the `ycc` Claude Code plugin from
 [yandy-r/ystack](https://github.com/yandy-r/ystack) for local sessions, which gives skills such as
 `/ycc:release-model` and `/ycc:backport`. Cloud sessions ignore plugins declared there. For
@@ -24,6 +28,7 @@ cloud threads, the project's cloud environment installs the plugin in its setup 
 | `packages/cartio-collector` | The collector. Runs on a customer VM, or an engineer's laptop as the fallback. Always connects out; never listens. |
 | `packages/cartio-controller` | The controller. Django with PostgreSQL. |
 | `tests` | Tests for all three, including an end-to-end collector check-in. |
+| `docs/design` | The engineer UI design: the spec and the prototype's source (ADR-0007). |
 
 ## Get started
 

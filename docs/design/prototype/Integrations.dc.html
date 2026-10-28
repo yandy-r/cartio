@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · Integrations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn.small{min-height:36px;padding:6px 12px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.pill{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.pill:hover{border-color:#98A2B3}
+.pill.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.card{display:flex;flex-direction:column;gap:12px;text-align:left;border:1px solid #E4E8EC;background:#FFFFFF;border-radius:14px;padding:16px;font:inherit;cursor:pointer;color:#101828;min-height:44px}
+.card:hover{border-color:#98A2B3;box-shadow:0 6px 18px rgba(16,24,40,.08)}
+.card:focus-visible{outline:3px solid #0E7490;outline-offset:2px}
+.mono-tile{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;letter-spacing:.02em;flex:none;color:#FFFFFF}
+.chip{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:#F3F5F7;color:#344054}
+.tab{border:0;background:transparent;font:inherit;font-size:14px;padding:12px 2px;margin-right:22px;color:#475467;cursor:pointer;border-bottom:2px solid transparent;min-height:44px}
+.tab.on{color:#101828;font-weight:600;border-bottom-color:#0E7490}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:500}
+.field input{font:inherit;font-size:14px;font-weight:400;border:1px solid #D0D5DD;border-radius:8px;padding:10px 12px;min-height:44px;box-sizing:border-box;color:#101828;background:#FFFFFF}
+.hint{font-size:12px;font-weight:400;color:#475467}
+.im-overlay{padding:24px}
+.im-dialog{width:min(1180px,100%);height:min(900px,100%);border-radius:16px}
+@media (min-width:1600px){.im-overlay{padding:40px}}
+@media (max-width:720px){.im-overlay{padding:0}.im-dialog{width:100%;height:100%;border-radius:0}}
+.x{width:40px;height:40px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#475467;display:inline-flex;align-items:center;justify-content:center}
+.x:hover{background:#EEF2F6}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a class="on" href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> · integrations are set up per customer</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Integrations</h1>
+<p style="margin: 6px 0 0; font-size: 14px; color: #475467; max-width: 760px">Pull what the customer’s own tools already know (monitored devices, interface load, alerts, configs, traffic seen on the wire) to seed discovery, fill gaps for devices Cartio can’t reach, and back findings with evidence. All integrations are read-only.</p>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #D0D5DD; border-radius: 8px; padding: 0 12px; min-height: 44px; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search integrations</span>
+<input type="search" placeholder="Search integrations" value="{{query}}" onInput="{{onSearch}}" style="border: 0; outline: none; font: inherit; font-size: 14px; width: 220px; background: transparent">
+</label>
+</header>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<section aria-label="Connected for this customer" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Connected for {{cname}}</h2>
+<span style="font-size: 13px; color: #475467">{{connectedSub}}</span>
+</div>
+<sc-if value="{{hasConnected}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px">
+<sc-for list="{{connected}}" as="c" hint-placeholder-count="2">
+<button type="button" class="card" onClick="{{c.open}}" style="flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px">
+<span class="mono-tile" style="background: {{c.color}}" aria-hidden="true">{{c.mono}}</span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 14px">{{c.name}}</span><span style="display: block; font-size: 12px; color: #475467">{{c.syncText}}</span></span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: {{c.stBg}}; color: {{c.stFg}}; flex: none"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{c.stDot}}"></span>{{c.state}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noConnected}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 14px; color: #475467">{{noConnectedText}}</div>
+</sc-if>
+</section>
+
+<div role="group" aria-label="Category" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="6"><button type="button" class="{{c.cls}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}">{{c.label}} <span style="opacity: .7">{{c.n}}</span></button></sc-for>
+</div>
+
+<section aria-label="Integration catalog" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px">
+<sc-for list="{{catalog}}" as="i" hint-placeholder-count="10">
+<button type="button" class="card" onClick="{{i.open}}" aria-label="{{i.name}}: {{i.state}}. Open details">
+<span style="display: flex; gap: 12px; align-items: center; width: 100%">
+<span class="mono-tile" style="background: {{i.color}}" aria-hidden="true">{{i.mono}}</span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 15px">{{i.name}}</span><span style="display: block; font-size: 12px; color: #475467">{{i.vendor}} · {{i.catLabel}}</span></span>
+<span style="font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{i.stBg}}; color: {{i.stFg}}; flex: none">{{i.state}}</span>
+</span>
+<span style="font-size: 13px; color: #344054; line-height: 1.5">{{i.pitch}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{i.kinds}}" as="k" hint-placeholder-count="4"><span class="chip">{{k.label}}</span></sc-for>
+</span>
+<span style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 12px; color: #475467; border-top: 1px solid #EEF2F6; padding-top: 10px; margin-top: auto">
+<span>{{i.method}}</span><span style="color: #0E7490; font-weight: 600">View data →</span>
+</span>
+</button>
+</sc-for>
+</section>
+<sc-if value="{{emptyCatalog}}" hint-placeholder-val="{{ false }}"><div style="font-size: 14px; color: #475467">No integration matches “{{query}}”.</div></sc-if>
+<div style="font-size: 12px; color: #475467">Product names belong to their owners. The lettered icons are placeholders until approved logos are added.</div>
+</main>
+
+<sc-if value="{{modalOpen}}" hint-placeholder-val="{{ false }}">
+<div class="im-overlay" style="position: fixed; inset: 0; z-index: 1000; background: rgba(14,26,36,.55); display: flex; align-items: center; justify-content: center; box-sizing: border-box">
+<section role="dialog" aria-modal="true" aria-labelledby="im-title" onKeyDown="{{onKey}}" class="im-dialog" style="background: #FFFFFF; box-shadow: 0 24px 64px rgba(14,26,36,.4); display: flex; flex-direction: column; overflow: hidden">
+<header style="display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px 0; flex: none">
+<span class="mono-tile" style="background: {{m.color}}; width: 52px; height: 52px; font-size: 17px" aria-hidden="true">{{m.mono}}</span>
+<div style="flex: 1; min-width: 0">
+<h2 id="im-title" style="margin: 0; font-size: 20px; font-weight: 600">{{m.name}}</h2>
+<div style="font-size: 13px; color: #475467; margin-top: 2px">{{m.vendor}} · {{m.catLabel}} · {{m.method}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px">
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: {{m.stBg}}; color: {{m.stFg}}; font-weight: 600"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{m.stDot}}"></span>{{m.stateLong}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #F3F5F7; color: #344054; font-weight: 500">Read-only · {{m.runsFrom}}</span>
+</div>
+</div>
+<button class="x" type="button" aria-label="Close" onClick="{{closeModal}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</header>
+<div role="tablist" aria-label="Integration details" style="display: flex; flex-wrap: wrap; padding: 0 20px; border-bottom: 1px solid #E4E8EC; flex: none">
+<sc-for list="{{mtabs}}" as="t" hint-placeholder-count="4"><button type="button" role="tab" class="{{t.cls}}" aria-selected="{{t.selected}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 16px">
+<sc-if value="{{tWhat}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; font-size: 14px; color: #344054; line-height: 1.6; max-width: 900px">{{m.about}}</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px">
+<sc-for list="{{m.data}}" as="d" hint-placeholder-count="4">
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 10px; align-items: center"><span style="width: 32px; height: 32px; border-radius: 8px; background: #ECFEFF; color: #0E7490; display: flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span><span style="font-weight: 600; font-size: 14px">{{d.kind}}</span></div>
+<div style="font-size: 13px; color: #344054; line-height: 1.5"><b style="font-weight: 600">What we take:</b> {{d.what}}</div>
+<div style="font-size: 13px; color: #344054; line-height: 1.5"><b style="font-weight: 600">How Cartio uses it:</b> {{d.use}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{d.feeds}}" as="f" hint-placeholder-count="2"><span class="chip" style="background: #E0F2FE; color: #075985">→ {{f.label}}</span></sc-for></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; background: #F8FAFB; border: 1px solid #E4E8EC; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #344054; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>
+<span>{{m.safety}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{tMap}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; color: #475467">How records from {{m.name}} line up with Cartio’s data model. Devices are matched by serial number first, then management IP, then hostname.</div>
+<div style="overflow-x: auto; border: 1px solid #E4E8EC; border-radius: 12px">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px">
+<thead><tr style="text-align: left; background: #F8FAFB; color: #475467; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th style="padding: 10px 14px; font-weight: 500">{{m.name}} field</th><th style="padding: 10px 14px; font-weight: 500">Cartio field</th><th style="padding: 10px 14px; font-weight: 500">Notes</th></tr></thead>
+<tbody>
+<sc-for list="{{m.mapping}}" as="r" hint-placeholder-count="6">
+<tr style="border-top: 1px solid #EEF2F6"><td class="mono" style="padding: 10px 14px; font-size: 12px">{{r.theirs}}</td><td class="mono" style="padding: 10px 14px; font-size: 12px; color: #0E7490">{{r.ours}}</td><td style="padding: 10px 14px; color: #475467">{{r.note}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+
+<sc-if value="{{tFound}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{m.isConnected}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px">
+<sc-for list="{{m.stats}}" as="t" hint-placeholder-count="4"><div style="border: 1px solid #E4E8EC; border-radius: 10px; padding: 12px"><div style="font-size: 22px; font-weight: 600">{{t.n}}</div><div style="font-size: 12px; color: #475467">{{t.label}}</div></div></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{m.found}}" as="f" hint-placeholder-count="3">
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap">
+<span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: {{f.bg}}; color: {{f.fg}}; text-transform: uppercase; letter-spacing: .04em; flex: none">{{f.tag}}</span>
+<div style="flex: 1 1 320px; min-width: 0"><div style="font-weight: 600; font-size: 14px">{{f.title}}</div><div style="font-size: 13px; color: #475467; margin-top: 2px; line-height: 1.5">{{f.text}}</div>
+<sc-if value="{{f.sample}}" hint-placeholder-val="{{ false }}"><pre class="mono" style="margin: 8px 0 0; background: #F8FAFB; border: 1px solid #E4E8EC; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.55; white-space: pre; overflow-x: auto">{{f.sample}}</pre></sc-if>
+</div>
+<sc-if value="{{f.isBtn}}" hint-placeholder-val="{{ true }}"><button class="btn small" type="button" disabled="{{f.doneAttr}}" onClick="{{f.act}}">{{f.action}}</button></sc-if>
+<sc-if value="{{f.isLink}}" hint-placeholder-val="{{ false }}"><a class="btn small" href="{{f.href}}">{{f.action}}</a></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #475467">{{m.syncText}}</div>
+</sc-if>
+<sc-if value="{{m.notConnected}}" hint-placeholder-val="{{ false }}">
+<div style="text-align: center; padding: 40px 20px; display: flex; flex-direction: column; gap: 10px; align-items: center">
+<div style="font-size: 16px; font-weight: 600">Not connected for {{cname}}</div>
+<div style="font-size: 14px; color: #475467; max-width: 520px">Connect it to see what it adds: devices Cartio hasn’t found, interface load for the report, and evidence for findings.</div>
+<button class="btn primary" type="button" onClick="{{toConnect}}">Connect {{m.name}}</button>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{tConnect}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{m.locked}}" hint-placeholder-val="{{ false }}">
+<div style="background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #4C1D95; line-height: 1.5">{{cname}} keeps data on site with inside access only. Configure this integration on <span class="mono">om-plant-vm</span> from inside their network; the controller will only see its sync status.</div>
+</sc-if>
+<sc-if value="{{m.canConfigure}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px">
+<label class="field">{{m.urlLabel}}<input type="text" class="mono" value="{{form.url}}" onInput="{{onUrl}}" placeholder="{{m.urlPh}}"><span class="hint">The customer’s own instance</span></label>
+<label class="field">{{m.authLabel}}<input type="password" placeholder="{{m.authPh}}" autocomplete="off"><span class="hint">Write-only. Ask for a read-only account or role.</span></label>
+</div>
+<div class="field">Runs from
+<div role="radiogroup" aria-label="Runs from" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{runOptions}}" as="o" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{o.checked}}" class="{{o.cls}}" disabled="{{o.disabled}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+</div>
+<span class="hint">{{runHint}}</span>
+</div>
+<div class="field">Data to import
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{importOptions}}" as="o" hint-placeholder-count="4"><label style="display: flex; gap: 10px; align-items: center; font-weight: 400; font-size: 14px; cursor: pointer; min-height: 32px"><input type="checkbox" checked="{{o.on}}" onChange="{{o.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490">{{o.label}}</label></sc-for>
+</div>
+</div>
+<div class="field">Sync
+<div role="radiogroup" aria-label="Sync schedule" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{syncOptions}}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{o.checked}}" class="{{o.cls}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+</div>
+</div>
+<sc-if value="{{testShown}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="border: 1px solid {{test.border}}; background: {{test.bg}}; color: {{test.fg}}; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6; white-space: pre-line">{{test.text}}</div>
+</sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; border-top: 1px solid #E4E8EC; padding-top: 16px">
+<button class="btn" type="button" onClick="{{runTest}}">{{testLabel}}</button>
+<button class="btn primary" type="button" disabled="{{cantSave}}" onClick="{{saveConn}}">{{saveLabel}}</button>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ctx: this.readCtx(), query: '', cat: 'all', open: null, tab: 'what', form: { url: '', run: null, sync: 'daily', imports: null }, test: null, toast: '', saved: {} };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => { const v = this.readCtx(); if (v.cust !== this.state.ctx.cust || v.eng !== this.state.ctx.eng) this.setState({ ctx: v, open: null, test: null, toast: '' }); }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); clearTimeout(this.t); }
+  getJ(k, d) { try { const v = JSON.parse(window.localStorage.getItem(k) || 'null'); return v === null ? d : v; } catch (e) { return d; } }
+  setJ(k, v) { try { window.localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+  // Shared with other screens: seeds → Engagement + Inventory, evidence → Findings, notes → Report, findings → Findings.
+  isDone(cust, a) {
+    if (!a) return '';
+    if (a.type === 'seeds') { const have = this.getJ('cartio.seeds.' + cust, []).map((x) => x.host); return a.devices.every((d) => have.indexOf(d[0]) >= 0) ? 'Added as seeds ✓' : ''; }
+    if (a.type === 'report') return this.getJ('cartio.reportExtra.' + cust, []).some((x) => x[1] === a.note[0]) ? 'In the report ✓' : '';
+    if (a.type === 'finding') return (this.getJ('cartio.evidence.' + cust, {})[a.fid] || []).some((x) => x[0] === a.ev[0]) ? 'Attached ✓' : '';
+    if (a.type === 'createFinding') { const f = this.getJ('cartio.findings.' + cust, null); return f && (f.added || []).some((x) => x.id === a.item.id) ? 'Finding created ✓' : ''; }
+    return '';
+  }
+  apply(cust, srcName, a, done) {
+    if (!a) return;
+    if (a.type === 'tab') return this.setState({ tab: a.tab });
+    if (a.type === 'seeds') {
+      const cur = this.getJ('cartio.seeds.' + cust, []);
+      const add = a.devices.filter((d) => !cur.some((x) => x.host === d[0])).map(([host, ip, model, site]) => ({ host, ip, model, site, source: a.src || srcName }));
+      this.setJ('cartio.seeds.' + cust, cur.concat(add));
+      return done(add.length + ' seeds added · they appear in New engagement › Scope and in Inventory as pending discovery');
+    }
+    if (a.type === 'report') { this.setJ('cartio.reportExtra.' + cust, this.getJ('cartio.reportExtra.' + cust, []).concat([[srcName, a.note[0], a.note[1]]])); return done('Added to the report’s Capacity and availability section'); }
+    if (a.type === 'finding') { const ev = this.getJ('cartio.evidence.' + cust, {}); ev[a.fid] = (ev[a.fid] || []).concat([a.ev]); this.setJ('cartio.evidence.' + cust, ev); return done('Evidence attached · shown on the finding and printed in the report'); }
+    if (a.type === 'createFinding') {
+      const f = this.getJ('cartio.findings.' + cust, null) || { hidden: cust === 'nw' ? { f7: true } : {}, edits: {}, added: [], removed: {}, notes: {} };
+      f.added = (f.added || []).concat([a.item]); this.setJ('cartio.findings.' + cust, f);
+      return done('Finding created · open Findings to review it');
+    }
+  }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'hosted'], bp: ['Bluepeak Credit Union', 'live'], lk: ['Larkfield School District', 'hosted'], om: ['Ostrander Manufacturing', 'locked'], lab: ['ITCN Lab', 'hosted'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const COL = { nw: ['nw-hq-vm', 'nw-east-vm'], bp: ['bp-dc1-vm'], lk: ['lk-vm-01 (offline)'], om: ['om-plant-vm'], lab: ['lab-vm-a', 'lab-vm-b'] }[cust];
+    const onsite = cust === 'bp' || cust === 'om';
+    const IC = { inv: 'M3 4h18v6H3z M3 14h18v6H3z', perf: 'M3 17l5-6 4 3 6-8 3 3', topo: 'M5 6a2 2 0 100 .1M19 6a2 2 0 100 .1M12 18a2 2 0 100 .1M7 7l4 9M17 7l-4 9', alert: 'M12 3l9 16H3z M12 10v4 M12 17h.01', cfg: 'M6 3h9l4 4v14H6z M9 12h7 M9 16h7', wire: 'M3 12h4l2-6 4 12 2-6h6', cmdb: 'M4 6h16M4 12h16M4 18h10', ticket: 'M4 7h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z' };
+    const FEED = { inv: 'Inventory', seeds: 'Discovery seeds', map: 'Site map', find: 'Findings', rep: 'Report', cmp: 'Compare' };
+    // [id, name, vendor, category, monogram, tile colour, method, pitch, about, data kinds, mapping, url label/placeholder, auth label/placeholder]
+    const CAT = [
+      { id: 'sw', name: 'SolarWinds NPM', vendor: 'SolarWinds', cat: 'npm', mono: 'SW', color: '#9A3412', method: 'SWIS REST API (port 17774)',
+        pitch: 'Nodes, interfaces and their load, NCM config backups and Orion’s own topology.',
+        about: 'Most customers who run SolarWinds have years of history on every node. Cartio reads it to find devices discovery missed, to put 30-day interface load and availability into the report, and to compare Orion’s config archive with what Cartio captured.',
+        data: [['inv', 'Nodes and hardware', 'Orion.Nodes: name, IP, vendor, machine type, serial, IOS version, status.', 'Matched to Cartio devices by serial, then IP. Nodes Cartio has not seen become discovery seeds.', ['inv', 'seeds']],
+          ['perf', 'Interface load and errors', 'Orion.NPM.Interfaces with 30-day p95 in/out utilisation, errors and discards.', 'Highlights saturated uplinks and erroring ports in the report and on the site map.', ['map', 'rep']],
+          ['topo', 'Topology', 'Orion.TopologyConnections built from CDP, LLDP and bridge tables.', 'Fills in links Cartio saw from only one end.', ['map']],
+          ['cfg', 'Config archive (NCM)', 'Cirrus.ConfigArchive latest running config per node.', 'Masked on the collector, then diffed with Cartio’s snapshot to spot drift between the two.', ['cmp', 'find']],
+          ['alert', 'Active alerts', 'Orion.AlertActive: name, severity, node, since.', 'Shown as context on findings and in the report’s current-state section.', ['find', 'rep']]],
+        mapping: [['Orion.Nodes.Caption', 'device.hostname', 'Lower-cased; domain suffix removed'], ['Orion.Nodes.IPAddress', 'device.mgmt_ip', ''], ['Orion.Nodes.MachineType', 'device.model', 'Normalised to Cartio’s model names'], ['Orion.Nodes.IOSVersion', 'device.os_version', 'Feeds check CHK-01 and CHK-02'], ['NCM.EntityPhysical.Serial', 'device.serial', 'Primary match key'], ['Interfaces.InPercentUtil (p95, 30 d)', 'interface.util_in_p95', 'New field, shown in report'], ['TopologyConnections', 'link (source = solarwinds)', 'Marked as “seen by SolarWinds”'], ['Cirrus.ConfigArchive.Config', 'config_snapshot (source = solarwinds)', 'Masked before storing']],
+        url: ['Orion server', 'https://orion.customer.local:17774'], auth: ['SWIS account', 'read-only Orion account'] },
+      { id: 'om', name: 'ManageEngine OpManager', vendor: 'ManageEngine', cat: 'npm', mono: 'ME', color: '#B54708', method: 'REST API key',
+        pitch: 'Devices, interfaces, alarms and Layer 2 maps; config backups through Network Configuration Manager.',
+        about: 'OpManager often covers devices Cartio cannot reach directly. Cartio imports its device list and interface statistics, and, where NCM is licensed, its config backups.',
+        data: [['inv', 'Devices', '/api/json/device/listDevices: name, IP, type, vendor, category, serial.', 'Matched to Cartio devices; unmatched ones become seeds.', ['inv', 'seeds']], ['perf', 'Interface statistics', 'Interface utilisation, errors and status per device.', 'Report capacity section and site map overlays.', ['rep', 'map']], ['alert', 'Alarms', 'Open alarms with severity and device.', 'Context on findings.', ['find']], ['cfg', 'Config backups (NCM)', 'Latest startup and running config per device.', 'Masked, then compared with Cartio’s capture.', ['cmp']]],
+        mapping: [['deviceName', 'device.hostname', ''], ['ipaddress', 'device.mgmt_ip', ''], ['vendorName', 'device.vendor', ''], ['type', 'device.role', 'Router, Switch, Firewall…'], ['serialNumber', 'device.serial', 'Primary match key'], ['ifInUtil / ifOutUtil', 'interface.util_*', ''], ['alarm.severity', 'finding.context', 'Not a finding by itself']],
+        url: ['OpManager URL', 'https://opmanager.customer.local:8061'], auth: ['API key', 'API key of a read-only operator'] },
+      { id: 's247', name: 'Site24x7', vendor: 'Zoho', cat: 'mon', mono: 'S7', color: '#15803D', method: 'OAuth (Zoho) · REST API',
+        pitch: 'Monitored network devices, uptime and latency history, and current alarms.',
+        about: 'Site24x7 is usually how the customer watches availability. Cartio uses its monitor list as a quick inventory and seed list, and its 30-day uptime and latency history to back up recommendations.',
+        data: [['inv', 'Network monitors', '/api/monitors filtered to network devices: name, IP, type, location.', 'Seed list for discovery; location helps assign devices to sites.', ['seeds', 'inv']], ['perf', 'Availability and latency', '30-day uptime % and response time per monitor.', 'Report: “current state” table and evidence for WAN recommendations.', ['rep']], ['alert', 'Alarms', 'Open alarms and outages in the last 30 days.', 'Context on findings; outage history in the report.', ['find', 'rep']]],
+        mapping: [['display_name', 'device.hostname', ''], ['host_name / ip', 'device.mgmt_ip', 'Match key when no serial'], ['monitor_group', 'site', 'Mapped once by the engineer'], ['availability (30 d)', 'device.uptime_30d', 'New field'], ['response_time (p95)', 'device.latency_p95', 'New field']],
+        url: ['Data centre', 'https://www.site24x7.com (US)'], auth: ['OAuth client', 'Self client with read scopes'] },
+      { id: 'eh', name: 'ExtraHop RevealX', vendor: 'ExtraHop', cat: 'wire', mono: 'EH', color: '#5B21B6', method: 'REST API key',
+        pitch: 'What is actually on the wire: devices seen passively, protocols in use, and who talks to whom.',
+        about: 'Wire data shows what configs alone can’t: whether Telnet or SNMPv1 is really being used, which devices exist that nobody manages, and which links carry the traffic. Cartio uses it to confirm findings and find unmanaged gear.',
+        data: [['wire', 'Devices seen on the wire', '/api/v1/devices: MAC, IP, vendor guess, role, first and last seen.', 'Network-like devices not in Cartio’s inventory become seeds.', ['seeds', 'inv']], ['alert', 'Insecure protocol use', 'Telnet, SNMPv1/v2c, HTTP admin and TFTP sessions to network devices.', 'Attached as evidence to CHK-03 findings, with session counts.', ['find']], ['perf', 'Top talkers per link', 'Bytes per device pair over 7 days.', 'Shows which uplinks matter most in the report.', ['rep', 'map']]],
+        mapping: [['device.ipaddr4', 'device.mgmt_ip', ''], ['device.vendor', 'device.vendor', 'Guess only'], ['device.role', 'device.role', 'gateway, switch, firewall…'], ['metric: telnet.sessions', 'finding.evidence', 'Count over 7 days'], ['metric: bytes by peer', 'link.traffic_7d', 'New field']],
+        url: ['RevealX appliance or SaaS', 'https://revealx.customer.local'], auth: ['API key', 'read-only API key'] },
+      { id: 'nb', name: 'NetBrain', vendor: 'NetBrain', cat: 'npm', mono: 'NB', color: '#075985', method: 'REST API',
+        pitch: 'The customer’s existing maps, device groups and data from their own discovery.',
+        about: 'Some customers already map their network in NetBrain, and the v1 scope names it as a tool they use. Cartio imports its device list and site groups to start from what the customer already has.',
+        data: [['inv', 'Devices and groups', 'Devices with site and group membership.', 'Seeds and site assignment.', ['seeds', 'inv']], ['topo', 'Map links', 'L2 and L3 links from NetBrain’s maps.', 'Fills one-sided links on the site map.', ['map']]],
+        mapping: [['hostname', 'device.hostname', ''], ['mgmtIP', 'device.mgmt_ip', ''], ['site', 'site', 'Mapped once'], ['subTypeName', 'device.role', '']],
+        url: ['NetBrain server', 'https://netbrain.customer.local'], auth: ['Account', 'read-only user'] },
+      { id: 'nbx', name: 'NetBox', vendor: 'NetBox Labs', cat: 'sot', mono: 'Nx', color: '#0E7490', method: 'REST API token',
+        pitch: 'The customer’s source of truth: sites, racks, devices, IP plan and circuits.',
+        about: 'If the customer keeps NetBox, Cartio reads it as the intended state and reports where the real network differs: devices missing from NetBox, wrong serials, undocumented links.',
+        data: [['cmdb', 'Sites, devices and IPs', '/api/dcim/devices, /api/dcim/sites, /api/ipam/prefixes.', 'Sites and allowed ranges for discovery; differences become findings.', ['seeds', 'find']], ['topo', 'Cables', '/api/dcim/cables.', 'Compared with LLDP/CDP links.', ['map', 'find']]],
+        mapping: [['dcim.devices.name', 'device.hostname', ''], ['dcim.devices.serial', 'device.serial', ''], ['dcim.devices.site', 'site', ''], ['ipam.prefixes', 'scope.allowed_ranges', 'Suggested, not applied automatically'], ['dcim.cables', 'link (source = netbox)', '']],
+        url: ['NetBox URL', 'https://netbox.customer.local'], auth: ['API token', 'read-only token'] },
+      { id: 'prtg', name: 'PRTG', vendor: 'Paessler', cat: 'mon', mono: 'PR', color: '#1D4ED8', method: 'REST API (passhash)',
+        pitch: 'Devices, sensors and historic bandwidth per port.',
+        about: 'Cartio reads the PRTG device tree as a seed list and its bandwidth sensors for interface load history.',
+        data: [['inv', 'Devices', 'Device tree with host and group.', 'Seeds and site assignment.', ['seeds']], ['perf', 'Bandwidth sensors', 'Traffic sensors per port, 30-day history.', 'Report capacity section.', ['rep']]],
+        mapping: [['device', 'device.hostname', ''], ['host', 'device.mgmt_ip', ''], ['group', 'site', 'Mapped once'], ['Traffic Total (p95)', 'interface.util_p95', '']],
+        url: ['PRTG URL', 'https://prtg.customer.local'], auth: ['Passhash', 'read-only user passhash'] },
+      { id: 'auvik', name: 'Auvik', vendor: 'Auvik', cat: 'mon', mono: 'AV', color: '#0F766E', method: 'REST API key',
+        pitch: 'Inventory, topology and config backups from Auvik’s own collectors.',
+        about: 'For customers managed by an MSP on Auvik, Cartio imports inventory and topology to start the assessment without new access.',
+        data: [['inv', 'Devices', 'Devices with model, serial and firmware.', 'Inventory and seeds.', ['inv', 'seeds']], ['topo', 'Topology', 'Layer 2 and 3 connections.', 'Site map links.', ['map']], ['cfg', 'Config backups', 'Latest config per device.', 'Masked and compared.', ['cmp']]],
+        mapping: [['deviceName', 'device.hostname', ''], ['ipAddresses', 'device.mgmt_ip', ''], ['serialNumber', 'device.serial', ''], ['firmwareVersion', 'device.os_version', '']],
+        url: ['Region', 'https://auvikapi.us1.my.auvik.com'], auth: ['API key', 'read-only API key'] },
+      { id: 'lnms', name: 'LibreNMS', vendor: 'LibreNMS', cat: 'mon', mono: 'LN', color: '#334155', method: 'REST API token',
+        pitch: 'Devices, ports, neighbours and alerts from an open-source monitor.',
+        about: 'Common in labs and smaller customers. Cartio reads devices, ports and discovered neighbours.',
+        data: [['inv', 'Devices', '/api/v0/devices.', 'Inventory and seeds.', ['inv', 'seeds']], ['topo', 'Neighbours', '/api/v0/resources/links (CDP/LLDP).', 'Site map links.', ['map']], ['perf', 'Port stats', '/api/v0/ports with utilisation.', 'Report capacity section.', ['rep']]],
+        mapping: [['hostname', 'device.hostname', ''], ['serial', 'device.serial', ''], ['version', 'device.os_version', ''], ['links', 'link (source = librenms)', '']],
+        url: ['LibreNMS URL', 'https://librenms.lab.local'], auth: ['API token', 'read-only token'] },
+      { id: 'snow', name: 'ServiceNow CMDB', vendor: 'ServiceNow', cat: 'itsm', mono: 'SN', color: '#166534', method: 'Table API (OAuth)',
+        pitch: 'Configuration items and owners for network gear; open incidents per device.',
+        about: 'Cartio reads network CIs to see what the customer thinks they own, and open incidents for context. Writing findings back as tickets would be a later, separately approved feature.',
+        data: [['cmdb', 'Network CIs', 'cmdb_ci_netgear: name, IP, serial, model, location, support group.', 'Owner and location on devices; CIs Cartio cannot find are listed in the report.', ['inv', 'rep']], ['ticket', 'Open incidents', 'incident where CI is a network device.', 'Context on findings.', ['find']]],
+        mapping: [['cmdb_ci_netgear.name', 'device.hostname', ''], ['serial_number', 'device.serial', ''], ['location', 'site', 'Mapped once'], ['support_group', 'device.owner', 'New field']],
+        url: ['Instance', 'https://customer.service-now.com'], auth: ['OAuth client', 'read-only integration user'] },
+    ];
+    const CATS = [['all', 'All'], ['npm', 'Network monitoring'], ['mon', 'Availability & infra monitoring'], ['wire', 'Wire data'], ['sot', 'Source of truth'], ['itsm', 'ITSM / CMDB']];
+    const catLabel = {}; CATS.forEach(([k, l]) => { catLabel[k] = l; });
+    // Per-customer connection state: [status, sync text, runs from, stats, found items].
+    // Found item: [tag, title, text, sample, action label, action]; actions write to shared storage the other screens read.
+    const westSeeds = [['west-sw-01', '198.51.100.65', 'Cisco C9200L-24P', 'Clinic West'], ['west-fw-01', '198.51.100.62', 'FortiGate 60F', 'Clinic West'], ['west-ap-01', '198.51.100.70', 'FortiAP 231F', 'Clinic West'], ['west-ap-02', '198.51.100.71', 'FortiAP 231F', 'Clinic West'], ['west-ap-03', '198.51.100.72', 'FortiAP 231F', 'Clinic West'], ['west-ap-04', '198.51.100.73', 'FortiAP 231F', 'Clinic West'], ['lab-printer-sw', '192.0.2.180', 'Unknown switch', 'HQ data center']];
+    const CONN = {
+      nw: {
+        s247: ['ok', 'Last sync today 10:20 · 22 network monitors · every 15 min', 'controller', [['22', 'network monitors'], ['21', 'matched Cartio devices'], ['1', 'not yet in Cartio'], ['99.92%', 'HQ WAN uptime, 30 days']],
+          [['load', 'ISP-A latency spikes at HQ', 'p95 latency to the ISP-A edge is 38 ms, with 3 brownouts above 200 ms in the last 30 days, all between 13:00 and 15:00. Backs the recommendation for a second WAN path.', 'monitor          p95 latency   brownouts (>200 ms)   uptime 30 d\nrtr-wan-01 WAN   38 ms         3                     99.92%\nisp-a-edge       41 ms         3                     99.90%', 'Add to report', { type: 'report', note: ['ISP-A latency spikes at HQ', 'Site24x7: p95 latency 38 ms to the ISP-A edge, 3 brownouts above 200 ms in 30 days, all 13:00–15:00. Uptime 99.92%.'] }],
+            ['evidence', 'east-fw-01 went down twice this month', 'Two outages, 31 and 16 minutes (Oct 12 and Oct 19), each followed by a reboot. Strengthens the end-of-support finding for the Clinic East firewall.', 'east-fw-01   2026-10-12 08:14 → 08:45   down 31 min   reason: no response, then reboot\neast-fw-01   2026-10-19 17:02 → 17:18   down 16 min   reason: no response, then reboot', 'Attach to finding', { type: 'finding', fid: 'f1', ev: ['Site24x7: 2 outages in October', 'east-fw-01 down 31 min on Oct 12 and 16 min on Oct 19, each followed by a reboot.'] }],
+            ['new', '1 monitor Cartio hasn’t discovered', 'Site24x7 already watches the Clinic West firewall. Add it as a seed so discovery starts there once nw-west-vm enrolls.', 'west-fw-01   198.51.100.62   FortiGate 60F   monitor group: Clinic West', 'Add as seed', { type: 'seeds', src: 'Site24x7', devices: [westSeeds[1]] }]]],
+        sw: ['ok', 'Last sync today 10:15 · 61 nodes · daily', 'controller', [['61', 'nodes in Orion'], ['54', 'matched Cartio devices'], ['7', 'not yet in Cartio'], ['412', 'interfaces with 30-day load']],
+          [['new', '7 nodes Cartio hasn’t discovered', 'Mostly Clinic West, where no collector is enrolled yet. Add them as seeds so discovery reaches them when nw-west-vm checks in.', westSeeds.map((x) => x[0].padEnd(16) + x[1].padEnd(16) + x[2]).join('\n'), 'Add 7 as seeds', { type: 'seeds', src: 'SolarWinds', devices: westSeeds }],
+            ['load', 'Uplink at 92% p95 on core-sw-02 Te1/1/1', '30-day p95 inbound 9.2 Gbps on a 10G uplink to fw-hq-01. Worth a recommendation in the report.', 'interface                 speed   p95 in   p95 out   peak\ncore-sw-02 Te1/1/1        10G     92%      41%       99% (Oct 22 14:10)\nfw-hq-01 port1 (ISP-A)    1G      71%      38%       96%', 'Add to report', { type: 'report', note: ['Uplink at 92% p95 on core-sw-02', 'SolarWinds: core-sw-02 Te1/1/1 to fw-hq-01 runs at 92% p95 inbound over 30 days (peak 99%). Add a second 10G member to Po1 or rebalance.'] }],
+            ['drift', 'Orion’s config for rtr-wan-01 is newer than Cartio’s', 'NCM captured a change at 02:14 today (BGP neighbor description). Cartio’s snapshot is from 10:39 and matches; nothing missing.', '', 'Open compare', { type: 'link', href: 'Compare.dc.html' }]]],
+        eh: ['ok', 'Last sync today 09:50 · 7-day window · hourly', 'nw-hq-vm', [['312', 'devices seen on the wire'], ['9', 'network devices not in Cartio'], ['14', 'Telnet sessions to rtr-wan-01'], ['3', 'findings with new evidence']],
+          [['evidence', 'Telnet is in active use on rtr-wan-01', '14 Telnet sessions from 2 admin workstations in the last 7 days. Attaching this to the Telnet finding makes the risk concrete for the customer.', 'src 10.10.30.41  → 192.0.2.1:23   9 sessions  last 2026-10-27 16:02\nsrc 10.10.30.57  → 192.0.2.1:23   5 sessions  last 2026-10-26 09:14', 'Attach to finding', { type: 'finding', fid: 'f4', ev: ['ExtraHop: Telnet in active use', '14 Telnet sessions to rtr-wan-01 from 2 admin workstations in the last 7 days (10.10.30.41, 10.10.30.57).'] }],
+            ['new', '9 network-like devices not in inventory', 'Including 198.51.100.40 (the unknown CDP neighbor), which ExtraHop identifies as a Cisco IP phone.', '', 'Open site map', { type: 'link', href: 'Topology.dc.html' }]]],
+      },
+      bp: { s247: ['ok', 'Last sync today 09:40 · runs on bp-dc1-vm · results kept on site', 'bp-dc1-vm', [['38', 'network monitors'], ['36', 'matched Cartio devices'], ['2', 'not yet in Cartio'], ['99.97%', 'WAN uptime, 30 days']],
+        [['new', '2 monitors Cartio hasn’t discovered', 'Branch 7 firewall and switch, waiting on bp-branch-laptop to reconnect.', 'br7-fw-01   10.41.0.1   FortiGate 60F\nbr7-sw-01   10.41.0.2   Cisco C9200L', 'Add 2 as seeds', { type: 'seeds', src: 'Site24x7', devices: [['br7-fw-01', '10.41.0.1', 'FortiGate 60F', 'Branch 7'], ['br7-sw-01', '10.41.0.2', 'Cisco C9200L-24P', 'Branch 7']] }],
+          ['load', 'Two short WAN outages at DC1', '4 min on Oct 3 and 11 min on Oct 19, both on the primary ISP. Supports adding a second WAN path to the report.', 'monitor        outage                      duration\nbp-fw-01 WAN   2026-10-03 06:12 → 06:16     4 min\nbp-fw-01 WAN   2026-10-19 21:40 → 21:51    11 min', 'Add to report', { type: 'report', note: ['Two WAN outages at DC1', 'Site24x7: primary ISP down 4 min on Oct 3 and 11 min on Oct 19. 30-day WAN uptime 99.97%.'] }]]] },
+      lk: { om: ['error', 'Sync failed Oct 26 · API key expired · last good sync Oct 24', 'controller', [['118', 'devices at last sync'], ['112', 'matched'], ['6', 'not yet in Cartio'], ['—', 'since Oct 26']],
+        [['error', 'API key expired', 'The district rotated OpManager API keys on Oct 26. Ask the district IT team for a new read-only key and paste it on the Settings tab.', '', 'Update key', { type: 'tab', tab: 'connect' }]]] },
+      om: { om: ['onsite', 'Configured on om-plant-vm · last sync 08:55 · status only', 'om-plant-vm', [], []] },
+      lab: { nbx: ['ok', 'Last sync 10:05 · 9 devices · on change', 'controller', [['9', 'devices in NetBox'], ['9', 'matched'], ['1', 'serial mismatch'], ['2', 'cables not seen by LLDP']],
+          [['drift', 'Serial mismatch on lab-c8k-02', 'NetBox has 9KZ4••••, the device reports 9KZ5••••. Fix in NetBox, or record it as a documentation finding.', '', 'Create finding', { type: 'createFinding', item: { id: 'int-nbx-serial', sev: 'low', check: 'Engineer finding', title: 'NetBox serial for lab-c8k-02 does not match the device', devices: [['lab-c8k-02', 'Fail', 'NetBox 9KZ4••••, device 9KZ5••••']], evidence: 'NetBox dcim.devices.serial = 9KZ4••••\nshow version: Processor board ID 9KZ5••••', evSource: 'From the NetBox integration', rec: 'Correct the serial in NetBox so the source of truth matches the device.', snippet: '(none)' } }]]],
+        lnms: ['ok', 'Last sync 10:10 · 9 devices · hourly', 'lab-vm-a', [['9', 'devices'], ['42', 'ports'], ['8', 'neighbor links'], ['0', 'new devices']], [['ok', 'LibreNMS and Cartio agree', 'Same 9 devices and 8 links. Good regression check for the drivers.', '', 'Open site map', { type: 'link', href: 'Topology.dc.html' }]]] },
+    }[cust] || {};
+    const ST = { ok: ['Connected', '#DCFCE7', '#166534', '#22C55E'], error: ['Needs attention', '#FEE4E2', '#912018', '#B42318'], onsite: ['On site', '#EDE9FE', '#5B21B6', '#7C3AED'], none: ['Not connected', '#F3F5F7', '#475467', '#98A2B3'] };
+    const stateOf = (id) => (s.saved[cust + id] ? 'ok' : CONN[id] ? CONN[id][0] : 'none');
+    const q = s.query.trim().toLowerCase();
+    // Connected first, Site24x7 leading, then the rest in catalog order.
+    const rankOf = (i) => (stateOf(i.id) === 'none' ? 2 : 0) + (i.id === 's247' ? 0 : 1);
+    CAT.sort((a, b) => rankOf(a) - rankOf(b));
+    const shown = CAT.filter((i) => s.cat === 'all' || i.cat === s.cat).filter((i) => !q || (i.name + ' ' + i.vendor + ' ' + i.pitch).toLowerCase().includes(q));
+    const open = (id) => () => this.setState({ open: id, tab: stateOf(id) === 'none' ? 'what' : 'found', test: null, form: { url: '', run: null, sync: 'daily', imports: null } });
+    const deco = (i) => { const st = ST[stateOf(i.id)]; return { ...i, catLabel: catLabel[i.cat], state: st[0], stBg: st[1], stFg: st[2], stDot: st[3], kinds: i.data.map((d) => ({ label: d[1] })), open: open(i.id) }; };
+    const connectedIds = CAT.filter((i) => stateOf(i.id) !== 'none');
+    const cur = CAT.find((i) => i.id === s.open);
+    let m = { name: '', mono: '', color: '#475467', data: [], mapping: [], stats: [], found: [] };
+    if (cur) {
+      const st = stateOf(cur.id); const conn = CONN[cur.id] || (s.saved[cust + cur.id] ? ['ok', 'Connected just now · first sync running', s.form.run || 'controller', [], []] : null);
+      const STT = ST[st];
+      const tags = { new: ['new', '#E0F2FE', '#075985'], load: ['load', '#FFEDD5', '#9A3412'], drift: ['drift', '#FEF3C7', '#854D0E'], evidence: ['evidence', '#EDE9FE', '#5B21B6'], error: ['error', '#FEE4E2', '#912018'], ok: ['ok', '#DCFCE7', '#166534'] };
+      m = { ...deco(cur), stateLong: st === 'ok' ? 'Connected for ' + META[cust][0] : st === 'error' ? 'Needs attention' : st === 'onsite' ? 'Configured on the on-site collector' : 'Not connected for ' + META[cust][0],
+        runsFrom: conn ? 'runs from ' + conn[2] : onsite ? 'would run on the on-site collector' : 'runs from the controller or a collector',
+        data: cur.data.map(([ic, kind, what, use, feeds]) => ({ icon: IC[ic], kind, what, use, feeds: feeds.map((f) => ({ label: FEED[f] })) })),
+        mapping: cur.mapping.map(([theirs, ours, note]) => ({ theirs, ours, note })),
+        isConnected: !!conn && st !== 'onsite', notConnected: !conn || st === 'onsite',
+        stats: conn ? conn[3].map(([n, label]) => ({ n, label })) : [],
+        found: conn ? conn[4].map(([t, title, text, sample, label, a]) => {
+          const done = this.isDone(cust, a);
+          return { tag: tags[t][0], bg: tags[t][1], fg: tags[t][2], title, text, sample,
+            isLink: !!(a && a.type === 'link'), href: a && a.href ? a.href : '#', isBtn: !(a && a.type === 'link'),
+            action: done ? done : label, doneAttr: !!done,
+            act: () => this.apply(cust, cur.name, a, (msg) => this.setState({ toast: msg + (onsite ? ' · runs on ' + COL[0] + ', data stays on site' : '') })) };
+        }) : [],
+        syncText: conn ? conn[1] : '',
+        safety: 'Read-only: Cartio only calls GET or query endpoints and asks for a read-only account. ' + (onsite ? 'For ' + META[cust][0] + ' the integration runs on ' + COL[0] + ' and its data stays in their on-site store; the controller only sees sync status.' : 'Data is stored with this customer only, never shared across customers. Configs pulled from it are masked before they are stored.'),
+        urlLabel: cur.url[0], urlPh: cur.url[1], authLabel: cur.auth[0], authPh: cur.auth[1],
+        locked: cust === 'om', canConfigure: cust !== 'om' };
+    }
+    const form = s.form;
+    const runDefault = onsite ? COL[0] : 'controller';
+    const run = form.run || runDefault;
+    const imports = form.imports || (cur ? cur.data.map(() => true) : []);
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng: s.ctx.eng }, onCtx: (v) => this.setState({ ctx: v, open: null, test: null, toast: '' }),
+      cname: META[cust][0],
+      query: s.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      cats: CATS.map(([id, label]) => ({ label, n: id === 'all' ? CAT.length : CAT.filter((i) => i.cat === id).length, cls: s.cat === id ? 'pill on' : 'pill', pressed: s.cat === id ? 'true' : 'false', pick: () => this.setState({ cat: id }) })),
+      catalog: shown.map(deco), emptyCatalog: shown.length === 0,
+      connected: connectedIds.map((i) => { const d = deco(i); const c = CONN[i.id]; return { ...d, syncText: c ? c[1] : 'Connected just now · first sync running' }; }),
+      hasConnected: connectedIds.length > 0, noConnected: connectedIds.length === 0,
+      connectedSub: connectedIds.length + ' of ' + CAT.length + ' connected',
+      noConnectedText: 'Nothing connected yet. Pick a tool the customer already runs below to see what Cartio can take from it.',
+      toast: s.toast,
+      modalOpen: !!cur, m,
+      closeModal: () => this.setState({ open: null }),
+      onKey: (e) => { if (e.key === 'Escape') this.setState({ open: null }); },
+      mtabs: [['what', 'What we take'], ['map', 'Field mapping'], ['found', 'What it found'], ['connect', cur && stateOf(cur.id) === 'ok' ? 'Settings' : 'Connect']].map(([id, label]) => ({ label, cls: s.tab === id ? 'tab on' : 'tab', selected: s.tab === id ? 'true' : 'false', pick: () => this.setState({ tab: id }) })),
+      tWhat: s.tab === 'what', tMap: s.tab === 'map', tFound: s.tab === 'found', tConnect: s.tab === 'connect',
+      toConnect: () => this.setState({ tab: 'connect' }),
+      form, onUrl: (e) => this.setState({ form: { ...form, url: e.target.value } }),
+      runOptions: ['controller'].concat(COL).map((c) => ({ label: c === 'controller' ? 'Controller (Hosted)' : 'Collector ' + c, checked: run === c ? 'true' : 'false', cls: run === c ? 'pill on' : 'pill', disabled: (onsite && c === 'controller') || /offline/.test(c), pick: () => this.setState({ form: { ...form, run: c } }) })),
+      runHint: onsite ? 'On site customer: integrations run on the on-site collector so their data never reaches the controller.' : 'Use a collector when the tool is only reachable inside the customer network.',
+      importOptions: cur ? cur.data.map((d, i) => ({ label: d[1], on: imports[i], toggle: () => { const n = imports.slice(); n[i] = !n[i]; this.setState({ form: { ...form, imports: n } }); } })) : [],
+      syncOptions: [['manual', 'Manual'], ['daily', 'Daily'], ['hourly', 'Hourly']].map(([id, label]) => ({ label, checked: form.sync === id ? 'true' : 'false', cls: form.sync === id ? 'pill on' : 'pill', pick: () => this.setState({ form: { ...form, sync: id } }) })),
+      testShown: !!s.test,
+      test: s.test === 'ok' ? { text: '✓ Reached ' + (form.url || (cur ? cur.url[1] : '')) + ' from ' + run + '\n✓ Signed in; the account is read-only\n✓ Sample: 61 devices, 412 interfaces available', bg: '#ECFDF3', border: '#ABEFC6', fg: '#14532D' } : s.test === 'run' ? { text: 'Testing from ' + run + '…', bg: '#F8FAFB', border: '#E4E8EC', fg: '#344054' } : { text: '', bg: '#FFFFFF', border: '#E4E8EC', fg: '#344054' },
+      testLabel: s.test === 'run' ? 'Testing…' : 'Test connection',
+      runTest: () => { this.setState({ test: 'run' }); clearTimeout(this.t); this.t = setTimeout(() => this.setState({ test: 'ok' }), 1000); },
+      cantSave: s.test !== 'ok', saveLabel: cur && stateOf(cur.id) === 'ok' ? 'Save settings' : 'Connect',
+      saveConn: () => { if (!cur) return; this.setState({ saved: { ...s.saved, [cust + cur.id]: true }, tab: 'found', toast: cur.name + ' connected for ' + META[cust][0] + ' · first sync started · logged in the audit log' }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

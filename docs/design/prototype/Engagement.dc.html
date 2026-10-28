@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · New engagement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 16px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn.small{min-height:36px;padding:6px 12px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:500}
+.field input,.field select,.field textarea{font:inherit;font-size:14px;font-weight:400;border:1px solid #D0D5DD;border-radius:8px;padding:10px 12px;min-height:44px;box-sizing:border-box;color:#101828;background:#FFFFFF}
+.hint{font-size:12px;font-weight:400;color:#475467}
+.tab{border:0;background:transparent;font:inherit;font-size:14px;padding:12px 4px;margin-right:22px;color:#475467;cursor:pointer;border-bottom:2px solid transparent;min-height:44px;display:inline-flex;gap:8px;align-items:center}
+.tab.on{color:#101828;font-weight:600;border-bottom-color:#0E7490}
+.pill{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.pill.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.entry{display:grid;grid-template-columns:120px minmax(140px,1fr) minmax(120px,1fr) 40px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #EEF2F6;font-size:13px}
+.x{border:0;background:transparent;width:36px;height:36px;border-radius:8px;cursor:pointer;color:#475467;font:inherit;font-size:16px}
+.x:hover{background:#EEF2F6}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<dc-import name="Switcher" cust="{{ctx.cust}}" eng="{{ctx.eng}}" on-change="{{onCtx}}" hint-size="100%,72px"></dc-import>
+<a href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a class="on" href="Engagement.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>Engagements</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">{{cname}}</a> / New engagement</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">{{engName}}</h1>
+</div>
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+<span style="font-size: 13px; color: #475467">{{readiness}}</span>
+<button class="btn primary" type="button" disabled="{{cantLaunch}}" onClick="{{goLaunch}}">Review and start discovery</button>
+</div>
+</header>
+
+<div role="tablist" aria-label="Engagement setup" style="display: flex; flex-wrap: wrap; border-bottom: 1px solid #DDE2E8">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button role="tab" type="button" class="{{t.cls}}" aria-selected="{{t.selected}}" onClick="{{t.pick}}"><span style="width: 22px; height: 22px; border-radius: 50%; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; background: {{t.bg}}; color: {{t.fg}}">{{t.mark}}</span>{{t.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<sc-if value="{{tDetails}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+<div><h2 style="margin: 0; font-size: 19px; font-weight: 600">Engagement details</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">One assessment for this customer. Later engagements can be compared with earlier ones.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px">
+<div class="field">Customer<span style="display: flex; align-items: center; gap: 8px; border: 1px solid #E4E8EC; background: #F8FAFB; border-radius: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box; font-weight: 400; font-size: 14px; color: #101828">{{cname}} <span style="font-size: 12px; font-weight: 500; padding: 1px 6px; border-radius: 4px; background: {{modeBg}}; color: {{modeFg}}">{{modeLabel}}</span></span><span class="hint">Change the customer with the switcher in the sidebar. Sites, collectors and credentials come from this customer only.</span></div>
+<label class="field">Name<input type="text" value="{{engName}}" onInput="{{onEngName}}"><span class="hint" style="color: {{engNameColor}}">{{engNameMsg}}</span></label>
+<label class="field">Status<select><option>Planned</option><option>Active</option></select></label>
+<label class="field">Start date<input type="date" value="2027-01-11"></label>
+<label class="field">End date<input type="date" value="2027-01-29"><span class="hint">On or after the start date</span></label>
+</div>
+<div class="field">Compare with <span class="hint">Baseline for “changes since last assessment”</span>
+<span style="display: flex; align-items: center; border: 1px solid #E4E8EC; background: #F8FAFB; border-radius: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box; font-weight: 400; font-size: 14px; color: #101828">{{baseline}}</span></div>
+<label class="field">What this assessment covers
+<textarea rows="3">{{scopeText}}</textarea></label>
+<div style="display: flex; justify-content: flex-end"><button class="btn primary" type="button" onClick="{{toScope}}">Continue to scope</button></div>
+</section>
+<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px">
+<h2 style="margin: 0 0 10px; font-size: 15px; font-weight: 600">Previous engagements</h2>
+<sc-for list="{{prev}}" as="p" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid #EEF2F6">
+<span style="width: 8px; height: 8px; border-radius: 2px; background: {{p.dot}}; margin-top: 6px; flex: none"></span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 500">{{p.name}}</span><span style="display: block; font-size: 12px; color: #475467">{{p.meta}}</span></span>
+<span style="font-size: 12px; color: #475467">{{p.status}}</span>
+</div>
+</sc-for>
+<a href="Compare.dc.html" style="display: inline-block; margin-top: 6px; font-size: 13px">Compare engagements</a>
+</section>
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px">
+<h2 style="margin: 0 0 10px; font-size: 15px; font-weight: 600">Ready to start?</h2>
+<sc-for list="{{checklist}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; font-size: 13px">
+<span style="width: 20px; height: 20px; border-radius: 50%; background: {{c.bg}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none">{{c.mark}}</span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">{{c.label}}</span><span style="display: block; color: #475467">{{c.detail}}</span></span>
+<button type="button" onClick="{{c.go}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #0E7490; cursor: pointer; min-height: 32px; flex: none">{{c.action}}</button>
+</div>
+</sc-for>
+</section>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{tScope}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div role="tablist" aria-label="Sites" style="flex: 1 1 200px; max-width: 260px; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{siteList}}" as="si" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{si.selected}}" onClick="{{si.pick}}" style="text-align: left; font: inherit; border: 1px solid {{si.border}}; background: {{si.bg}}; border-radius: 10px; padding: 12px; cursor: pointer; color: #101828; min-height: 44px">
+<span style="display: block; font-weight: 600; font-size: 14px">{{si.name}}</span>
+<span style="display: block; font-size: 12px; color: #475467">{{si.meta}}</span>
+</button>
+</sc-for>
+</div>
+
+<section style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 18px">
+<div><h2 style="margin: 0; font-size: 19px; font-weight: 600">Discovery scope · {{site.name}}</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">Discovery logs in to the <b>seed devices</b> first, then follows their LLDP, CDP and routing neighbors. It only touches addresses inside the <b>allowed ranges</b> and never touches anything in an <b>excluded range</b>.</p></div>
+
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #F8FAFB">
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 13px; font-weight: 500; margin-right: 4px">Add</span>
+<sc-for list="{{kinds}}" as="k" hint-placeholder-count="3"><button type="button" class="{{k.cls}}" aria-pressed="{{k.pressed}}" onClick="{{k.pick}}">{{k.label}}</button></sc-for>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<label style="flex: 2 1 240px; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{kindLabel}} address</span>
+<input type="text" class="mono" value="{{draft}}" onInput="{{onDraft}}" onKeyDown="{{onKey}}" placeholder="{{draftPh}}" aria-invalid="{{draftInvalid}}" style="flex: 1; font-size: 13px; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box"></label>
+<label style="flex: 1 1 160px; display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Label</span>
+<input type="text" value="{{draftNote}}" onInput="{{onDraftNote}}" placeholder="{{notePh}}" style="flex: 1; font: inherit; font-size: 13px; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box"></label>
+<button class="btn" type="button" onClick="{{addEntry}}">Add</button>
+</div>
+<span class="hint" style="color: {{draftMsgColor}}">{{draftMsg}}</span>
+</div>
+
+<div>
+<div class="entry" style="border-top: 0; font-size: 12px; color: #475467; text-transform: uppercase; letter-spacing: .05em; padding-top: 0"><span>Type</span><span>Address</span><span>Label</span><span></span></div>
+<sc-for list="{{entries}}" as="e" hint-placeholder-count="5">
+<div class="entry">
+<span><span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: {{e.bg}}; color: {{e.fg}}">{{e.kindLabel}}</span></span>
+<span class="mono">{{e.v}}</span>
+<span style="color: #475467">{{e.note}}</span>
+<button class="x" type="button" aria-label="Remove {{e.v}}" onClick="{{e.remove}}">×</button>
+</div>
+</sc-for>
+<sc-if value="{{noSeed}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #B54708; padding-top: 10px">Add at least one seed device, usually the core switch or the site’s main router or firewall.</div></sc-if>
+</div>
+
+<sc-if value="{{hasSuggest}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid #A5E3EE; background: #F0FBFD; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center">
+<div><div style="font-size: 14px; font-weight: 600">Suggested by integrations · {{suggestCount}}</div><div style="font-size: 12px; color: #475467">Devices the customer’s tools know about that Cartio hasn’t discovered at {{site.name}}.</div></div>
+<button class="btn small" type="button" onClick="{{acceptAll}}">Accept all</button>
+</div>
+<sc-for list="{{suggest}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 10px; padding: 8px 10px; font-size: 13px">
+<span class="mono" style="font-weight: 500; min-width: 120px">{{g.host}}</span>
+<span class="mono" style="color: #475467; min-width: 110px">{{g.ip}}</span>
+<span style="color: #475467; flex: 1 1 140px">{{g.model}}</span>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #E0F2FE; color: #075985">from {{g.source}}</span>
+<button class="btn small" type="button" onClick="{{g.accept}}">Accept</button>
+<button type="button" onClick="{{g.dismiss}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #475467; cursor: pointer; min-height: 36px">Dismiss</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; border-top: 1px solid #E4E8EC; padding-top: 16px">
+<label class="field">Max hops from a seed<input type="number" value="5" min="1" max="10"><span class="hint">How far to follow neighbors</span></label>
+<label class="field">Parallel sessions<input type="number" value="8" min="1" max="32"><span class="hint">Lower for fragile devices</span></label>
+<label class="field">Rate limit<select><option>Normal (2 logins/s)</option><option>Gentle (1 login/5 s)</option></select></label>
+<label class="field">Collector<select><option>{{site.collector}}</option></select></label>
+</div>
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><button class="btn" type="button" onClick="{{toDetails}}">Back</button><button class="btn primary" type="button" onClick="{{toCreds}}">Continue to credentials</button></div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tCreds}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap">
+<div><h2 style="margin: 0; font-size: 19px; font-weight: 600">Credentials</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">{{credIntro}}</p></div>
+<sc-if value="{{hostedCreds}}" hint-placeholder-val="{{ true }}">
+<button class="btn" type="button" onClick="{{openAdd}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add credential</button>
+</sc-if>
+</div>
+<sc-if value="{{onsiteCreds}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 12px; align-items: flex-start; background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #4C1D95; line-height: 1.5">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none; margin-top: 1px"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>
+<span>To add or replace a credential, open <span class="mono">{{localUrl}}</span> from inside {{cname}}’s network. Secrets are encrypted there with a key that never leaves their network; this page only lists their names.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{adding}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid #A5E3EE; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{ctypes}}" as="c" hint-placeholder-count="5"><button type="button" class="{{c.cls}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<label class="field">Name<input type="text" value="{{newName}}" onInput="{{onNewName}}" placeholder="e.g. ro-audit SSH"><span class="hint">Shown in jobs and the audit log</span></label>
+<sc-for list="{{cfields}}" as="f" hint-placeholder-count="2">
+<label class="field">{{f.label}}<input type="{{f.type}}" class="{{f.cls}}" placeholder="{{f.ph}}" autocomplete="off"><span class="hint">{{f.hint}}</span></label>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #475467">{{ctypeAdvice}}</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end"><button class="btn" type="button" onClick="{{closeAdd}}">Cancel</button><button class="btn primary" type="button" onClick="{{saveCred}}">Save credential</button></div>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{creds}}" as="c" hint-placeholder-count="4">
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; padding: 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+<span class="mono" style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 6px; background: #EEF2F6; color: #344054; flex: none; min-width: 76px; text-align: center">{{c.type}}</span>
+<div style="flex: 1 1 220px; min-width: 0">
+<div style="font-weight: 600; font-size: 14px">{{c.name}}</div>
+<div style="font-size: 12px; color: #475467">{{c.detail}} · {{c.secretWhere}} set {{c.set}}</div>
+<sc-if value="{{c.tested}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; margin-top: 4px; color: {{c.testColor}}">{{c.testText}}</div></sc-if>
+</div>
+<label style="display: inline-flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; min-height: 40px"><input type="checkbox" checked="{{c.used}}" onChange="{{c.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490">Use in this engagement</label>
+<button class="btn small" type="button" onClick="{{c.test}}">{{c.testLabel}}</button>
+<sc-if value="{{hostedCreds}}" hint-placeholder-val="{{ true }}"><button class="btn small" type="button" onClick="{{c.replace}}">Replace</button></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><button class="btn" type="button" onClick="{{toScope}}">Back</button><button class="btn primary" type="button" onClick="{{goLaunch}}" disabled="{{cantLaunch}}">Review and start</button></div>
+</section>
+
+<aside style="flex: 1 1 280px; min-width: 0; max-width: 360px; display: flex; flex-direction: column; gap: 14px">
+<div style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; font-size: 13px; line-height: 1.55">
+<div style="font-weight: 600; font-size: 14px; margin-bottom: 8px">Order tried per device</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div><b>FortiGate:</b> REST API token, then SSH</div>
+<div><b>Cisco IOS / IOS-XE:</b> SSH, with SNMP filling gaps</div>
+<div><b>Anything else:</b> SNMPv3, then SNMPv2c, for basic inventory</div>
+</div>
+</div>
+<div style="background: #0E1A24; color: #C9D4DE; border-radius: 14px; padding: 18px; font-size: 13px; line-height: 1.55">
+<div style="color: #FFFFFF; font-weight: 600; margin-bottom: 6px">Ask for read-only accounts</div>
+FortiGate read-only admin profile and API user, a Cisco show-only privilege level, an SNMPv3 authPriv read view. Cartio only runs allow-listed read commands, so a write-capable account is never needed.
+</div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{tLaunch}}" hint-placeholder-val="{{ false }}">
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 19px; font-weight: 600">Review and start discovery</h2>
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px">
+<thead><tr style="text-align: left; color: #475467; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th style="padding: 8px 10px 8px 0; font-weight: 500">Site</th><th style="padding: 8px 10px; font-weight: 500">Collector</th><th style="padding: 8px 10px; font-weight: 500">Seeds</th><th style="padding: 8px 10px; font-weight: 500">Allowed / excluded</th><th style="padding: 8px 10px; font-weight: 500">Ready</th></tr></thead>
+<tbody>
+<sc-for list="{{plan}}" as="p" hint-placeholder-count="3">
+<tr style="border-top: 1px solid #EEF2F6">
+<td style="padding: 12px 10px 12px 0; font-weight: 500">{{p.name}}</td>
+<td class="mono" style="padding: 12px 10px">{{p.collector}}</td>
+<td class="mono" style="padding: 12px 10px">{{p.seeds}}</td>
+<td style="padding: 12px 10px">{{p.ranges}}</td>
+<td style="padding: 12px 10px; font-weight: 600; color: {{p.color}}">{{p.ready}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="font-size: 13px; color: #344054">Credentials used: {{credSummary}}</div>
+<div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #0C4A6E">Discovery is read-only. Collectors run only allow-listed show, GET and SNMP get/walk commands, and mask secrets in configs before anything leaves the network.</div>
+<div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><button class="btn" type="button" onClick="{{toCreds}}">Back</button>
+<div style="display: flex; gap: 10px; flex-wrap: wrap"><button class="btn" type="button" onClick="{{saveDraft}}">Save without running</button><button class="btn primary" type="button" onClick="{{start}}">Start discovery on ready sites</button></div></div>
+<sc-if value="{{started}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid #E4E8EC; padding-top: 14px">
+<span style="font-size: 14px">Jobs queued. Collectors pick them up on their next poll.</span>
+<a class="btn" href="Collectors.dc.html">Watch jobs</a><a class="btn" href="Topology.dc.html">Open site map</a>
+</div>
+</sc-if>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const ctx = this.readCtx();
+    this.state = { ...this.fresh(ctx.cust), ctx };
+  }
+  readCtx() {
+    try { const v = JSON.parse(window.localStorage.getItem('cartio.context') || 'null'); if (v && v.cust) return v; } catch (e) { /* storage unavailable */ }
+    return { cust: 'nw', eng: 'nw-q4' };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      const v = this.readCtx();
+      if (v.cust !== this.state.ctx.cust) return this.setState({ ...this.fresh(v.cust), ctx: v });
+      if (v.eng !== this.state.ctx.eng) return this.setState({ ctx: v });
+      const b = this.seedBlob(v.cust); if (b !== this._sb) { this._sb = b; this.forceUpdate(); }
+    }, 800);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  data() {
+    return {
+      nw: { eng: 'Q1 2027 assessment', baseline: 'Q4 2026 assessment · Oct 28, 2026', taken: ['q4 2026 assessment', 'q2 2026 assessment', 'q4 2025 assessment'],
+        scope: 'Quarterly review of all three sites: inventory, topology, config changes since Q4 2026, and the five v1 checks.',
+        sites: [['HQ data center', 'nw-hq-vm', true], ['Clinic East', 'nw-east-vm', true], ['Clinic West', 'nw-west-vm (not enrolled)', false]],
+        entries: { 0: [['seed', '192.0.2.1', 'rtr-wan-01 · WAN router'], ['seed', '192.0.2.20', 'core-sw-01'], ['allow', '192.0.2.0/24', 'HQ management'], ['allow', '10.10.0.0/16', 'HQ infrastructure'], ['exclude', '10.10.99.0/24', 'Medical devices, do not touch']], 1: [['allow', '198.51.100.0/24', 'Clinic East']], 2: [] },
+        creds: [['SSH', 'ro-audit SSH', 'user ro-audit · password', 'Oct 27 by Yandy R.', true], ['SNMPv3', 'ro-audit SNMPv3', 'user ro-audit · SHA / AES-128 · authPriv', 'Oct 28 by Yandy R.', true], ['API token', 'FortiGate HQ API', 'read-only REST API user cartio-ro', 'Oct 27 by A. Chen', true], ['SNMPv2c', 'legacy community', 'community for older devices', 'Apr 14 by A. Chen', false]],
+        testSeed: 'rtr-wan-01 (192.0.2.1) through nw-hq-vm' },
+      bp: { eng: 'PCI pre-assessment 2027', baseline: 'Annual review 2026 · live', taken: ['annual review 2026', 'annual review 2025'],
+        scope: 'Pre-assessment for the 2027 PCI DSS audit: cardholder-data DMZ, firewalls, and the five v1 checks. Data stays on site.',
+        sites: [['DC1', 'bp-dc1-vm', true], ['Branch 7', 'bp-branch-laptop (stale)', false]],
+        entries: { 0: [['seed', '10.40.0.1', 'bp-fw-01 · firewall'], ['seed', '10.40.1.1', 'bp-core-01'], ['seed', '10.40.5.2', 'bp-dmz-sw-01 · DMZ'], ['allow', '10.40.0.0/16', 'DC1'], ['exclude', '10.40.7.0/24', 'ATM network, out of scope'], ['exclude', '10.40.8.0/24', 'Core banking hosts']], 1: [['seed', '10.41.0.1', 'br7-fw-01'], ['allow', '10.41.0.0/20', 'Branch 7']] },
+        creds: [['SSH', 'ro-audit SSH', 'user ro-audit · password', 'Oct 27 on bp-dc1-vm', true], ['SNMPv3', 'ro-audit SNMPv3', 'user ro-audit · SHA / AES-256', 'Oct 27 on bp-dc1-vm', true], ['API token', 'FortiGate DC1 API', 'read-only REST API user cartio-ro', 'Oct 27 on bp-dc1-vm', true]],
+        testSeed: 'bp-fw-01 (10.40.0.1) through bp-dc1-vm', localUrl: 'https://bp-dc1-vm.bluepeak.local:8443' },
+      lk: { eng: 'Wi-Fi refresh validation', baseline: 'Wi-Fi refresh baseline · Oct 24, 2026', taken: ['wi-fi refresh baseline'],
+        scope: 'After the new access points go in: confirm the access layer upgrades, PoE budgets and the controller, and compare with the October baseline.',
+        sites: [['District office', 'lk-vm-01 (offline)', false], ['Roosevelt High', 'lk-vm-01 (offline)', false], ['Lincoln Elementary', 'lk-vm-01 (offline)', false]],
+        entries: { 0: [['seed', '10.60.1.1', 'lk-core-01'], ['allow', '10.60.0.0/16', 'District office'], ['exclude', '10.60.200.0/24', 'Student devices']], 1: [['seed', '10.61.1.1', 'rhs-core-01'], ['allow', '10.61.0.0/16', 'Roosevelt High']], 2: [['allow', '10.62.0.0/16', 'Lincoln Elementary']] },
+        creds: [['SSH', 'district ro-audit', 'user cartio · password', 'Oct 20 by Yandy R.', true], ['SNMPv2c', 'district community', 'for the wireless controller only', 'Oct 20 by Yandy R.', true], ['API token', 'FortiGate 100F API', 'read-only REST API user cartio-ro', 'Oct 20 by Yandy R.', true]],
+        testSeed: 'lk-core-01 (10.60.1.1) through lk-vm-01' },
+      om: { eng: 'Plant 2 extension', baseline: 'Plant network review · in progress', taken: ['plant network review'],
+        scope: 'Add Plant 2 to the plant network review: OT switches and firewalls, read-only, with the PLC VLANs excluded.',
+        sites: [['Plant 1', 'om-plant-vm', true], ['Plant 2', 'om-plant-vm (via site link)', true]],
+        entries: { 0: [['seed', '10.80.0.1', 'om-fw-01'], ['allow', '10.80.0.0/16', 'Plant 1'], ['exclude', '10.80.50.0/24', 'PLC network, never touch']], 1: [['seed', '10.81.0.1', 'om-p2-fw-01'], ['allow', '10.81.0.0/16', 'Plant 2'], ['exclude', '10.81.50.0/24', 'PLC network, never touch']] },
+        creds: [['SSH', 'plant ro SSH', 'user cartio-ro', 'Oct 20 on om-plant-vm', true], ['SNMPv3', 'plant ro SNMPv3', 'user cartio-ro · authPriv', 'Oct 20 on om-plant-vm', true]],
+        testSeed: 'om-fw-01 (10.80.0.1) through om-plant-vm', localUrl: 'https://om-plant-vm.ostrander.local:8443' },
+      lab: { eng: 'Driver regression 0.5', baseline: 'Driver regression · Oct 28, 2026', taken: ['driver regression'],
+        scope: 'Run the 0.5 drivers against the lab and confirm the five checks still produce the expected fixture results.',
+        sites: [['Lab site A', 'lab-vm-a', true], ['Lab site B', 'lab-vm-b', true]],
+        entries: { 0: [['seed', '172.16.0.1', 'lab-fgt-01'], ['allow', '172.16.0.0/16', 'Whole lab']], 1: [['seed', '172.16.2.1', 'lab-c8k-02'], ['allow', '172.16.2.0/24', 'Lab site B']] },
+        creds: [['SSH', 'lab-ro SSH', 'user lab-ro · key', 'Oct 2 by Yandy R.', true], ['SNMPv3', 'lab-ro SNMPv3', 'user lab-ro · authPriv', 'Oct 2 by Yandy R.', true], ['API token', 'lab FortiGate API', 'read-only REST API user cartio-ro', 'Oct 2 by Yandy R.', true]],
+        testSeed: 'lab-fgt-01 (172.16.0.1) through lab-vm-a' },
+    };
+  }
+  fresh(cust) {
+    const d = this.data()[cust] || this.data().nw;
+    return { tab: 'details', engName: d.eng, site: 0, kind: 'seed', draft: '', draftNote: '', msg: '', entries: JSON.parse(JSON.stringify(d.entries)), adding: false, ctype: 'ssh', newName: '', creds: d.creds.map((c) => c.slice()), tests: {}, started: false, toast: '', taken: {} };
+  }
+  seedBlob(cust) { try { return window.localStorage.getItem('cartio.seeds.' + cust) || ''; } catch (e) { return ''; } }
+  seeds(cust) { try { return JSON.parse(this.seedBlob(cust) || '[]'); } catch (e) { return []; } }
+  check(kind, h) {
+    h = h.trim(); if (!h) return 'Type an address first';
+    const v4 = /^\d{1,3}(\.\d{1,3}){3}$/; const ok = (ip) => v4.test(ip) && ip.split('.').every((n) => +n <= 255);
+    const m = h.match(/^([^/]+)\/(\d{1,3})$/);
+    if (kind === 'seed') {
+      if (m) return 'A seed is one device: use its IP or host name. Put networks under allowed ranges.';
+      if (/^[\d.]+$/.test(h)) return ok(h) ? null : 'Not a valid IPv4 address';
+      if (h.includes(':')) return null;
+      return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/.test(h) ? null : 'Use an IP address or a host name';
+    }
+    if (!m) return ok(h) ? null : 'Use a network in CIDR form, e.g. 10.20.0.0/16';
+    if (ok(m[1])) return +m[2] > 32 ? 'Not a valid prefix' : +m[2] < 16 ? 'Wider than /16. Split it into smaller networks.' : null;
+    if (m[1].includes(':')) return +m[2] < 48 ? 'Wider than /48. Split it into smaller networks.' : null;
+    return 'Not a valid network';
+  }
+  renderVals() {
+    const s = this.state;
+    const META = { nw: ['Northwind Clinics', 'Hosted'], bp: ['Bluepeak Credit Union', 'On site'], lk: ['Larkfield School District', 'Hosted'], om: ['Ostrander Manufacturing', 'On site'], lab: ['ITCN Lab', 'Hosted'] };
+    const cust = META[s.ctx.cust] ? s.ctx.cust : 'nw';
+    const d = this.data()[cust];
+    const onsite = META[cust][1] === 'On site';
+    const SITES = d.sites;
+    const siteIdx = Math.min(s.site, SITES.length - 1);
+    const K = { seed: ['Seed device', '#E0F2FE', '#075985', '192.0.2.1 or core1.example.net', 'What is it? e.g. core switch'], allow: ['Allowed range', '#DCFCE7', '#166534', '10.20.0.0/16', 'e.g. Branch LAN'], exclude: ['Excluded', '#FEE4E2', '#912018', '10.20.99.0/24', 'Why? e.g. medical devices'] };
+    const ents = s.entries[siteIdx] || [];
+    const count = (i, k) => (s.entries[i] || []).filter((e) => e[0] === k).length;
+    const setEntries = (list) => this.setState({ entries: { ...s.entries, [siteIdx]: list } });
+    const add = () => {
+      const err = this.check(s.kind, s.draft); if (err) return this.setState({ msg: err });
+      if (ents.find((e) => e[1] === s.draft.trim())) return this.setState({ msg: 'Already in the list' });
+      this.setState({ entries: { ...s.entries, [siteIdx]: ents.concat([[s.kind, s.draft.trim(), s.draftNote.trim() || '—']]) }, draft: '', draftNote: '', msg: '' });
+    };
+    const used = s.creds.filter((c) => c[4]);
+    const sitesReady = SITES.map((x, i) => x[2] && count(i, 'seed') > 0);
+    const anySeeds = SITES.some((x, i) => count(i, 'seed') > 0);
+    const canLaunch = anySeeds && used.length > 0;
+    const CT = {
+      ssh: ['SSH password', [['Username', 'text', 'ro-audit', '', 'mono'], ['Password', 'password', '', 'Write-only. Never shown again.', '']], 'Used for Cisco IOS/IOS-XE and as the FortiGate fallback. Cartio never enters enable mode with a read-only account.'],
+      sshkey: ['SSH key', [['Username', 'text', 'ro-audit', '', 'mono'], ['Private key', 'password', 'Paste the key', 'Stored encrypted; only the fingerprint is shown later', '']], 'Key-based SSH for devices that allow it.'],
+      snmp3: ['SNMPv3', [['User', 'text', 'ro-audit', '', 'mono'], ['Auth (SHA) passphrase', 'password', '', 'Write-only', ''], ['Priv (AES) passphrase', 'password', '', 'Write-only', '']], 'authPriv with SHA and AES. Used for any device, for basic inventory and neighbors.'],
+      snmp2: ['SNMPv2c', [['Community', 'password', '', 'Write-only. Check CHK-05 flags v2c in use.', '']], 'Only for devices without SNMPv3. The assessment will recommend moving them to v3.'],
+      api: ['FortiOS API token', [['API user', 'text', 'cartio-ro', 'Read-only admin profile', 'mono'], ['Token', 'password', '', 'Write-only', '']], 'Preferred for FortiGates. Also inventories managed FortiSwitches and FortiAPs.'],
+    };
+    const ct = CT[s.ctype];
+    const tabDefs = [['details', 'Details', true], ['scope', 'Scope & seeds', anySeeds], ['creds', 'Credentials', used.length > 0], ['launch', 'Start', s.started]];
+    const go = (t) => this.setState({ tab: t });
+    const nameTaken = d.taken.includes(s.engName.trim().toLowerCase());
+    const nReady = sitesReady.filter(Boolean).length;
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      ctx: { cust, eng: s.ctx.eng }, onCtx: (v) => this.setState({ ...this.fresh(v.cust), ctx: v }),
+      cname: META[cust][0], modeLabel: META[cust][1], modeBg: onsite ? '#EDE9FE' : '#E0F2FE', modeFg: onsite ? '#5B21B6' : '#075985',
+      baseline: d.baseline, scopeText: d.scope, localUrl: d.localUrl || '',
+      prev: ({ nw: [['Q4 2026 assessment', 'Active', 'Oct 2026 · 58 devices · 23 findings'], ['Q2 2026 assessment', 'Completed', 'Apr 2026 · 54 devices · 27 findings'], ['Q4 2025 assessment', 'Completed', 'Nov 2025 · 49 devices · 31 findings']],
+        bp: [['Annual review 2026', 'Active', 'Oct 2026 · 41 devices · 13 findings'], ['Annual review 2025', 'Completed', 'Nov 2025 · 38 devices · 15 findings']],
+        lk: [['Wi-Fi refresh baseline', 'Completed', 'Oct 2026 · 118 devices · 35 findings']],
+        om: [['Plant network review', 'Active', 'Oct 2026 · results kept on site']],
+        lab: [['Driver regression', 'Active', 'Oct 2026 · 9 devices · 5 findings']] }[cust] || []).map(([name, status, meta]) => ({ name, status, meta, dot: status === 'Active' ? '#0E7490' : '#15803D' })),
+      checklist: (() => {
+        const online = SITES.filter((x) => x[2]).length;
+        const seeds = SITES.reduce((n, x, i) => n + count(i, 'seed'), 0);
+        const ok = (b) => (b ? { mark: '✓', bg: '#DCFCE7', fg: '#166534' } : { mark: '!', bg: '#FEF3C7', fg: '#854D0E' });
+        return [
+          { ...ok(online > 0), label: 'Collectors', detail: online + ' of ' + SITES.length + ' sites have an online collector', action: online === SITES.length ? '' : 'Review', go: () => go('launch') },
+          { ...ok(seeds > 0), label: 'Seeds and ranges', detail: seeds + ' seed devices across ' + SITES.length + ' sites', action: 'Edit', go: () => go('scope') },
+          { ...ok(used.length > 0), label: 'Credentials', detail: used.length + ' selected' + (onsite ? ', held on the collector' : ''), action: 'Edit', go: () => go('creds') },
+        ];
+      })(),
+      engName: s.engName, onEngName: (e) => this.setState({ engName: e.target.value }),
+      engNameMsg: nameTaken ? 'This customer already has an engagement with this name' : 'Unique within this customer',
+      engNameColor: nameTaken ? '#B42318' : '#475467',
+      readiness: nReady + ' of ' + SITES.length + ' sites ready · ' + used.length + ' credentials selected',
+      cantLaunch: !canLaunch,
+      tabs: tabDefs.map(([id, label, ok], i) => ({ label, mark: ok && s.tab !== id ? '✓' : String(i + 1), cls: s.tab === id ? 'tab on' : 'tab', selected: s.tab === id ? 'true' : 'false', bg: s.tab === id ? '#0E1A24' : ok ? '#0E7490' : '#E4E8EC', fg: s.tab === id || ok ? '#FFFFFF' : '#475467', pick: () => go(id) })),
+      tDetails: s.tab === 'details', tScope: s.tab === 'scope', tCreds: s.tab === 'creds', tLaunch: s.tab === 'launch',
+      toDetails: () => go('details'), toScope: () => go('scope'), toCreds: () => go('creds'), goLaunch: () => go('launch'),
+      siteList: SITES.map(([name], i) => ({ name, meta: count(i, 'seed') + ' seeds · ' + count(i, 'allow') + ' allowed · ' + count(i, 'exclude') + ' excluded', selected: siteIdx === i ? 'true' : 'false', border: siteIdx === i ? '#0E7490' : '#E4E8EC', bg: siteIdx === i ? '#ECFEFF' : '#FFFFFF', pick: () => this.setState({ site: i, msg: '' }) })),
+      site: { name: SITES[siteIdx][0], collector: SITES[siteIdx][1] },
+      kinds: Object.keys(K).map((k) => ({ label: K[k][0], cls: s.kind === k ? 'pill on' : 'pill', pressed: s.kind === k ? 'true' : 'false', pick: () => this.setState({ kind: k, msg: '' }) })),
+      kindLabel: K[s.kind][0], draftPh: K[s.kind][3], notePh: K[s.kind][4],
+      draft: s.draft, draftNote: s.draftNote,
+      onDraft: (e) => this.setState({ draft: e.target.value, msg: '' }), onDraftNote: (e) => this.setState({ draftNote: e.target.value }),
+      onKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }, addEntry: add,
+      draftInvalid: s.msg ? 'true' : 'false',
+      draftMsg: s.msg || (s.kind === 'seed' ? 'A seed is a device Cartio logs in to first, such as the core switch or the site’s main router or firewall.' : s.kind === 'allow' ? 'Networks discovery may reach: up to /16 for IPv4, /48 for IPv6.' : 'Never contacted, even if a neighbor points there.'),
+      draftMsgColor: s.msg ? '#B42318' : '#475467',
+      entries: ents.map((e, i) => ({ kindLabel: K[e[0]][0], bg: K[e[0]][1], fg: K[e[0]][2], v: e[1], note: e[2], remove: () => setEntries(ents.filter((x, j) => j !== i)) })),
+      noSeed: count(siteIdx, 'seed') === 0,
+      ...(() => {
+        // Seeds suggested by integrations for this site (devices whose site name does not match go to the first site).
+        const names = SITES.map((x) => x[0]);
+        const here = this.seeds(cust).filter((g) => !s.taken[g.host] && (names.indexOf(g.site) >= 0 ? names.indexOf(g.site) : 0) === siteIdx);
+        const take = (list, accept) => {
+          const taken = { ...s.taken }; list.forEach((g) => { taken[g.host] = true; });
+          const add = accept ? list.filter((g) => !ents.some((e) => e[1] === g.ip)).map((g) => ['seed', g.ip, g.host + ' · from ' + g.source]) : [];
+          this.setState({ taken, entries: { ...s.entries, [siteIdx]: ents.concat(add) }, toast: accept ? add.length + (add.length === 1 ? ' seed' : ' seeds') + ' added to ' + SITES[siteIdx][0] : 'Suggestion dismissed' });
+        };
+        return { hasSuggest: here.length > 0, suggestCount: here.length, acceptAll: () => take(here, true),
+          suggest: here.map((g) => ({ ...g, accept: () => take([g], true), dismiss: () => take([g], false) })) };
+      })(),
+      credIntro: onsite ? 'For On site customers, credentials are entered on and stored by the on-site collector, encrypted with a key that never leaves ' + META[cust][0] + '’s network. The controller only references them by name.' : 'These belong to ' + META[cust][0] + ' only and are sent only to its collectors, inside a job, held in memory for the run. After saving, a secret can be replaced or deleted but never shown again.',
+      hostedCreds: !onsite, onsiteCreds: onsite,
+      adding: s.adding && !onsite, openAdd: () => this.setState({ adding: true }), closeAdd: () => this.setState({ adding: false }),
+      ctypes: Object.keys(CT).map((k) => ({ label: CT[k][0], cls: s.ctype === k ? 'pill on' : 'pill', pressed: s.ctype === k ? 'true' : 'false', pick: () => this.setState({ ctype: k }) })),
+      cfields: ct[1].map(([label, type, ph, hint, cls]) => ({ label, type, ph, hint, cls })), ctypeAdvice: ct[2],
+      newName: s.newName, onNewName: (e) => this.setState({ newName: e.target.value }),
+      saveCred: () => this.setState({ adding: false, newName: '', creds: s.creds.concat([[ct[0].replace(' password', '').replace('FortiOS ', ''), s.newName.trim() || ct[0], 'added just now', 'today by Yandy R.', true]]), toast: 'Credential saved, encrypted, and logged in the audit log. Its secret can’t be shown again.' }),
+      creds: s.creds.map((c, i) => {
+        const t = s.tests[i];
+        return { type: c[0], name: c[1], detail: c[2], set: c[3], used: c[4], secretWhere: onsite ? 'secret held on the collector,' : 'secret ••••••••',
+          toggle: () => this.setState({ creds: s.creds.map((x, j) => (j === i ? [x[0], x[1], x[2], x[3], !x[4]] : x)) }),
+          tested: !!t, testText: t === 'run' ? 'Testing against ' + d.testSeed + '…' : t === 'ok' ? '✓ Worked on ' + d.testSeed + ' · read-only access confirmed · test logged' : t === 'off' ? 'Can’t test: the collector is offline. The test runs when it reconnects.' : '',
+          testColor: t === 'ok' ? '#15803D' : t === 'off' ? '#B54708' : '#475467', testLabel: t === 'run' ? 'Testing…' : 'Test on a seed',
+          test: () => { if (cust === 'lk') return this.setState({ tests: { ...s.tests, [i]: 'off' } }); this.setState({ tests: { ...s.tests, [i]: 'run' } }); setTimeout(() => this.setState({ tests: { ...this.state.tests, [i]: 'ok' } }), 1100); },
+          replace: () => this.setState({ adding: true, toast: 'Enter the new secret; the old one is overwritten and can’t be recovered' }) };
+      }),
+      plan: SITES.map(([name, col, online], i) => ({ name, collector: col, seeds: (s.entries[i] || []).filter((e) => e[0] === 'seed').map((e) => e[1]).join(', ') || '—',
+        ranges: count(i, 'allow') + ' allowed / ' + count(i, 'exclude') + ' excluded',
+        ready: !online ? 'Collector unavailable' : sitesReady[i] ? 'Ready' : 'Needs a seed', color: sitesReady[i] ? '#15803D' : '#B54708' })),
+      credSummary: used.map((c) => c[1]).join(', ') || 'none',
+      start: () => this.setState({ started: true, toast: nReady ? 'Discovery queued for ' + nReady + (nReady === 1 ? ' site' : ' sites') + ' · “' + s.engName + '” is now Active' : 'No collector is online; jobs will wait until one checks in · “' + s.engName + '” saved' }),
+      saveDraft: () => this.setState({ toast: '“' + s.engName + '” saved as Planned' }),
+      started: s.started, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

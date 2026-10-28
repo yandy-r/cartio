@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · New customer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:9px 16px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#344054;font-weight:500}
+.field input,.field select,.field textarea{font:inherit;font-size:14px;font-weight:400;border:1px solid #D0D5DD;border-radius:8px;padding:10px 12px;min-height:44px;box-sizing:border-box;color:#101828;background:#FFFFFF}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid #A5E3EE;border-color:#0E7490}
+.hint{font-size:12px;font-weight:400;color:#475467}
+.stepbtn{display:flex;gap:12px;align-items:flex-start;width:100%;border:0;background:transparent;font:inherit;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;color:#101828;min-height:44px}
+.stepbtn:hover{background:#EEF2F6}
+.stepbtn.on{background:#FFFFFF;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.stepbtn[disabled]{cursor:not-allowed;opacity:.55}
+.card{border:1.5px solid #DDE2E8;background:#FFFFFF;border-radius:14px;padding:18px;text-align:left;font:inherit;cursor:pointer;color:#101828;display:flex;flex-direction:column;gap:10px}
+.card:hover{border-color:#98A2B3}
+.card.on{border-color:#0E7490;box-shadow:0 0 0 3px #CFFAFE}
+.chipbtn{border:1px solid #D0D5DD;background:#FFFFFF;font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;color:#344054;cursor:pointer;min-height:36px}
+.chipbtn.on{background:#0E1A24;border-color:#0E1A24;color:#FFFFFF}
+.seed{display:inline-flex;align-items:center;gap:6px;border:1px solid #DDE2E8;background:#F8FAFB;border-radius:6px;padding:3px 4px 3px 8px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px}
+.seed button{border:0;background:transparent;cursor:pointer;width:28px;height:28px;border-radius:6px;color:#475467;font:inherit;font-size:14px}
+.seed button:hover{background:#EEF2F6}
+.radio{display:flex;gap:10px;align-items:flex-start;border:1px solid #DDE2E8;border-radius:10px;padding:12px;cursor:pointer;font-size:14px;background:#FFFFFF}
+.radio:hover{border-color:#98A2B3}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<a class="on" href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 24px clamp(16px, 2.5vw, 32px) 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467"><a href="Main.dc.html">All customers</a> / New customer</div>
+<h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600">Onboard a customer</h1>
+</div>
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+<span style="font-size: 13px; color: #475467">{{saveText}}</span>
+<sc-if value="{{showRestart}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{restart}}">Start a new customer</button></sc-if>
+</div>
+</header>
+
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<ol aria-label="Steps" style="list-style: none; margin: 0; padding: 0; flex: 1 1 220px; max-width: 280px; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="6">
+<li>
+<button type="button" class="{{st.cls}}" aria-current="{{st.current}}" disabled="{{st.locked}}" onClick="{{st.go}}">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; background: {{st.bg}}; color: {{st.fg}}">{{st.mark}}</span>
+<span><span style="display: block; font-size: 14px; font-weight: 600">{{st.label}}</span><span style="display: block; font-size: 12px; color: #475467">{{st.sub}}</span></span>
+</button>
+</li>
+</sc-for>
+</ol>
+
+<section aria-label="Step" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">Who is the customer?</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">Everything Cartio stores is scoped to one customer: data, collectors and credentials never cross between customers.</p></div>
+<label class="field">Customer name
+<input type="text" value="{{name}}" onInput="{{onName}}" aria-invalid="{{nameInvalid}}" aria-describedby="name-msg" placeholder="Organization name">
+<span id="name-msg" class="hint" style="color: {{nameMsgColor}}">{{nameMsg}}</span>
+</label>
+<div class="field">Compliance requirements
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{comp}}" as="c" hint-placeholder-count="4"><button type="button" class="{{c.cls}}" aria-pressed="{{c.pressed}}" onClick="{{c.toggle}}">{{c.label}}</button></sc-for>
+</div>
+<span class="hint">Used to suggest the right data mode. Shown on the customer list.</span>
+</div>
+<label class="field">Notes <span class="hint">Optional. Contacts, access windows, change freeze dates.</span>
+<textarea rows="3" placeholder="Primary contact, how access is granted, anything the next engineer should know"></textarea>
+</label>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">Where does their network data live?</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">This is set when the customer is created. Changing it later is an audited admin action: data is exported and checksums are confirmed before anything is deleted.</p></div>
+<sc-if value="{{suggestOnsite}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 10px; align-items: flex-start; background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #4C1D95">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
+<span>{{compText}} customers often require data to stay on their network. Confirm with them before choosing Hosted.</span>
+</div>
+</sc-if>
+<div role="radiogroup" aria-label="Data mode" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px">
+<button type="button" role="radio" aria-checked="{{hostedChecked}}" class="{{hostedCls}}" onClick="{{pickHosted}}">
+<span style="display: flex; gap: 10px; align-items: center"><span style="width: 36px; height: 36px; border-radius: 10px; background: #E0F2FE; color: #075985; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 18h10a4 4 0 000-8 6 6 0 00-11.6 1.5A3.5 3.5 0 007 18z"></path></svg></span><span><span style="display: block; font-weight: 600; font-size: 16px">Hosted</span><span style="display: block; font-size: 12px; color: #475467">Default</span></span></span>
+<span style="font-size: 13px; line-height: 1.55; color: #344054">Inventory, masked configs, findings and reports are stored on our controller, separated per customer. Engineers see everything with one login.</span>
+<span style="font-size: 12px; color: #475467">Credentials: encrypted on the controller</span>
+</button>
+<button type="button" role="radio" aria-checked="{{onsiteChecked}}" class="{{onsiteCls}}" onClick="{{pickOnsite}}">
+<span style="display: flex; gap: 10px; align-items: center"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EDE9FE; color: #5B21B6; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21V8l8-5 8 5v13M9 21v-5h6v5"></path></svg></span><span><span style="display: block; font-weight: 600; font-size: 16px">On site</span><span style="display: block; font-size: 12px; color: #475467">For HIPAA, PCI and similar</span></span></span>
+<span style="font-size: 13px; line-height: 1.55; color: #344054">Network data is written to a store on the customer’s network. Our controller keeps only collector health and job status.</span>
+<span style="font-size: 12px; color: #475467">Credentials: entered and stored on site</span>
+</button>
+</div>
+
+<sc-if value="{{isOnsite}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #E4E8EC; padding-top: 18px">
+<div class="field">On-site store
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px">
+<sc-for list="{{stores}}" as="o" hint-placeholder-count="2">
+<label class="radio" style="border-color: {{o.border}}"><input type="radio" name="store" checked="{{o.on}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; accent-color: #0E7490; margin: 1px 0 0"><span><span style="display: block; font-weight: 600">{{o.label}}</span><span style="display: block; font-size: 12px; color: #475467; font-weight: 400">{{o.hint}}</span></span></label>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{storeChosen}}" hint-placeholder-val="{{ false }}">
+<label class="field">{{storeFieldLabel}}<input type="text" class="mono" placeholder="{{storePlaceholder}}"><span class="hint">The on-site collector needs write access here. This goes on the customer’s onboarding checklist.</span></label>
+</sc-if>
+<div class="field">Live view through the controller
+<span class="hint">Lets engineers see this customer’s data from the controller. It passes through in memory and is never stored there. Choose explicitly: there is no default.</span>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px">
+<sc-for list="{{live}}" as="o" hint-placeholder-count="2">
+<label class="radio" style="border-color: {{o.border}}"><input type="radio" name="live" checked="{{o.on}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; accent-color: #0E7490; margin: 1px 0 0"><span><span style="display: block; font-weight: 600">{{o.label}}</span><span style="display: block; font-size: 12px; color: #475467; font-weight: 400">{{o.hint}}</span></span></label>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">Sites and where discovery starts</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">A site is an office, a data center or a cloud region. Seed hints are IP addresses, networks no wider than /16 (IPv4) or /48 (IPv6), or host names.</p></div>
+<sc-for list="{{sites}}" as="si" hint-placeholder-count="2">
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<label class="field">Site name<input type="text" value="{{si.name}}" onInput="{{si.onName}}" placeholder="e.g. Main office"></label>
+<label class="field">Location <span class="hint">Optional</span><input type="text" value="{{si.location}}" onInput="{{si.onLoc}}" placeholder="City or address"></label>
+</div>
+<div class="field">Seed hints
+<div style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 8px">
+<sc-for list="{{si.seeds}}" as="sd" hint-placeholder-count="2"><span class="seed">{{sd.v}}<button type="button" aria-label="Remove {{sd.v}}" onClick="{{sd.remove}}">×</button></span></sc-for>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<input type="text" class="mono" value="{{si.draft}}" onInput="{{si.onDraft}}" onKeyDown="{{si.onKey}}" aria-invalid="{{si.invalid}}" placeholder="192.0.2.1, 10.20.0.0/16 or core1.example.net" style="flex: 1 1 240px; font-size: 13px">
+<button class="btn" type="button" onClick="{{si.add}}">Add seed</button>
+</div>
+<span class="hint" style="color: {{si.msgColor}}">{{si.msg}}</span>
+</div>
+<sc-if value="{{si.removable}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{si.removeSite}}" style="align-self: flex-start; border: 0; background: transparent; font: inherit; font-size: 13px; color: #B42318; cursor: pointer; min-height: 36px; padding: 0">Remove site</button></sc-if>
+</div>
+</sc-for>
+<button class="btn" type="button" onClick="{{addSite}}" style="align-self: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add another site</button>
+</sc-if>
+
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">First engagement</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">The assessment you are about to run. Later assessments of the same customer can be compared with this one.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+<label class="field">Name<input type="text" value="Initial network assessment"></label>
+<label class="field">Status<select><option>Planned</option><option>Active</option></select></label>
+<label class="field">Start date<input type="date" value="2026-11-03"></label>
+<label class="field">End date<input type="date" value="2026-11-21"><span class="hint">Must be on or after the start date</span></label>
+</div>
+<label class="field">What this assessment covers
+<textarea rows="4">Baseline inventory and topology for all sites, the five v1 checks, and a report with recommended fixes and enhancements.</textarea>
+</label>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer"><input type="checkbox" checked="{{skipEng}}" onChange="{{toggleSkipEng}}" style="width: 18px; height: 18px; accent-color: #0E7490">Skip for now. I’ll create the engagement later.</label>
+</sc-if>
+
+<sc-if value="{{s5}}" hint-placeholder-val="{{ false }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">Collectors</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">A collector runs inside the customer’s network and dials out to the controller on 443. Add one per site you can reach, or skip and add them later from Collectors &amp; jobs. Enrollment tokens are shown once, right after you create the customer.</p></div>
+<sc-for list="{{collectors}}" as="co" hint-placeholder-count="2">
+<div style="border: 1px solid {{co.border}}; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: {{co.bg}}">
+<label style="display: flex; gap: 10px; align-items: center; font-size: 15px; font-weight: 600; cursor: pointer"><input type="checkbox" checked="{{co.on}}" onChange="{{co.toggle}}" style="width: 18px; height: 18px; accent-color: #0E7490">Collector for {{co.site}}</label>
+<sc-if value="{{co.on}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<label class="field">Name<input type="text" class="mono" value="{{co.name}}"></label>
+<label class="field">Runs on<select><option>Customer Linux VM (container)</option><option>Customer Linux VM (uv install)</option><option>Engineer laptop (Windows exe)</option></select></label>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{noneChosen}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; color: #475467">No collectors yet. You can still import show outputs, configs and CSV device lists for this customer.</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{s6}}" hint-placeholder-val="{{ false }}">
+<div><h2 style="margin: 0; font-size: 20px; font-weight: 600">Review and create</h2><p style="margin: 6px 0 0; font-size: 14px; color: #475467">Creating the customer is logged in the audit log. Nothing is ever deleted: records can be archived and restored.</p></div>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(120px, 180px) 1fr; gap: 0; font-size: 14px">
+<sc-for list="{{review}}" as="r" hint-placeholder-count="6">
+<dt style="padding: 12px 0; border-top: 1px solid #EEF2F6; color: #475467">{{r.k}}</dt>
+<dd style="margin: 0; padding: 12px 0; border-top: 1px solid #EEF2F6; display: flex; justify-content: space-between; gap: 10px"><span>{{r.v}}</span><button type="button" onClick="{{r.edit}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; color: #0E7490; cursor: pointer; min-height: 32px; flex: none">Edit</button></dd>
+</sc-for>
+</dl>
+<sc-if value="{{isOnsite}}" hint-placeholder-val="{{ false }}">
+<div style="background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #4C1D95; line-height: 1.5">What we tell the customer: “Your network data is stored only in your network, and credentials never leave it.{{liveSentence}}”</div>
+</sc-if>
+</sc-if>
+
+<div style="display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #E4E8EC; padding-top: 18px; flex-wrap: wrap">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{back}}">Back</button></sc-if>
+<sc-if value="{{noBack}}" hint-placeholder-val="{{ true }}"><a class="btn" href="Main.dc.html">Cancel</a></sc-if>
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+<span style="font-size: 13px; color: #B42318">{{blocker}}</span>
+<button class="btn primary" type="button" disabled="{{nextDisabled}}" onClick="{{next}}">{{nextLabel}}</button>
+</div>
+</div>
+</section>
+
+<aside aria-label="Summary" style="flex: 1 1 260px; min-width: 0; max-width: 340px; display: flex; flex-direction: column; gap: 14px">
+<div style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #475467">Preview on the customer list</div>
+<div style="font-weight: 600; font-size: 16px">{{previewName}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<span style="font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: {{modeBg}}; color: {{modeFg}}">{{modeLabel}}</span>
+<span style="font-size: 12px; color: #475467">{{tagText}}</span>
+</div>
+<div style="font-size: 13px; color: #344054; line-height: 1.6">{{siteCount}} · {{collectorCount}}<br>{{engText}}</div>
+</div>
+<div style="background: #0E1A24; color: #C9D4DE; border-radius: 14px; padding: 18px; font-size: 13px; line-height: 1.55; display: flex; flex-direction: column; gap: 10px">
+<div style="color: #FFFFFF; font-weight: 600">What Cartio guarantees</div>
+<div>Read-only: no device is ever changed.</div>
+<div>Secrets are masked on the collector before anything leaves the customer’s network.</div>
+<div>No inbound firewall rules: collectors only dial out.</div>
+</div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Customer created" style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 22px; max-width: 1000px">
+<div style="display: flex; gap: 14px; align-items: center">
+<span style="width: 44px; height: 44px; border-radius: 50%; background: #DCFCE7; color: #15803D; display: flex; align-items: center; justify-content: center; flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div><h2 style="margin: 0; font-size: 22px; font-weight: 600">{{previewName}} is set up</h2><div style="font-size: 14px; color: #475467">{{modeLabel}} · {{siteCount}} · {{engText}}</div></div>
+</div>
+
+<sc-if value="{{anyCollectors}}" hint-placeholder-val="{{ true }}">
+<div>
+<h3 style="margin: 0 0 6px; font-size: 16px; font-weight: 600">Enrollment tokens</h3>
+<div style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #713F12; margin-bottom: 12px">Shown once. Each expires in 1 hour. Only a hash is stored.</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{tokens}}" as="t" hint-placeholder-count="2">
+<div style="border: 1px solid #E4E8EC; border-radius: 12px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap"><span><span class="mono" style="font-weight: 500">{{t.name}}</span> <span style="font-size: 12px; color: #475467">· {{t.site}}</span></span><button class="btn" type="button" onClick="{{t.copy}}">{{t.copyLabel}}</button></div>
+<div class="mono" style="background: #0E1A24; color: #C9D4DE; padding: 12px 14px; font-size: 12.5px; line-height: 1.8; overflow-x: auto; white-space: pre">uv run cartio-collector enroll --controller https://cartio.itcloudnetwork.com --token {{t.token}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="flex: 1 1 380px; border: 1px solid #E4E8EC; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 16px; font-weight: 600">Send the onboarding checklist</h3>
+<ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #344054">
+<li>A VM or jump host for the collector, with outbound HTTPS to the controller</li>
+<li>Reachability from the collector to device management IPs</li>
+<li>Read-only accounts: FortiGate read-only admin profile and API user, Cisco show-only privilege level, SNMPv3 authPriv read view</li>
+<sc-if value="{{isOnsite}}" hint-placeholder-val="{{ false }}"><li>An on-site store the collector can write to: {{storeShort}}</li></sc-if>
+<li>The data mode in plain words: {{modePlain}}</li>
+</ul>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button class="btn" type="button" onClick="{{expPdf}}">PDF</button>
+<button class="btn" type="button" onClick="{{expDocx}}">DOCX</button>
+<button class="btn" type="button" onClick="{{expEmail}}">Copy as email</button>
+</div>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><div role="status" style="font-size: 13px; color: #15803D">{{toast}}</div></sc-if>
+</div>
+<div style="flex: 1 1 260px; border: 1px solid #E4E8EC; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 16px; font-weight: 600">Next</h3>
+<a class="btn primary" href="Collectors.dc.html">Watch for first check-ins</a>
+<a class="btn" href="Engagement.dc.html">Set up scope and credentials</a>
+<button class="btn" type="button" onClick="{{restart}}">Onboard another customer</button>
+<a class="btn" href="Inventory.dc.html">Import files instead</a>
+<a class="btn" href="Main.dc.html">Back to all customers</a>
+</div>
+</div>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.fresh();
+  }
+  fresh() {
+    return {
+      step: 1, reached: 1, done: false,
+      name: 'Cedar Valley Dental', comp: { HIPAA: true },
+      mode: null, store: null, live: null,
+      sites: [
+        { name: 'Main office', location: '', seeds: ['192.0.2.1', '192.0.2.0/24'], draft: '', msg: '' },
+        { name: 'Westside clinic', location: '', seeds: [], draft: '', msg: '' },
+      ],
+      skipEng: false, col: { 0: true, 1: false }, copied: {}, toast: '',
+    };
+  }
+  blank() {
+    return { ...this.fresh(), name: '', comp: {}, sites: [{ name: '', location: '', seeds: [], draft: '', msg: '' }], col: {} };
+  }
+  checkSeed(h) {
+    h = h.trim();
+    if (!h) return 'Type a seed first';
+    const v4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+    const okV4 = (ip) => v4.test(ip) && ip.split('.').every((n) => +n <= 255);
+    const m = h.match(/^([^/]+)\/(\d{1,3})$/);
+    if (m) {
+      if (okV4(m[1])) return +m[2] > 32 ? 'Not a valid prefix' : +m[2] < 16 ? 'Wider than /16. Split it into smaller networks.' : null;
+      if (m[1].includes(':')) return +m[2] > 128 ? 'Not a valid prefix' : +m[2] < 48 ? 'Wider than /48. Split it into smaller networks.' : null;
+      return 'Not a valid network';
+    }
+    if (/^[\d.]+$/.test(h)) return okV4(h) ? null : 'Not a valid IPv4 address';
+    if (h.includes(':')) return /^[0-9a-fA-F:]+$/.test(h) ? null : 'Not a valid IPv6 address';
+    if (/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/.test(h)) return null;
+    return 'Use an IP address, a network (CIDR) or a host name';
+  }
+  renderVals() {
+    const s = this.state;
+    const existing = ['northwind clinics', 'bluepeak credit union', 'larkfield school district', 'ostrander manufacturing', 'itcn lab'];
+    const nm = s.name.trim();
+    const dup = existing.includes(nm.toLowerCase());
+    const nameOk = nm.length > 0 && !dup;
+    const comps = Object.keys(s.comp).filter((k) => s.comp[k]);
+    const onsite = s.mode === 'on_site';
+    const modeOk = s.mode === 'hosted' || (onsite && s.store && s.live);
+    const sitesOk = s.sites.length > 0 && s.sites.every((x) => x.name.trim());
+    const okFor = { 1: nameOk, 2: modeOk, 3: sitesOk, 4: true, 5: true, 6: true };
+    const prefix = (nm.split(/\s+/).map((w) => w[0] || '').join('') || 'cu').toLowerCase().slice(0, 3);
+    const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').split('-')[0] || 'site';
+    const setSite = (i, patch) => this.setState({ sites: s.sites.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+    const addSeed = (i) => {
+      const x = s.sites[i]; const err = this.checkSeed(x.draft);
+      if (err) return setSite(i, { msg: err });
+      if (x.seeds.includes(x.draft.trim())) return setSite(i, { msg: 'Already added' });
+      setSite(i, { seeds: x.seeds.concat(x.draft.trim()), draft: '', msg: '' });
+    };
+    const go = (n) => this.setState({ step: n, reached: Math.max(s.reached, n) });
+    const stepDefs = [
+      ['Customer', nm || 'Name and compliance'],
+      ['Data residency', s.mode === 'hosted' ? 'Hosted' : onsite ? 'On site' + (s.live === 'yes' ? ' · live view' : s.live === 'no' ? ' · inside only' : '') : 'Hosted or On site'],
+      ['Sites', s.sites.length + (s.sites.length === 1 ? ' site' : ' sites') + ' · ' + s.sites.reduce((n, x) => n + x.seeds.length, 0) + ' seeds'],
+      ['Engagement', s.skipEng ? 'Skipped' : 'Initial network assessment'],
+      ['Collectors', s.sites.filter((x, i) => s.col[i]).length + ' to enroll'],
+      ['Review', 'Create the customer'],
+    ];
+    const allPrevOk = (n) => { for (let k = 1; k < n; k++) if (!okFor[k]) return false; return true; };
+    const steps = stepDefs.map(([label, sub], i) => {
+      const n = i + 1; const cur = s.step === n; const complete = n < s.step || (n <= s.reached && okFor[n] && !cur);
+      return { label, sub, mark: complete && !cur ? '✓' : String(n), cls: cur ? 'stepbtn on' : 'stepbtn', current: cur ? 'step' : 'false',
+        locked: !(n <= s.reached || allPrevOk(n)), bg: cur ? '#0E1A24' : complete ? '#0E7490' : '#E4E8EC', fg: cur || complete ? '#FFFFFF' : '#475467', go: () => go(n) };
+    });
+    const blockers = { 1: !nm ? 'Enter a customer name' : dup ? 'Name already in use' : '', 2: !s.mode ? 'Choose a data mode' : onsite && !s.store ? 'Choose an on-site store' : onsite && !s.live ? 'Decide on live view' : '', 3: sitesOk ? '' : 'Every site needs a name' };
+    const chosen = s.sites.map((x, i) => ({ x, i })).filter(({ i }) => s.col[i]);
+    const modeLabel = s.mode === 'hosted' ? 'Hosted' : onsite ? 'On site' : 'Data mode not set';
+    const tok = ['5c1e9a07…d2f4', 'a83b0c61…7e19', '0f6d42b8…c3a0', '9e27f1d5…61bb'];
+    const storeDefs = [['db', 'PostgreSQL database', 'A database on their network'], ['share', 'Folder on a file share', 'SMB or NFS path']];
+    const liveDefs = [['yes', 'Allow live view', 'Engineers can work from the controller; nothing is stored there'], ['no', 'Inside access only', 'Engineers open data from inside the customer’s network']];
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      notDone: !s.done, done: s.done,
+      saveText: s.done ? 'Created · logged in the audit log' : 'Step ' + s.step + ' of 6 · nothing is created until you confirm',
+      steps,
+      s1: s.step === 1, s2: s.step === 2, s3: s.step === 3, s4: s.step === 4, s5: s.step === 5, s6: s.step === 6,
+      name: s.name, onName: (e) => this.setState({ name: e.target.value }),
+      nameInvalid: dup ? 'true' : 'false',
+      nameMsg: dup ? 'A customer with this name already exists (names are compared without case). Archived customers count too.' : nameOk ? 'Available' : 'Must be unique across all customers',
+      nameMsgColor: dup ? '#B42318' : nameOk ? '#15803D' : '#475467',
+      comp: ['HIPAA', 'PCI', 'SOC 2', 'None'].map((k) => ({ label: k, cls: s.comp[k] ? 'chipbtn on' : 'chipbtn', pressed: s.comp[k] ? 'true' : 'false',
+        toggle: () => this.setState({ comp: k === 'None' ? { None: !s.comp.None } : { ...s.comp, None: false, [k]: !s.comp[k] } }) })),
+      suggestOnsite: !!(s.comp.HIPAA || s.comp.PCI), compText: ['HIPAA', 'PCI'].filter((k) => s.comp[k]).join(' and '),
+      hostedCls: s.mode === 'hosted' ? 'card on' : 'card', onsiteCls: onsite ? 'card on' : 'card',
+      hostedChecked: s.mode === 'hosted' ? 'true' : 'false', onsiteChecked: onsite ? 'true' : 'false',
+      pickHosted: () => this.setState({ mode: 'hosted' }), pickOnsite: () => this.setState({ mode: 'on_site' }),
+      isOnsite: onsite,
+      stores: storeDefs.map(([id, label, hint]) => ({ label, hint, on: s.store === id, border: s.store === id ? '#0E7490' : '#DDE2E8', pick: () => this.setState({ store: id }) })),
+      storeChosen: !!s.store,
+      storeFieldLabel: s.store === 'db' ? 'Database host and name' : 'Share path',
+      storePlaceholder: s.store === 'db' ? 'db01.customer.local / cartio' : '\\\\files01\\cartio  or  nfs01:/exports/cartio',
+      live: liveDefs.map(([id, label, hint]) => ({ label, hint, on: s.live === id, border: s.live === id ? '#0E7490' : '#DDE2E8', pick: () => this.setState({ live: id }) })),
+      sites: s.sites.map((x, i) => ({ ...x, removable: s.sites.length > 1,
+        seeds: x.seeds.map((v) => ({ v, remove: () => setSite(i, { seeds: x.seeds.filter((y) => y !== v) }) })),
+        invalid: x.msg && x.msg !== 'Already added' ? 'true' : 'false',
+        msg: x.msg || (x.seeds.length ? 'Press Enter or Add seed to add more.' : 'At least one seed lets discovery start right away. You can add them later.'),
+        msgColor: x.msg ? '#B42318' : '#475467',
+        onName: (e) => setSite(i, { name: e.target.value }), onLoc: (e) => setSite(i, { location: e.target.value }),
+        onDraft: (e) => setSite(i, { draft: e.target.value, msg: '' }),
+        onKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); addSeed(i); } },
+        add: () => addSeed(i),
+        removeSite: () => this.setState({ sites: s.sites.filter((y, j) => j !== i) }) })),
+      addSite: () => this.setState({ sites: s.sites.concat({ name: '', location: '', seeds: [], draft: '', msg: '' }) }),
+      skipEng: s.skipEng, toggleSkipEng: () => this.setState({ skipEng: !s.skipEng }),
+      collectors: s.sites.map((x, i) => ({ site: x.name || 'Site ' + (i + 1), name: prefix + '-' + slug(x.name || 'site' + (i + 1)) + '-vm', on: !!s.col[i],
+        border: s.col[i] ? '#A5E3EE' : '#E4E8EC', bg: s.col[i] ? '#FFFFFF' : '#F8FAFB', toggle: () => this.setState({ col: { ...s.col, [i]: !s.col[i] } }) })),
+      noneChosen: chosen.length === 0,
+      review: [
+        ['Customer', nm + (comps.length && !s.comp.None ? ' · ' + comps.join(', ') : ''), 1],
+        ['Data mode', onsite ? 'On site · ' + (s.store === 'db' ? 'PostgreSQL database' : 'File share') + ' · ' + (s.live === 'yes' ? 'live view allowed' : 'inside access only') : 'Hosted', 2],
+        ['Sites', s.sites.map((x) => (x.name || 'Unnamed') + ' (' + x.seeds.length + ' seeds)').join(', '), 3],
+        ['Engagement', s.skipEng ? 'None yet' : 'Initial network assessment · Planned · Nov 3–21, 2026', 4],
+        ['Collectors', chosen.length ? chosen.map(({ x, i }) => prefix + '-' + slug(x.name || 'site' + (i + 1)) + '-vm').join(', ') : 'None yet', 5],
+      ].map(([k, v, n]) => ({ k, v, edit: () => go(n) })),
+      liveSentence: s.live === 'yes' ? ' With live view on, data passes through our controller in memory and is never stored there.' : '',
+      hasBack: s.step > 1, noBack: s.step === 1, back: () => this.setState({ step: s.step - 1 }),
+      blocker: okFor[s.step] ? '' : blockers[s.step],
+      nextDisabled: !okFor[s.step],
+      nextLabel: s.step === 6 ? 'Create customer' : s.step === 5 && chosen.length === 0 ? 'Skip collectors' : 'Continue',
+      next: () => { if (!okFor[s.step]) return; if (s.step === 6) this.setState({ done: true }); else go(s.step + 1); },
+      previewName: nm || 'New customer',
+      modeLabel, modeBg: onsite ? '#EDE9FE' : s.mode ? '#E0F2FE' : '#EEF2F6', modeFg: onsite ? '#5B21B6' : s.mode ? '#075985' : '#475467',
+      tagText: (comps.filter((k) => k !== 'None').join(' · ')) + (onsite && s.live ? (comps.length ? ' · ' : '') + (s.live === 'yes' ? 'Live view on' : 'Inside access only') : ''),
+      siteCount: s.sites.length + (s.sites.length === 1 ? ' site' : ' sites'),
+      collectorCount: chosen.length + (chosen.length === 1 ? ' collector to enroll' : ' collectors to enroll'),
+      engText: s.skipEng ? 'No engagement yet' : 'Initial network assessment · Planned',
+      anyCollectors: chosen.length > 0,
+      tokens: chosen.map(({ x, i }, k) => { const nmc = prefix + '-' + slug(x.name || 'site' + (i + 1)) + '-vm'; return { name: nmc, site: x.name, token: tok[k % 4], copyLabel: s.copied[nmc] ? 'Copied' : 'Copy command', copy: () => this.setState({ copied: { ...s.copied, [nmc]: true } }) }; }),
+      storeShort: s.store === 'db' ? 'a PostgreSQL database' : 'an SMB or NFS folder',
+      modePlain: onsite ? 'your network data stays on your network' : 'data is stored on our controller, separated from other customers',
+      expPdf: () => this.setState({ toast: 'Onboarding checklist exported as PDF' }),
+      expDocx: () => this.setState({ toast: 'Onboarding checklist exported as DOCX' }),
+      expEmail: () => this.setState({ toast: 'Checklist copied as an email draft' }),
+      toast: s.toast,
+      restart: () => this.setState(this.blank()),
+      showRestart: s.done || s.step > 1 || s.name !== 'Cedar Valley Dental',
+    };
+  }
+}
+</script>
+</body>
+</html>

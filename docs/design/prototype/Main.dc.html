@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cartio · All customers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0E7490}a:hover{color:#155E75}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C9D4DE;text-decoration:none;font-size:14px}
+.nav a:hover{background:#17293A;color:#FFFFFF}
+.nav a.on{background:#1F3A50;color:#FFFFFF;font-weight:500}
+.tab{border:0;background:transparent;font:inherit;font-size:14px;padding:10px 14px;border-radius:8px;color:#475467;cursor:pointer;min-height:40px}
+.tab:hover{background:#E9EDF1;color:#101828}
+.tab.on{background:#FFFFFF;color:#101828;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.crow{display:grid;grid-template-columns:minmax(220px,2.2fr) minmax(170px,1.6fr) minmax(170px,1.3fr) 80px minmax(150px,1.2fr) 40px;gap:16px;align-items:center;padding:14px 20px;border-top:1px solid #E4E8EC;text-decoration:none;color:inherit}
+.crow:hover{background:#F8FAFB}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #DDE2E8;background:#FFFFFF;border-radius:999px;padding:4px 10px 4px 8px;font:inherit;font-size:12px;color:#344054;cursor:default;min-height:28px}
+.chip:hover,.chip:focus{border-color:#0E7490;outline:none}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #D0D5DD;background:#FFFFFF;color:#101828;border-radius:8px;padding:10px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;min-height:44px;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:#F8FAFB}
+.btn.primary{background:#0E7490;border-color:#0E7490;color:#FFFFFF}
+.btn.primary:hover{background:#155E75}
+</style>
+</helmet>
+<div onKeyDown="{{onKeyK}}" tabIndex="-1" style="outline: none; display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #101828; background: #F3F5F7">
+
+<nav class="nav" aria-label="Main" style="flex: 1 1 232px; max-width: 100%; background: #0E1A24; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px">
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
+<div><div style="color: #FFFFFF; font-weight: 700; font-size: 18px; letter-spacing: .02em">Cartio</div><div style="color: #8FA3B5; font-size: 11px">IT Cloud Network</div></div>
+</div>
+<div style="padding: 0 4px 12px"><dc-import name="GlobalSearch" tick="{{searchTick}}" hint-size="100%,44px"></dc-import></div>
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8FA3B5; padding: 8px 12px 6px">Workspace</div>
+<a class="on" href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg>Customers</a>
+<a href="Topology.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="6" r="2.5"></circle><circle cx="19" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="2.5"></circle><path d="M7 7.5l4 8.5M17 7.5l-4 8.5M7.5 6h9"></path></svg>Site map</a>
+<a href="Inventory.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect><path d="M7 7h.01M7 17h.01"></path></svg>Inventory</a>
+<a href="Findings.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings</a>
+<a href="Compare.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare</a>
+<a href="Report.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h7"></path></svg>Reports</a>
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8FA3B5; padding: 18px 12px 6px">Operations</div>
+<a href="Collectors.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs</a>
+<a href="Integrations.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations</a>
+<a href="Collectors.dc.html#audit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v4l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>Audit log</a>
+<div style="flex-grow: 1; min-height: 24px"></div>
+<div style="border: 1px solid #1F3A50; border-radius: 10px; padding: 12px; color: #C9D4DE; font-size: 12px; line-height: 1.5">
+<div style="display: flex; align-items: center; gap: 6px; color: #FFFFFF; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>Read-only v1</div>
+Cartio never changes customer devices. Recommendations are text and suggested snippets only.
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 14px 8px 0">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #1F3A50; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">YR</div>
+<div style="font-size: 13px; color: #FFFFFF">Yandy R.<div style="font-size: 11px; color: #8FA3B5">Engineer · MFA on</div></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; padding: 28px clamp(16px, 3vw, 40px) 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div>
+<div style="font-size: 13px; color: #475467">Connected once · 5 customers · 8 collectors</div>
+<h1 style="margin: 4px 0 0; font-size: 30px; font-weight: 600; letter-spacing: -.01em">All customers</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<label style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #D0D5DD; border-radius: 8px; padding: 0 12px; min-height: 44px; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search customers</span>
+<input type="search" placeholder="Search customers, sites, collectors" value="{{query}}" onInput="{{onSearch}}" style="border: 0; outline: none; font: inherit; font-size: 14px; width: 240px; background: transparent; color: #101828">
+</label>
+<button class="btn" type="button" onClick="{{toggleExport}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>Export list</button>
+<a class="btn" href="Engagement.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7M17 15v6M14 18h6"></path></svg>New engagement</a>
+<a class="btn primary" href="NewCustomer.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New customer</a>
+</div>
+</header>
+
+<sc-if value="{{exportOpen}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #DDE2E8; border-radius: 12px; padding: 14px 16px">
+<div style="font-size: 14px; font-weight: 600; margin-right: 8px">Export customer list</div>
+<sc-for list="{{exportFormats}}" as="f" hint-placeholder-count="3">
+<button class="btn" type="button" onClick="{{f.pick}}"><span class="mono" style="font-size: 12px; color: #0E7490">{{f.ext}}</span>{{f.label}}</button>
+</sc-for>
+<div style="font-size: 12px; color: #667085; flex: 1 1 200px">On site customers export health and job status only. Their network data never reaches the controller.</div>
+</div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #0E1A24; color: #FFFFFF; border-radius: 10px; padding: 12px 16px; font-size: 14px; align-self: flex-start">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EC4D6" stroke-width="2.2" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{toast}}
+</div>
+</sc-if>
+
+<section aria-label="Summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 12px; padding: 16px 18px">
+<div style="font-size: 13px; color: #475467">{{k.label}}</div>
+<div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px"><span style="font-size: 28px; font-weight: 600">{{k.value}}</span><span style="font-size: 13px; color: {{k.subColor}}">{{k.sub}}</span></div>
+</div>
+</sc-for>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<section aria-label="Customers" style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px">
+<div role="tablist" aria-label="Filter by data mode" style="display: flex; flex-wrap: wrap; gap: 4px; background: #F3F5F7; padding: 4px; border-radius: 10px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button role="tab" type="button" class="{{t.cls}}" aria-selected="{{t.selected}}" onClick="{{t.pick}}">{{t.label}} <span style="color: #667085; font-weight: 400">{{t.count}}</span></button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #667085">Hover a collector for its health</div>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 900px">
+<div class="crow" style="padding-top: 10px; padding-bottom: 10px; background: #F8FAFB; font-size: 12px; color: #475467; text-transform: uppercase; letter-spacing: .05em">
+<div>Customer</div><div>Active engagement</div><div>Collectors</div><div>Devices</div><div>Open findings</div><div></div>
+</div>
+<sc-for list="{{rows}}" as="c" hint-placeholder-count="5">
+<div class="crow">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<a href="Topology.dc.html" onClick="{{c.open}}" style="font-weight: 600; font-size: 15px; color: #101828; text-decoration: none">{{c.name}}</a>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: {{c.modeBg}}; color: {{c.modeFg}}">
+<sc-if value="{{c.hosted}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 18h10a4 4 0 000-8 6 6 0 00-11.6 1.5A3.5 3.5 0 007 18z"></path></svg></sc-if>
+<sc-if value="{{c.onsite}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 21V8l8-5 8 5v13M9 21v-5h6v5"></path></svg></sc-if>
+{{c.mode}}</span>
+<span style="font-size: 12px; color: #475467">{{c.tag}}</span>
+</div>
+</div>
+<div style="font-size: 14px">
+<div>{{c.eng}}</div>
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475467; margin-top: 4px"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{c.engDot}}"></span>{{c.engStatus}} · {{c.sites}} sites</div>
+<a href="Engagement.dc.html" onClick="{{c.open}}" style="display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; font-weight: 600; color: #0E7490; border: 1px solid #A5E3EE; background: #ECFEFF; border-radius: 6px; padding: 4px 8px; text-decoration: none; align-self: flex-start">+ New engagement</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{c.collectors}}" as="k" hint-placeholder-count="2">
+<span style="position: relative; display: inline-flex">
+<button type="button" class="chip mono" onMouseEnter="{{k.enter}}" onMouseLeave="{{leave}}" onFocus="{{k.enter}}" onBlur="{{leave}}" aria-describedby="pop-{{k.id}}">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: {{k.dot}}; box-shadow: 0 0 0 2px {{k.ring}}"></span>{{k.name}}
+</button>
+<sc-if value="{{k.open}}" hint-placeholder-val="{{ false }}">
+<div id="pop-{{k.id}}" role="tooltip" style="position: absolute; z-index: 20; top: 36px; left: 0; width: 280px; background: #0E1A24; color: #E6EDF3; border-radius: 12px; padding: 14px 16px; box-shadow: 0 12px 32px rgba(14,26,36,.28); font-size: 13px; line-height: 1.45">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+<span class="mono" style="color: #FFFFFF; font-weight: 500">{{k.name}}</span>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {{k.dot}}; color: #0E1A24">{{k.state}}</span>
+</div>
+<div style="display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; margin-top: 10px; font-size: 12px">
+<span style="color: #8FA3B5">Last check-in</span><span>{{k.seen}}</span>
+<span style="color: #8FA3B5">Runs on</span><span>{{k.host}}</span>
+<span style="color: #8FA3B5">Version</span><span class="mono">{{k.version}}</span>
+<span style="color: #8FA3B5">Site</span><span>{{k.site}}</span>
+<span style="color: #8FA3B5">Certificate</span><span>{{k.cert}}</span>
+<span style="color: #8FA3B5">Queue</span><span>{{k.queue}}</span>
+</div>
+<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1F3A50; font-size: 12px; color: #8FA3B5">Dials out on 443 · never listens</div>
+</div>
+</sc-if>
+</span>
+</sc-for>
+</div>
+<div class="mono" style="font-size: 14px">{{c.devices}}</div>
+<div>
+<sc-if value="{{c.hasFindings}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #EEF2F6; gap: 2px" aria-hidden="true">
+<span style="flex: {{c.f.c}} 1 0; background: #B42318"></span><span style="flex: {{c.f.h}} 1 0; background: #E8590C"></span><span style="flex: {{c.f.m}} 1 0; background: #F5B53F"></span><span style="flex: {{c.f.l}} 1 0; background: #98A2B3"></span>
+</div>
+<div style="font-size: 12px; color: #475467; margin-top: 6px">{{c.findingsText}}</div>
+</sc-if>
+<sc-if value="{{c.noFindings}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: #475467; line-height: 1.4">{{c.findingsText}}</div>
+</sc-if>
+</div>
+<a href="Topology.dc.html" onClick="{{c.open}}" aria-label="Open {{c.name}}" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; color: #475467"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 32px 20px; color: #475467; font-size: 14px; border-top: 1px solid #E4E8EC">No customers match “{{query}}”.</div>
+</sc-if>
+</div>
+</div>
+</section>
+
+<aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px">
+<h2 style="margin: 0 0 12px; font-size: 16px; font-weight: 600">Needs attention</h2>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{attention}}" as="a" hint-placeholder-count="4">
+<div style="display: flex; gap: 12px">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 8px; background: {{a.bg}}; color: {{a.fg}}; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700" aria-hidden="true">!</span>
+<div style="font-size: 13px; line-height: 1.45"><div style="font-weight: 500">{{a.title}}</div><div style="color: #475467">{{a.detail}}</div><a href="{{a.href}}" style="font-size: 13px">{{a.action}}</a></div>
+</div>
+</sc-for>
+</div>
+</section>
+<section style="background: #FFFFFF; border: 1px solid #E4E8EC; border-radius: 14px; padding: 18px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0 0 12px; font-size: 16px; font-weight: 600">Recent activity</h2><a href="Collectors.dc.html#audit" style="font-size: 13px">Audit log</a></div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{activity}}" as="e" hint-placeholder-count="5">
+<li style="display: grid; grid-template-columns: 52px 1fr; gap: 10px; font-size: 13px; line-height: 1.4">
+<span class="mono" style="font-size: 12px; color: #667085">{{e.at}}</span>
+<span><span style="font-weight: 500">{{e.what}}</span><br><span style="color: #475467">{{e.detail}}</span></span>
+</li>
+</sc-for>
+</ol>
+</section>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'all', query: '', hover: null, exportOpen: false, toast: '' };
+  }
+  renderVals() {
+    const s = this.state;
+    const col = (id, name, st, seen, host, version, site, cert, queue) => {
+      const map = { Online: ['#22C55E', '#DCFCE7'], Stale: ['#F59E0B', '#FEF3C7'], Offline: ['#98A2B3', '#EEF2F6'] };
+      return { id, name, state: st, seen, host, version, site, cert, queue, dot: map[st][0], ring: map[st][1], open: s.hover === id, enter: () => this.setState({ hover: id }) };
+    };
+    const customers = [
+      { name: 'Northwind Clinics', mode: 'Hosted', tag: 'HIPAA', eng: 'Q4 2026 assessment', engStatus: 'Active', engDot: '#0E7490', sites: 3, devices: 64,
+        f: { c: 2, h: 5, m: 9, l: 7 }, findingsText: '2 critical · 5 high · 16 other',
+        collectors: [col('c1', 'nw-hq-vm', 'Online', '42 s ago', 'Linux VM · container', '0.4.0', 'HQ data center', 'Valid · 81 days', 'Idle'),
+                     col('c2', 'nw-east-vm', 'Online', '1 min ago', 'Linux VM · uv install', '0.4.0', 'Clinic East', 'Valid · 81 days', '1 job running')] },
+      { name: 'Bluepeak Credit Union', mode: 'On site', tag: 'PCI · Live view on', eng: 'Annual review 2026', engStatus: 'Active', engDot: '#0E7490', sites: 2, devices: '41',
+        f: { c: 0, h: 3, m: 4, l: 6 }, findingsText: '3 high · 10 other · via live view, not stored',
+        collectors: [col('c3', 'bp-dc1-vm', 'Online', '12 s ago', 'Linux VM · container', '0.4.0', 'DC1', 'Valid · 64 days', 'Idle'),
+                     col('c4', 'bp-branch-laptop', 'Stale', '3 h ago', 'Windows laptop · exe', '0.3.1', 'Branch 7', 'Valid · 12 days', '2 results queued offline')] },
+      { name: 'Larkfield School District', mode: 'Hosted', tag: 'Education', eng: 'Wi-Fi refresh baseline', engStatus: 'Completed', engDot: '#15803D', sites: 5, devices: 118,
+        f: { c: 0, h: 3, m: 12, l: 20 }, findingsText: '3 high · 32 other',
+        collectors: [col('c5', 'lk-vm-01', 'Offline', '2 days ago', 'Linux VM · container', '0.3.1', 'District office', 'Valid · 40 days', '—')] },
+      { name: 'Ostrander Manufacturing', mode: 'On site', tag: 'Inside access only', eng: 'Plant network review', engStatus: 'Active', engDot: '#0E7490', sites: 2, devices: '—',
+        f: null, findingsText: 'Live view is off for this customer. Open from inside their network.',
+        collectors: [col('c6', 'om-plant-vm', 'Online', '30 s ago', 'Linux VM · container', '0.4.0', 'Plant 1', 'Valid · 77 days', 'Report saving to on-site store')] },
+      { name: 'ITCN Lab', mode: 'Hosted', tag: 'Internal lab', eng: 'Driver regression', engStatus: 'Active', engDot: '#0E7490', sites: 2, devices: 9,
+        f: { c: 1, h: 1, m: 2, l: 1 }, findingsText: '1 critical · 1 high · 3 other',
+        collectors: [col('c7', 'lab-vm-a', 'Online', '5 s ago', 'Linux VM · uv install', '0.4.1-dev', 'Lab site A', 'Valid · 88 days', 'Idle'),
+                     col('c8', 'lab-vm-b', 'Online', '9 s ago', 'Linux VM · uv install', '0.4.1-dev', 'Lab site B', 'Valid · 88 days', 'Idle')] },
+    ];
+    const q = s.query.trim().toLowerCase();
+    const rows = customers
+      .filter((c) => s.tab === 'all' || (s.tab === 'hosted' ? c.mode === 'Hosted' : s.tab === 'onsite' ? c.mode === 'On site' : false))
+      .filter((c) => !q || (c.name + ' ' + c.tag + ' ' + c.collectors.map((k) => k.name).join(' ')).toLowerCase().includes(q))
+      .map((c) => ({ ...c, hosted: c.mode === 'Hosted', onsite: c.mode === 'On site',
+        open: () => { const ids = { 'Northwind Clinics': ['nw', 'nw-q4'], 'Bluepeak Credit Union': ['bp', 'bp-26'], 'Larkfield School District': ['lk', 'lk-wifi'], 'Ostrander Manufacturing': ['om', 'om-plant'], 'ITCN Lab': ['lab', 'lab-drv'] }[c.name]; try { window.localStorage.setItem('cartio.context', JSON.stringify({ cust: ids[0], eng: ids[1] })); } catch (e) { /* storage unavailable */ } },
+        modeBg: c.mode === 'Hosted' ? '#E0F2FE' : '#EDE9FE', modeFg: c.mode === 'Hosted' ? '#075985' : '#5B21B6',
+        hasFindings: !!c.f, noFindings: !c.f, f: c.f || { c: 0, h: 0, m: 0, l: 0 } }));
+    const tabDefs = [['all', 'All', 5], ['hosted', 'Hosted', 3], ['onsite', 'On site', 2], ['archived', 'Archived', 1]];
+    const formats = [['CSV', '.csv'], ['Excel', '.xlsx'], ['JSON', '.json']];
+    return {
+      onKeyK: (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ searchTick: (this.state.searchTick || 0) + 1 }); } }, searchTick: this.state.searchTick || 0,
+      query: s.query,
+      onSearch: (e) => this.setState({ query: e.target.value }),
+      leave: () => this.setState({ hover: null }),
+      tabs: tabDefs.map(([id, label, count]) => ({ label, count, selected: s.tab === id ? 'true' : 'false', cls: s.tab === id ? 'tab on' : 'tab', pick: () => this.setState({ tab: id }) })),
+      rows,
+      empty: rows.length === 0,
+      exportOpen: s.exportOpen,
+      toggleExport: () => this.setState({ exportOpen: !s.exportOpen, toast: '' }),
+      exportFormats: formats.map(([label, ext]) => ({ label, ext, pick: () => this.setState({ exportOpen: false, toast: 'Exported customers-2026-10-28' + ext + ' (' + rows.length + ' rows)' }) })),
+      toast: s.toast,
+      kpis: [
+        { label: 'Collectors online', value: '6 / 8', sub: '1 stale · 1 offline', subColor: '#B54708' },
+        { label: 'Active engagements', value: '3', sub: '1 planned', subColor: '#475467' },
+        { label: 'Devices discovered', value: '232', sub: '+58 this week', subColor: '#15803D' },
+        { label: 'Open critical findings', value: '3', sub: 'across 2 customers', subColor: '#B42318' },
+      ],
+      attention: [
+        { title: 'lk-vm-01 has been offline for 2 days', detail: 'Larkfield · results from the last run were acknowledged before it dropped.', action: 'Check collector', href: 'Collectors.dc.html', bg: '#FEE4E2', fg: '#B42318' },
+        { title: 'Ostrander report not saved yet', detail: 'The on-site collector kept it locally and is retrying the write to the customer store.', action: 'View job', href: 'Collectors.dc.html', bg: '#FEF3C7', fg: '#B54708' },
+        { title: 'bp-branch-laptop runs 0.3.1', detail: 'Bluepeak · 0.4.0 adds offline replay with result IDs.', action: 'Update guide', href: 'Collectors.dc.html', bg: '#FEF3C7', fg: '#B54708' },
+        { title: 'Enrollment token expires in 40 min', detail: 'Northwind · nw-west-vm has not enrolled yet.', action: 'Reissue token', href: 'Collectors.dc.html', bg: '#E0F2FE', fg: '#075985' },
+      ],
+      activity: [
+        { at: '10:42', what: 'Discovery finished · Northwind / HQ', detail: '58 devices from 2 seeds · 4 m 12 s · nw-hq-vm' },
+        { at: '10:31', what: 'Checks re-run · Northwind', detail: '5 checks · 23 findings · no new collection needed' },
+        { at: '09:58', what: 'Live view opened · Bluepeak', detail: 'Relayed through the controller, nothing stored' },
+        { at: '09:12', what: 'Discovery finished · Ostrander', detail: 'Status only: results written to their on-site store' },
+        { at: '09:20', what: 'Imported 12 config files · Bluepeak', detail: 'Masked on the on-site collector · by A. Chen' },
+        { at: '08:47', what: 'Credential replaced · Northwind', detail: 'SNMPv3 user ro-audit · by Yandy R.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
