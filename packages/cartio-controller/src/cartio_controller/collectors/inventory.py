@@ -1,4 +1,6 @@
-"""Store a device's raw outputs and build its Device, Interfaces and Links from them (ADR-0008).
+"""Store a device's raw outputs and build its inventory records from them (ADR-0008).
+
+The records are the Device, its Interfaces, its Links (L2) and its RoutingNeighbors (L3).
 
 Outputs arrive masked from the collector (or an upload) and are kept as `RawOutput`s, so the
 parsers in `cartio_core.parsers` can be re-run on them later. Parsing is idempotent: storing
@@ -19,7 +21,16 @@ from cartio_core.parsers import ParsedDevice, expand_interface, parse
 from django.db import transaction
 
 from . import audit
-from .models import AuditEvent, Customer, Device, Interface, Link, OnSiteDataError, RawOutput
+from .models import (
+    AuditEvent,
+    Customer,
+    Device,
+    Interface,
+    Link,
+    OnSiteDataError,
+    RawOutput,
+    RoutingNeighbor,
+)
 
 
 class UnmaskedOutputError(ValueError):
@@ -121,6 +132,8 @@ def _apply(source, parsed: ParsedDevice, *, management_ip: str | None) -> Device
                 "mac_address": found.mac_address,
                 "mtu": found.mtu,
                 "speed": found.speed,
+                "ip_address": found.ip_address or None,
+                "prefix_length": found.prefix_length,
             },
         )
 
@@ -148,7 +161,54 @@ def _apply(source, parsed: ParsedDevice, *, management_ip: str | None) -> Device
         if far is not None and far != link.a_interface:
             link.b_interface, link.b_device_name, link.b_interface_name = far, "", ""
             link.save()
+    _apply_routing(source, parsed, device)
     return device
+
+
+def _apply_routing(source, parsed: ParsedDevice, device: Device) -> None:
+    customer = source.customer
+    neighbors = RoutingNeighbor.objects.for_customer(customer)
+    # This source's routing neighbors of this device are rebuilt from its outputs.
+    neighbors.filter(source=source, device=device).delete()
+    interfaces = Interface.objects.for_customer(customer)
+    for found in parsed.routing_neighbors:
+        local = (
+            interfaces.filter(device=device, name=found.local_interface).first()
+            if found.local_interface
+            else None
+        )
+        neighbors.create(
+            device=device,
+            interface=local,
+            protocol=found.protocol,
+            address=found.address,
+            router_id=found.router_id,
+            remote_as=found.remote_as,
+            state=found.state,
+            peer=_owner(source, found.address, exclude=device),
+            source=source,
+        )
+    # Neighbors that other devices found at one of this device's addresses before it arrived.
+    addresses = list(
+        interfaces.filter(device=device)
+        .exclude(ip_address=None)
+        .values_list("ip_address", flat=True)
+    )
+    for neighbor in neighbors.filter(
+        device__engagement=source.engagement, peer=None, address__in=addresses
+    ).exclude(device=device):
+        neighbor.peer = device
+        neighbor.save()
+
+
+def _owner(source, address: str, *, exclude: Device) -> Device | None:
+    """The engagement's device with an interface at this address, if it has been collected."""
+    return (
+        Device.objects.for_customer(source.customer)
+        .filter(engagement=source.engagement, interfaces__ip_address=address)
+        .exclude(pk=exclude.pk)
+        .first()
+    )
 
 
 def _interface(source, device_name: str, interface_name: str) -> Interface | None:

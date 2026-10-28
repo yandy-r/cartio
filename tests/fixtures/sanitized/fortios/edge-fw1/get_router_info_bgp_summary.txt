@@ -1,0 +1,9 @@
+VRF 0 BGP router identifier 192.0.2.1, local AS number 64512
+BGP table version is 3
+1 BGP AS-PATH entries
+0 BGP community entries
+
+Neighbor        V         AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+203.0.113.1     4      64500    1442    1438        2    0    0 23:58:11        12
+
+Total number of neighbors 1

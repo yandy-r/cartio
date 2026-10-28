@@ -8,6 +8,7 @@ from cartio_core.parsers import (
     COMMANDS,
     ParsedInterface,
     ParsedNeighbor,
+    ParsedRoutingNeighbor,
     ParseError,
     expand_interface,
     parse,
@@ -110,6 +111,64 @@ def test_fortios_firewall():
     assert device.neighbors == ()
 
 
+def test_interface_addresses():
+    core = {i.name: i for i in parse("ios-xe", outputs("core-sw1")).interfaces}
+    assert (core["Vlan10"].ip_address, core["Vlan10"].prefix_length) == ("192.0.2.10", 24)
+    assert (
+        core["GigabitEthernet1/0/48"].ip_address,
+        core["GigabitEthernet1/0/48"].prefix_length,
+    ) == (
+        "",
+        None,
+    )
+    edge = {i.name: i for i in parse("fortios", outputs("edge-fw1")).interfaces}
+    assert (edge["port1"].ip_address, edge["port1"].prefix_length) == ("192.0.2.1", 24)
+    # FortiOS shows an unset address as 0.0.0.0 0.0.0.0.
+    assert (edge["wan2"].ip_address, edge["wan2"].prefix_length) == ("", None)
+
+
+def test_routing_neighbors():
+    assert parse("ios-xe", outputs("core-sw1")).routing_neighbors == (
+        ParsedRoutingNeighbor("ospf", "192.0.2.1", "Vlan10", "192.0.2.1", None, "FULL/DR"),
+    )
+    assert parse("fortios", outputs("edge-fw1")).routing_neighbors == (
+        ParsedRoutingNeighbor("ospf", "192.0.2.10", "port1", "192.0.2.10", None, "Full/Backup"),
+        # BGP doesn't name an interface: the peer's address is on wan1's subnet.
+        ParsedRoutingNeighbor("bgp", "203.0.113.1", "wan1", "", 64500, "Established"),
+    )
+    # floor-sw1 runs neither protocol: "% BGP not active" and an empty OSPF table.
+    assert parse("ios", outputs("floor-sw1")).routing_neighbors == ()
+
+
+def test_a_bgp_peer_that_isnt_up_keeps_its_state_and_a_remote_peer_has_no_interface():
+    lab = outputs("edge-fw1")
+    lab["get router info bgp summary"] = lab["get router info bgp summary"].replace(
+        "203.0.113.1     4      64500    1442    1438        2    0    0 23:58:11        12",
+        "198.18.0.1      4      64501       0       0        0    0    0 never    Active",
+    )
+    bgp = [n for n in parse("fortios", lab).routing_neighbors if n.protocol == "bgp"]
+    assert bgp == [ParsedRoutingNeighbor("bgp", "198.18.0.1", "", "", 64501, "Active")]
+
+
+def test_ios_bgp_peers():
+    summary = "\n".join(
+        [
+            "BGP router identifier 192.0.2.10, local AS number 64512",
+            "BGP table version is 5, main routing table version 5",
+            "",
+            "Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd",
+            "192.0.2.1       4        64512     120     118        5    0    0 01:52:10        3",
+            "198.18.0.1      4        64501       0       0        1    0    0 never    Idle",
+        ]
+    )
+    lab = {**outputs("core-sw1"), "show ip bgp summary": summary}
+    bgp = [n for n in parse("ios-xe", lab).routing_neighbors if n.protocol == "bgp"]
+    assert bgp == [
+        ParsedRoutingNeighbor("bgp", "192.0.2.1", "Vlan10", "", 64512, "Established"),
+        ParsedRoutingNeighbor("bgp", "198.18.0.1", "", "", 64501, "Idle"),
+    ]
+
+
 def test_fortios_model_comes_from_the_ttp_hardware_template():
     lab = outputs("edge-fw1")
     lab["get system status"] = lab["get system status"].replace("FortiGate-60F v", "unknown v")
@@ -119,7 +178,7 @@ def test_fortios_model_comes_from_the_ttp_hardware_template():
 def test_missing_outputs_leave_fields_empty():
     device = parse("ios", {"show version": outputs("floor-sw1")["show version"]})
     assert device.name == "floor-sw1"
-    assert device.interfaces == device.neighbors == ()
+    assert device.interfaces == device.neighbors == device.routing_neighbors == ()
 
 
 @pytest.mark.parametrize("platform", list(Platform))

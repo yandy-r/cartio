@@ -57,12 +57,15 @@ its scrapli driver class in `ScrapliDriver.open()`.
 
 Parsers live in `packages/cartio-core/src/cartio_core/parsers.py`, so the collector and the
 controller share them. They use ntc-templates (TextFSM) where a template exists, and TTP where
-it doesn't (FortiOS `get hardware status`). For a new platform:
+it doesn't or doesn't fit (FortiOS `get hardware status`, `get router info ospf neighbor` and
+`get router info bgp summary`). For a new platform:
 
 - List the commands its parser reads in `COMMANDS`. Each must be on its allow-list (a test
   checks), and `collect()` on the collector runs exactly these, masking each output.
-- Add a `_parse_<platform>()` that returns a `ParsedDevice` with its interfaces and neighbors.
-  Leave a field empty when the output doesn't say; never guess.
+- Add a `_parse_<platform>()` that returns a `ParsedDevice` with its interfaces (and their IPv4
+  addresses), its CDP/LLDP neighbors and its OSPF/BGP routing neighbors. Leave a field empty when
+  the output doesn't say; never guess. A command for a protocol the device doesn't run (IOS
+  answers "% BGP not active") parses to nothing.
 - Add sanitized fixtures in `tests/fixtures/sanitized/<platform>/<host>/`, one file per command
   named after it (`show_version.txt`). Use documentation addresses (192.0.2.0/24,
   198.51.100.0/24, 203.0.113.0/24), `example.net` names and made-up serials, and no secrets.
@@ -70,7 +73,9 @@ it doesn't (FortiOS `get hardware status`). For a new platform:
   when it has neighbors there.
 
 On the controller, `collectors/inventory.py` stores one device's masked outputs as `RawOutput`s
-and parses them into `Device`, `Interface` and `Link` records (`store_outputs()`). It refuses
+and parses them into `Device`, `Interface`, `Link` and `RoutingNeighbor` records
+(`store_outputs()`). A routing neighbor's far device is the engagement's device that owns the
+neighbor's address, once it's collected. It refuses
 output that still holds a secret. `reparse()` runs the parsers again on a `Source`'s stored
 outputs after a parser fix, and gives the same records whatever order the devices arrived in.
 Both are audit-logged.
@@ -88,8 +93,9 @@ network:
 | -- | -- |
 | `Source` | How data arrived: a live run, an uploaded file or a customer tool export |
 | `Device` | Name, platform, manufacturer, model, serial, OS version, management IP, last seen |
-| `Interface` | A device's ports and logical interfaces |
-| `Link` | A neighbor relation, to another interface or to a named device not in scope |
+| `Interface` | A device's ports and logical interfaces, with the primary IPv4 address |
+| `Link` | An L2 neighbor relation (CDP/LLDP), to another interface or to a named device not in scope |
+| `RoutingNeighbor` | An L3 relation (OSPF neighbor or BGP peer), with its subnet, and the far device once collected |
 | `RawOutput` | One command's masked output, kept for re-parsing |
 | `ConfigSnapshot` | A device's masked config, with its SHA-256 |
 
