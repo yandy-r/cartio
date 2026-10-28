@@ -10,8 +10,11 @@ from cartio_controller.collectors.models import (
     AuditEvent,
     CollectionRun,
     CollectionRunResult,
+    ConfigSnapshot,
     Customer,
     LoginEvent,
+    RawOutput,
+    Source,
 )
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -20,7 +23,10 @@ from django.db import DatabaseError, connection, transaction
 pytestmark = pytest.mark.django_db
 
 ROLE = settings.DB_APP_ROLE
-APPEND_ONLY = {m._meta.db_table for m in (AuditEvent, CollectionRun, CollectionRunResult)}
+APPEND_ONLY = {
+    m._meta.db_table
+    for m in (AuditEvent, CollectionRun, CollectionRunResult, Source, RawOutput, ConfigSnapshot)
+}
 LOGIN_LOG = LoginEvent._meta.db_table
 
 
