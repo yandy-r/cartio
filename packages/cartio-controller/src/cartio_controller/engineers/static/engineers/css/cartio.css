@@ -621,6 +621,9 @@ code.command { display: block; margin-top: 10px; padding: 10px 12px; font-size: 
 .report-code { margin: 4px 0 12px; padding: 10px 12px; background: var(--page); border-radius: 8px; font: 12px/1.5 var(--mono);
                white-space: pre-wrap; overflow-wrap: anywhere; }
 .report-page table { margin-bottom: 12px; }
+.report-map { margin: 4px 0 16px; }
+.report-map svg { display: block; width: 100%; height: auto; max-height: 640px; border: 1px solid var(--border); border-radius: 6px; }
+.report-map figcaption { margin-top: 6px; font-size: 12px; }
 
 /* Compare (DESIGN.md section 8). */
 .compare { display: flex; flex-direction: column; gap: 16px; }

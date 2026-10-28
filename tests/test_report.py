@@ -237,3 +237,145 @@ def test_report_needs_sign_in(client, assessed):
     engagement, _, _ = assessed
     assert client.get(_url(engagement)).status_code == 302
     assert _export(client, engagement, "pdf").status_code in (302, 403)
+
+
+# The topology and changes pages (YAN-1745).
+
+
+def test_topology_page_prints_each_sites_map(client, engineer, acme):
+    from tests.test_sitemap import _lab
+
+    engagement, hq, floor = _lab(acme)
+    page = client.get(_url(engagement)).content.decode()
+    assert 'report-h1">Topology' in page
+    assert 'report-h2">HQ' in page and 'report-h2">Floor 2' in page
+    assert "Figure 1. Layer 2 topology of Floor 2 from LLDP and CDP" in page
+    assert "<svg" in page and "core-sw1" in page
+    # The report's maps are drawings, not links to the Site map, and carry no ids.
+    assert "sitemap-svg" not in page
+    assert all(str(d.pk) not in page for d in Device.objects.for_customer(acme))
+
+    pdf = _export(client, engagement, "pdf")
+    text = _pdf_text(pdf.content)
+    assert "Layer 2 topology of HQ" in text and "(core-sw1)" in text
+
+    docx = _export(client, engagement, "docx").content
+    xml = _docx_text(docx)
+    assert "Layer 2 topology of HQ" in xml and "rIdFigure2" in xml
+    with zipfile.ZipFile(io.BytesIO(docx)) as package:
+        images = [n for n in package.namelist() if n.startswith("word/media/")]
+        assert images == ["word/media/figure1.png", "word/media/figure2.png"]
+        assert package.read(images[0]).startswith(b"\x89PNG")
+        assert 'Extension="png"' in package.read("[Content_Types].xml").decode()
+        rels = package.read("word/_rels/document.xml.rels").decode()
+        assert 'Target="media/figure2.png"' in rels
+
+
+def test_topology_is_left_out_without_devices_or_when_unticked(client, engineer, assessed):
+    engagement, _, _ = assessed
+    # The assessed devices are on HQ, with no links: the map still shows them.
+    assert 'report-h1">Topology' in client.get(_url(engagement)).content.decode()
+    page = client.get(_url(engagement, query="?set=1&sections=scope")).content.decode()
+    assert 'report-h1">Topology' not in page and "report-map" not in page
+
+    empty = _engagement(Customer.objects.create(name="Initech"))
+    page = client.get(_url(empty)).content.decode()
+    assert 'report-h1">Topology' not in page
+
+
+def test_svg_figures_draw_the_icons_and_labels():
+    from cartio_controller.engineers import figures
+    from cartio_controller.engineers.sitemap import ROLES
+
+    for _, icon, _ in ROLES.values():
+        lines = figures.flatten(icon)
+        assert lines and all(points for points, _ in lines)
+    # Compact arc flags run into the next number.
+    ((points, closed),) = figures.flatten("M4.5 10a11 11 0 0115 0")
+    assert not closed and points[-1] == (19.5, 10)
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">'
+        '<rect x="0" y="0" width="200" height="100" fill="#FAFBFC"/>'
+        '<g transform="translate(10 20)" opacity="0.5"><line x1="0" y1="0" x2="50" y2="0" '
+        'stroke="#E8590C" stroke-dasharray="7 5"/><text x="5" y="30" font-size="12">a &lt; b</text>'
+        '<path d="M3 8h18v8H3z" fill="none" stroke="#0E1A24"/></g></svg>'
+    )
+    width, height, shapes = figures.parse(svg)
+    assert (width, height) == (200, 100)
+    line = next(s for s in shapes if s.kind == "line")
+    assert line.at == (10, 20, 60, 20) and line.style.opacity == 0.5
+    assert next(s for s in shapes if s.kind == "text").text == "a < b"
+    # The engineer UI's Plex fonts load, so the DOCX map matches the screen.
+    assert "Plex" in " ".join(figures._load_font("ibm-plex-mono-latin-500-normal", 12).getname())
+    content, w, h = figures.png(svg, 400)
+    assert content.startswith(b"\x89PNG") and (w, h) == (400, 200)
+    drawing = figures.drawing(svg, 100, 100)
+    assert (drawing.width, drawing.height) == (100, 50)
+
+
+@pytest.fixture
+def two_reviews(acme):
+    from tests.test_compare import pair
+
+    q2, q4 = pair.__wrapped__(acme)
+    return q2, q4
+
+
+def test_changes_page_compares_with_the_engagement_before(client, engineer, two_reviews):
+    q2, q4 = two_reviews
+    page = client.get(_url(q4)).content.decode()
+    assert 'report-h1">Changes since the last assessment' in page
+    assert "Compared with the previous assessment, Q2 review (April 14, 2026)." in page
+    assert "Findings fixed" in page and "Insecure management protocols on core-sw-01" in page
+    assert "core-sw-01 17.6.5 → 17.9.4a" in page
+    assert "east-sw-02" in page and "legacy-sw" in page
+    assert "Configurations changed" in page and "core-sw-01 (+" in page
+
+    pdf = _pdf_text(_export(client, q4, "pdf").content)
+    docx = _docx_text(_export(client, q4, "docx").content)
+    for content in (pdf, docx):
+        assert "Changes since the last assessment" in content
+        assert "Configurations changed" in content
+        # Configs are compared, but no config line or secret prints.
+        assert "masked:" not in content and "hostname core-sw-01" not in content
+    event = AuditEvent.objects.for_customer(q4.customer).filter(action="report.exported").first()
+    assert event.detail["baseline"] == "Q2 review"
+
+
+def test_changes_page_is_left_out_without_an_earlier_engagement(client, engineer, two_reviews):
+    q2, q4 = two_reviews
+    page = client.get(_url(q2)).content.decode()
+    assert "Changes since the last assessment" in page  # the option, shown disabled
+    assert "Needs an earlier engagement" in page
+    assert 'report-h1">Changes' not in page
+    page = client.get(_url(q4, query="?set=1&sections=scope")).content.decode()
+    assert 'report-h1">Changes' not in page
+
+
+def test_baseline_must_be_an_earlier_engagement_of_this_customer(client, engineer, two_reviews):
+    q2, q4 = two_reviews
+    later = _engagement(q4.customer, "Q1 2027 review")
+    later.start_date, later.end_date = datetime.date(2027, 1, 10), datetime.date(2027, 1, 20)
+    later.save()
+    picked = client.get(_url(later, query=f"?baseline={q2.pk}")).content.decode()
+    assert "Compared with an earlier assessment, Q2 review" in picked
+    # A later engagement, itself, or another customer's isn't a baseline.
+    other = _engagement(Customer.objects.create(name="Globex"), "Globex review")
+    for baseline in (later, other):
+        assert client.get(_url(q4, query=f"?baseline={baseline.pk}")).status_code == 404
+    assert _export(client, q4, "pdf", baseline=str(other.pk)).status_code == 404
+    assert client.get(_url(q4, query=f"?baseline={q4.pk}")).status_code == 404
+
+
+def test_compare_adds_its_changes_to_the_report(client, engineer, two_reviews):
+    q2, q4 = two_reviews
+    compare = f"/customers/{q4.customer_id}/engagements/{q4.pk}/compare"
+    page = client.get(compare).content.decode()
+    link = f"/customers/{q4.customer_id}/engagements/{q4.pk}/report?baseline={q2.pk}"
+    assert f'href="{link}"' in page and "Add to report" in page
+    assert 'report-h1">Changes since the last assessment' in client.get(link).content.decode()
+    # Not offered when the baseline is the later one.
+    reversed_page = client.get(
+        f"/customers/{q2.customer_id}/engagements/{q2.pk}/compare?baseline={q4.pk}"
+    ).content.decode()
+    assert "Add to report" not in reversed_page

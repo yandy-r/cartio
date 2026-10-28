@@ -1,5 +1,7 @@
 """The report's PDF and DOCX files, written from `Report.blocks()`.
 
+Topology maps print as vectors in the PDF and as PNGs in the DOCX (see `figures`).
+
 The DOCX is written by hand, like `xlsx.py`, with real Word styles (Title, Heading 1–3, Code)
 so engineers can edit it before sending. The PDF uses ReportLab's standard Helvetica, so no
 font file has to ship with it; it covers Latin text only, so other scripts in names or notes
@@ -26,6 +28,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from . import figures
+
 BRAND = "IT Cloud Network"
 
 # DESIGN.md's tokens, without the "#".
@@ -37,7 +41,7 @@ SEVERITY_COLOURS = {"critical": "B42318", "high": "E8590C", "medium": "B7791F", 
 SEVERITY_WORDS = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low"}
 
 # Columns that hold a count, which get a narrow column.
-NUMERIC = {"Devices", "Findings", "Pass", "Fail"}
+NUMERIC = {"Devices", "Findings", "Pass", "Fail", "Count"}
 
 # Characters XML 1.0 can't hold.
 _NOT_XML = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f￾￿]")
@@ -50,6 +54,11 @@ def _clean(text) -> str:
 # DOCX
 
 _W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+_DRAWING = (
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+    'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
+)
 _R = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
 _XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 
@@ -58,6 +67,7 @@ _CONTENT_TYPES = (
     '<Default Extension="rels" '
     'ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
     '<Default Extension="xml" ContentType="application/xml"/>'
+    '<Default Extension="png" ContentType="image/png"/>'
     '<Override PartName="/word/document.xml" ContentType="application/'
     'vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     '<Override PartName="/word/styles.xml" ContentType="application/'
@@ -91,8 +101,17 @@ _DOCUMENT_RELS = (
     '<Relationship Id="rId3" '
     'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" '
     'Target="footer1.xml"/>'
-    "</Relationships>"
+    "{images}</Relationships>"
 )
+_IMAGE_REL = (
+    '<Relationship Id="{rid}" '
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" '
+    'Target="media/{name}"/>'
+)
+# A figure fits the text width and leaves room for its heading and caption, in EMU.
+_EMU_PER_TWIP = 635
+_FIGURE_WIDTH = 9640 * _EMU_PER_TWIP
+_FIGURE_HEIGHT = 7 * 914400
 
 
 def _style(style_id, name, run, paragraph="", based="Normal") -> str:
@@ -146,6 +165,7 @@ _STYLES = (
         '<w:shd w:val="clear" w:color="auto" w:fill="F3F5F7"/>'
         '<w:spacing w:after="160" w:line="240" w:lineRule="auto"/><w:ind w:left="120"/>',
     )
+    + _style("Caption", "caption", f'<w:color w:val="{TEXT_2}"/><w:sz w:val="17"/>')
     + _style("ListBullet", "List Bullet", "", '<w:ind w:left="360" w:hanging="240"/>')
     + '<w:style w:type="table" w:styleId="ReportTable"><w:name w:val="Report Table"/>'
     "<w:tblPr><w:tblBorders>"
@@ -194,7 +214,27 @@ def _table(header, rows) -> str:
     )
 
 
-def _docx_body(blocks) -> str:
+def _figure(number, image, width, height, alt) -> str:
+    scale = min(_FIGURE_WIDTH / width, _FIGURE_HEIGHT / height)
+    cx, cy = round(width * scale), round(height * scale)
+    alt = escape(_clean(alt), {'"': "&quot;"})
+    return (
+        '<w:p><w:pPr><w:keepNext/><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
+        f'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/>'
+        f'<wp:docPr id="{number}" name="Figure {number}" descr="{alt}"/>'
+        '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        f'<pic:pic><pic:nvPicPr><pic:cNvPr id="{number}" name="{image}"/><pic:cNvPicPr/>'
+        f'</pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdFigure{number}"/>'
+        "<a:stretch><a:fillRect/></a:stretch></pic:blipFill>"
+        f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+        "</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>"
+    )
+
+
+def _docx_body(blocks, media) -> str:
+    """The document's body. Figures are added to `media` as (file name, PNG bytes)."""
     out = []
     for block in blocks:
         if block.kind == "cover":
@@ -224,13 +264,22 @@ def _docx_body(blocks) -> str:
             out.append(_para(block.text, "Code"))
         elif block.kind == "table":
             out.append(_table(block.header, block.items))
+        elif block.kind == "map":
+            number = len(media) + 1
+            content, width, height = figures.png(block.svg)
+            name = f"figure{number}.png"
+            media.append((name, content))
+            out.append(_figure(number, name, width, height, block.text))
+            out.append(_para(block.text, "Caption"))
     return "".join(out)
 
 
 def docx(report) -> bytes:
     footer_text = f"Confidential · prepared for {report.customer.name}"
+    media = []
+    body = _docx_body(report.blocks(), media)
     document = (
-        _XML + f"<w:document {_W} {_R}><w:body>{_docx_body(report.blocks())}"
+        _XML + f"<w:document {_W} {_R} {_DRAWING}><w:body>{body}"
         '<w:sectPr><w:headerReference w:type="default" r:id="rId2"/>'
         '<w:footerReference w:type="default" r:id="rId3"/>'
         '<w:pgSz w:w="12240" w:h="15840"/>'
@@ -276,7 +325,13 @@ def docx(report) -> bytes:
         package.writestr("word/styles.xml", _STYLES)
         package.writestr("word/header1.xml", header)
         package.writestr("word/footer1.xml", footer)
-        package.writestr("word/_rels/document.xml.rels", _DOCUMENT_RELS)
+        images = "".join(
+            _IMAGE_REL.format(rid=f"rIdFigure{n}", name=name)
+            for n, (name, _) in enumerate(media, 1)
+        )
+        package.writestr("word/_rels/document.xml.rels", _DOCUMENT_RELS.format(images=images))
+        for name, content in media:
+            package.writestr(f"word/media/{name}", content)
     return out.getvalue()
 
 
@@ -325,6 +380,9 @@ _PDF_STYLES = {
         textColor=_hex(TEXT_2),
         spaceBefore=6,
         spaceAfter=2,
+    ),
+    "caption": ParagraphStyle(
+        "caption", _BODY, fontSize=8.5, leading=11, textColor=_hex(TEXT_2), spaceBefore=4
     ),
     "bullet": ParagraphStyle("bullet", _BODY, leftIndent=14, bulletIndent=2),
     "cell": ParagraphStyle("cell", _BODY, fontSize=9, leading=11, spaceAfter=0),
@@ -376,7 +434,13 @@ def _pdf_table(header, rows, width):
     return [table, Spacer(1, 10)]
 
 
-def _flowables(blocks, width) -> list:
+def _map(block, width, height) -> list:
+    drawing = figures.drawing(block.svg, width, height)
+    drawing.hAlign = "CENTER"
+    return [drawing, Paragraph(_text(block.text), _PDF_STYLES["caption"]), Spacer(1, 8)]
+
+
+def _flowables(blocks, width, height) -> list:
     out = []
     for block in blocks:
         if block.kind == "cover":
@@ -404,6 +468,9 @@ def _flowables(blocks, width) -> list:
             out.append(Preformatted(_code(block.text), _PDF_STYLES["code"]))
         elif block.kind == "table":
             out += _pdf_table(block.header, block.items, width)
+        elif block.kind == "map":
+            # Room on the page for the site's heading above and the caption below.
+            out += _map(block, width, height - 72)
     return out
 
 
@@ -446,6 +513,8 @@ def pdf(report) -> bytes:
         canvas.restoreState()
 
     document.build(
-        _flowables(report.blocks(), document.width), onFirstPage=cover, onLaterPages=page
+        _flowables(report.blocks(), document.width, document.height),
+        onFirstPage=cover,
+        onLaterPages=page,
     )
     return out.getvalue()

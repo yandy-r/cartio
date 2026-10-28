@@ -5,6 +5,10 @@ or dismissed on the Findings screen is left out here too, and the engineer's not
 its finding. The screen previews the same pages the PDF and DOCX hold: both are built from
 `Report.blocks()`.
 
+The topology page (YAN-1745) prints each site's L2 map as the Site map draws it
+(`SiteMap.svg()`), and the changes page reads `compare.Comparison` against the engagement before
+this one, or the one picked on the screen or sent by Compare's "Add to report".
+
 A report shows one customer's data, and nothing internal: no database ids, no collector ids,
 no secrets. Configs and evidence are already masked by the collector (ADR-0003).
 """
@@ -14,15 +18,18 @@ import io
 from collections import Counter
 from dataclasses import dataclass
 
+from django.http import Http404
 from django.utils import timezone
 
 from cartio_controller.collectors import audit
 from cartio_controller.collectors.models import AuditEvent, Collector, Site, Source
 
-from . import report_files
+from . import report_files, shell
+from .compare import GROUPS, Comparison, ordered
 from .findings import SEVERITIES, SEVERITY_LABELS, Findings
 from .inventory import SOURCE_LABELS
 from .report_files import BRAND
+from .sitemap import SiteMap
 
 READ_ONLY = (
     "Cartio read the network with read-only access and changed nothing on any device. "
@@ -35,8 +42,21 @@ READ_ONLY = (
 OPTIONAL = {
     "scope": ("Scope and method", "Sites, collectors, what was read and how"),
     "inventory": ("Inventory summary", "Devices by vendor, model, OS and site"),
+    "topology": ("Topology", "Each site's L2 map, as the Site map draws it"),
+    "changes": ("Changes since the last assessment", "From Compare"),
     "appendix": ("Device appendix", "Every device with its serial and OS"),
 }
+
+# The changes page's rows, in order, and how many examples each one names.
+CHANGE_ROWS = ["fixed", "new", "open", "os", "added", "removed"]
+EXAMPLES = 3
+
+LEGEND = (
+    "Solid lines are links both devices reported; dashed orange lines were seen from one end "
+    "only. A red or orange border marks a device with a critical or high finding, and its "
+    "badge counts its findings. A dashed box is a neighbour Cartio saw but didn't collect from, "
+    "and a grey one is a device on another site."
+)
 
 # Evidence beyond this many lines per finding is summarised, so one noisy check can't take
 # over the report. The full lines stay on the Findings screen.
@@ -63,7 +83,8 @@ CSV_COLUMNS = [
 class Block:
     """One piece of the report, in the order it prints.
 
-    `kind` is one of: cover, h1, h2, p, bullets, table, code, finding, break.
+    `kind` is one of: cover, h1, h2, p, bullets, table, code, finding, map, break. A map's
+    `svg` is the Site map's drawing, every value in it escaped, and its `text` the caption.
     """
 
     kind: str
@@ -71,6 +92,7 @@ class Block:
     items: list | None = None
     header: list | None = None
     severity: str = ""
+    svg: str = ""
 
 
 def _plural(n: int, word: str) -> str:
@@ -120,6 +142,37 @@ class Report:
             .filter(engagement=engagement)
             .values_list("kind", flat=True)
         )
+        # Earlier engagements of this customer, which the changes page can compare against.
+        rows = ordered(shell.engagements_of(customer))
+        self.earlier = rows[: rows.index(engagement)] if engagement in rows else []
+        picked = params.get("baseline", "")
+        if picked:
+            # Only this customer's earlier engagements are offered, so any other id isn't found.
+            self.baseline = next((e for e in self.earlier if str(e.pk) == picked), None)
+            if self.baseline is None:
+                raise Http404
+        else:
+            self.baseline = self.earlier[-1] if self.earlier else None
+        self.comparison = None
+        if self.baseline is not None and "changes" in self.sections:
+            self.comparison = Comparison(customer, self.baseline, engagement)
+        self.maps = self._maps() if "topology" in self.sections else []
+
+    def _maps(self) -> list:
+        """Each site's L2 map that has a device on it, in the Site map's site order."""
+        first = SiteMap(self.customer, self.engagement, {})
+        maps = []
+        for site in first.sites:
+            if not site.count:
+                continue
+            view = (
+                first
+                if site.key == first.site
+                else SiteMap(self.customer, self.engagement, {"site": site.key})
+            )
+            if not view.empty:
+                maps.append(view)
+        return maps
 
     # What the screen shows around the preview.
 
@@ -226,6 +279,47 @@ class Report:
             for d in self.devices
         ]
 
+    def map_caption(self, number, view) -> str:
+        devices = _plural(len(view.site_devices), "device")
+        links = _plural(len(view.links), "link")
+        return (
+            f"Figure {number}. Layer 2 topology of {view.site_name} from LLDP and CDP: "
+            f"{devices}, {links}."
+        )
+
+    def changes_intro(self) -> str:
+        base = self.baseline
+        when = f" ({_date(base.start_date)})" if base.start_date else ""
+        text = f"Compared with the previous assessment, {base.name}{when}."
+        if self.baseline != self.earlier[-1]:
+            text = f"Compared with an earlier assessment, {base.name}{when}."
+        if self.comparison.not_assessed:
+            names = " and ".join(e.name for e in self.comparison.not_assessed)
+            text += (
+                f" The checks didn't run on {names}, so findings fixed and new aren't "
+                "compared; only devices, OS versions and configurations are."
+            )
+        return text
+
+    def change_rows(self) -> list:
+        groups = self.comparison.groups
+        rows = []
+        for key in CHANGE_ROWS:
+            if key in ("fixed", "new", "open") and self.comparison.not_assessed:
+                continue
+            changes = groups[key]
+            if key in ("fixed", "new", "open"):
+                named = [f"{c.text} on {c.host}" if c.host else c.text for c in changes]
+            elif key == "os":
+                named = [f"{c.host} {c.text}" for c in changes]
+            else:
+                named = [c.host for c in changes]
+            rows.append([GROUPS[key], str(len(changes)), _examples(named)])
+        diffs = self.comparison.diffs
+        named = [f"{d.host} (+{d.added} −{d.removed})" for d in diffs]
+        rows.append(["Configurations changed", str(len(diffs)), _examples(named)])
+        return rows
+
     @staticmethod
     def affected(item) -> list:
         devices = item.devices if item.manual else item.failing
@@ -292,6 +386,11 @@ class Report:
                 Block("h2", "By site"),
                 Block("table", header=["Site", "Devices"], items=self.site_rows()),
             ]
+        if self.maps:
+            out += [Block("break"), Block("h1", "Topology"), Block("p", LEGEND)]
+            for number, view in enumerate(self.maps, 1):
+                out.append(Block("h2", view.site_name))
+                out.append(Block("map", self.map_caption(number, view), svg=view.svg()))
         out += [Block("break"), Block("h1", "Findings")]
         if not self.findings:
             out.append(Block("p", "No findings to report."))
@@ -309,6 +408,13 @@ class Report:
                 ]
             if item.note:
                 out += [Block("h2", "Engineer's note"), Block("p", item.note)]
+        if self.comparison is not None:
+            out += [
+                Block("break"),
+                Block("h1", "Changes since the last assessment"),
+                Block("p", self.changes_intro()),
+                Block("table", header=["Change", "Count", "Examples"], items=self.change_rows()),
+            ]
         if "appendix" in self.sections:
             out += [
                 Block("break"),
@@ -320,6 +426,12 @@ class Report:
                 ),
             ]
         return out
+
+
+def _examples(named) -> str:
+    if len(named) > EXAMPLES:
+        return ", ".join(named[:EXAMPLES]) + f" and {len(named) - EXAMPLES} more"
+    return ", ".join(named)
 
 
 def pages(blocks) -> list:
@@ -388,6 +500,7 @@ def export(report, actor: str, fmt: str) -> tuple[bytes, str]:
         findings=len(report.findings),
         min_severity=report.min_severity,
         sections=report.sections,
+        baseline=report.comparison.baseline.name if report.comparison else "",
     )
     if fmt == "csv":
         return findings_csv(report), name

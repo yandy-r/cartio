@@ -11,6 +11,7 @@ dependencies = [
     "djangorestframework>=3.18,<3.19",
     "cryptography>=46",
     "reportlab>=4.4,<6",
+    "pillow>=11",
 ]
 
 [project.scripts]

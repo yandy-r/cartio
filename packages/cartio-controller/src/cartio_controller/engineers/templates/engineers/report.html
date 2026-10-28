@@ -20,11 +20,23 @@
         <legend class="label">Sections</legend>
         <p class="report-fixed muted">Cover, summary and findings are always in.</p>
         {% for key, section in optional.items %}
+        {% if key == "changes" and not report.earlier %}
+        <label class="report-section"><input type="checkbox" disabled>
+          <span><strong>{{ section.0 }}</strong><br><span class="muted">Needs an earlier engagement</span></span></label>
+        {% else %}
         <label class="report-section"><input type="checkbox" name="sections" value="{{ key }}"{% if key in report.sections %} checked{% endif %}>
           <span><strong>{{ section.0 }}</strong><br><span class="muted">{{ section.1 }}</span></span></label>
+        {% endif %}
         {% endfor %}
-        <p class="report-fixed muted">Topology maps and Changes since the last assessment aren't in the report yet.</p>
+        <p class="report-fixed muted">Capacity and availability needs port, PoE and uptime data Cartio doesn't collect yet, so it isn't in the report.</p>
       </fieldset>
+      {% if report.earlier %}
+      <label class="field"><span class="label">Compare with</span>
+        <select name="baseline">
+          {% for e in report.earlier %}<option value="{{ e.pk }}"{% if e == report.baseline %} selected{% endif %}>{{ e.name }}{% if e.start_date %} · {{ e.start_date|date:"M j, Y" }}{% endif %}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
       <label class="field"><span class="label">Lowest severity to include</span>
         <select name="min">
           {% for value, label in severities.items %}<option value="{{ value }}"{% if value == report.min_severity %} selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -38,6 +50,7 @@
       <input type="hidden" name="set" value="1">
       {% for key in report.sections %}<input type="hidden" name="sections" value="{{ key }}">{% endfor %}
       <input type="hidden" name="min" value="{{ report.min_severity }}">
+      {% if report.baseline %}<input type="hidden" name="baseline" value="{{ report.baseline.pk }}">{% endif %}
       <h2 class="label">Export</h2>
       <div class="report-formats">
         <button class="btn primary" type="submit" name="format" value="pdf"{% if customer.is_on_site %} disabled{% endif %}>Export PDF<small>Ready to send</small></button>
@@ -69,6 +82,8 @@
         {% elif block.kind == "finding" %}<h3 class="report-finding"><span class="severity {{ block.severity }}">{{ block.severity|capfirst }}</span> {{ block.text }}</h3>
         {% elif block.kind == "p" %}<p>{{ block.text|linebreaksbr }}</p>
         {% elif block.kind == "bullets" %}<ul>{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% elif block.kind == "map" %}
+        <figure class="report-map">{{ block.svg|safe }}<figcaption class="muted">{{ block.text }}</figcaption></figure>
         {% elif block.kind == "code" %}<pre class="report-code">{{ block.text }}</pre>
         {% elif block.kind == "table" %}
         <div class="table-scroll"><table><thead><tr>{% for h in block.header %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
