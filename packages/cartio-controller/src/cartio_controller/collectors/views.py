@@ -1,7 +1,6 @@
 """The collector-facing API. Collectors start every exchange (ADR-0001)."""
 
 import json
-import uuid
 
 from cartio_core.protocol import (
     CheckIn,
@@ -48,7 +47,7 @@ def enroll(request: HttpRequest) -> JsonResponse:
         if collector is None:
             return _error(403, "unknown or used enrollment token")
         # Lock the row and check again, so two enrollments with one token can't both win.
-        collector = Collector.objects.select_for_update().get(pk=collector.pk)
+        collector = Collector.all_customers.select_for_update().get(pk=collector.pk)
         if not collector.enrollment_token_hash:
             return _error(403, "unknown or used enrollment token")
         secret = collector.issue_secret()
@@ -72,31 +71,22 @@ def checkin(request: HttpRequest) -> JsonResponse:
     except ProtocolError as exc:
         return _error(400, str(exc))
 
-    collector = (
-        Collector.objects.filter(pk=collector_id).first() if _is_uuid(collector_id) else None
-    )
+    collector = Collector.for_id(collector_id)
     if collector is None or not collector.check_secret(secret):
         return _error(401, "unknown collector or wrong secret")
 
+    # From here on, everything goes through the collector's own customer.
     now = timezone.now()
-    CheckInRecord.objects.create(
+    collector.scoped(CheckInRecord).create(
         collector=collector,
         hostname=message.hostname,
         version=message.version,
         platform=message.platform,
     )
-    Collector.objects.filter(pk=collector.pk).update(
+    collector.scoped(Collector).filter(pk=collector.pk).update(
         hostname=message.hostname,
         version=message.version,
         platform=message.platform,
         last_check_in=now,
     )
     return JsonResponse(CheckInResponse(status="ok").to_dict())
-
-
-def _is_uuid(value: str) -> bool:
-    try:
-        uuid.UUID(value)
-    except ValueError:
-        return False
-    return True

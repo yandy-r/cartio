@@ -91,7 +91,7 @@ class CustomerScopedViewSet(ArchivableViewSet):
         return self._customer
 
     def get_queryset(self):
-        queryset = self.model.objects.filter(customer=self.get_customer())
+        queryset = self.model.objects.for_customer(self.get_customer())
         return self.filter_archived(queryset.select_related("customer"))
 
     def get_serializer_context(self):

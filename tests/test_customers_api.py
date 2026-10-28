@@ -264,9 +264,10 @@ def test_records_stay_with_their_customer(api, kind):
     assert api.get(f"{globex_url}/{record['id']}").status_code == 404
     assert _patch(api, f"{globex_url}/{record['id']}", {"name": "Two"}).status_code == 404
     assert _post(api, f"{globex_url}/{record['id']}/archive").status_code == 404
+    assert _post(api, f"{globex_url}/{record['id']}/restore").status_code == 404
 
     model = Engagement if kind == "engagements" else Site
-    stored = model.objects.get(pk=record["id"])
+    stored = model.all_customers.get(pk=record["id"])
     assert stored.customer_id == acme["id"]
     assert stored.name == "One"
     assert stored.archived_at is None
@@ -274,16 +275,16 @@ def test_records_stay_with_their_customer(api, kind):
 
 def test_engagement_and_site_require_a_customer():
     with pytest.raises(IntegrityError), transaction.atomic():
-        Engagement.objects.create(name="Orphan")
+        Engagement.all_customers.create(name="Orphan")
     with pytest.raises(IntegrityError), transaction.atomic():
-        Site.objects.create(name="Orphan")
+        Site.all_customers.create(name="Orphan")
 
 
 def test_customer_with_records_cannot_be_hard_deleted():
     from django.db.models import ProtectedError
 
     acme = Customer.objects.create(name="Acme")
-    Site.objects.create(customer=acme, name="HQ")
+    Site.objects.for_customer(acme).create(name="HQ")
     with pytest.raises(ProtectedError):
         acme.delete()
 
@@ -350,7 +351,7 @@ def test_admin_cannot_delete_or_store_bad_seed_hints(client):
     admin_user = get_user_model().objects.create_superuser("root", password="x")
     client.force_login(admin_user)
     acme = Customer.objects.create(name="Acme")
-    site = Site.objects.create(customer=acme, name="HQ")
+    site = Site.objects.for_customer(acme).create(name="HQ")
     assert client.get(f"/admin/collectors/site/{site.pk}/delete/").status_code == 403
     assert client.get(f"/admin/collectors/customer/{acme.pk}/delete/").status_code == 403
 

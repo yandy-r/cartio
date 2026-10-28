@@ -47,7 +47,9 @@ def test_secrets_are_stored_hashed():
     collector, token = _new_collector()
     secret = collector.issue_secret()
     collector.save()
-    stored = Collector.objects.values("enrollment_token_hash", "secret_hash").get(pk=collector.pk)
+    stored = Collector.all_customers.values("enrollment_token_hash", "secret_hash").get(
+        pk=collector.pk
+    )
     assert token not in stored.values()
     assert secret not in stored.values()
 
@@ -69,7 +71,7 @@ def test_checkin_records_the_collector(client):
     collector.refresh_from_db()
     assert collector.last_check_in is not None
     assert collector.version == "0.1.0"
-    assert CheckIn.objects.filter(collector=collector).count() == 1
+    assert collector.scoped(CheckIn).filter(collector=collector).count() == 1
 
 
 @pytest.mark.parametrize(
