@@ -341,6 +341,10 @@ def _mask_lines(
                     start, end = match.span(name)
                     if _PLACEHOLDER.fullmatch(value) or _overlaps(spans, start, end):
                         continue
+                    # A match that starts inside a value already taken, such as a community
+                    # named "secret", doesn't start a secret: what follows it is ordinary.
+                    if _overlaps(spans, match.start(), match.start() + 1):
+                        continue
                     weak = rule.kind == _COMMUNITY_KIND and weak_community(value)
                     spans.append((start, end, weak))
         for start, end, weak in sorted(spans, reverse=True):

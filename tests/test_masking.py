@@ -526,4 +526,12 @@ def test_marked_placeholders_are_kept_when_masked_again():
 def test_weak_community_rules():
     assert weak_community("public") and weak_community("Public ")
     assert weak_community("abc1234")  # under 8 characters
+    assert not weak_community("abcd1234")
+
+
+@pytest.mark.parametrize("name", ["secret", "password"])
+def test_a_community_named_like_a_keyword_keeps_its_access_and_acl(name):
+    config = "snmp-server" + SP + f"community {name} RW 10\n"
+    result = mask_config(config, Platform.IOS, KEY)
+    assert re.fullmatch(r"snmp-server community <masked:k1:[0-9a-f]{16}:weak> RW 10\n", result.text)
     assert not weak_community(LONG_COMMUNITY)
