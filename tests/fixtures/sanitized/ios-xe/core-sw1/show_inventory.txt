@@ -1,0 +1,9 @@
+NAME: "c93xx Stack", DESCR: "c93xx Stack"
+PID: C9300-48P         , VID: V02  , SN: FOC0000Y0BB
+
+NAME: "Switch 1", DESCR: "C9300-48P"
+PID: C9300-48P         , VID: V02  , SN: FOC0000Y0BB
+
+NAME: "TenGigabitEthernet1/1/1", DESCR: "SFP-10GBase-SR"
+PID: SFP-10G-SR          , VID: V03  , SN: AVD0000B0BB
+

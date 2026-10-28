@@ -1,0 +1,46 @@
+------------------------------------------------
+Local Intf: Te1/1/1
+Chassis id: 0000.5e00.5301
+Port id: Gi1/0/49
+Port Description: Uplink to core-sw1
+System Name: access-sw1.example.net
+
+System Description: 
+Cisco IOS Software, C2960X Software (C2960X-UNIVERSALK9-M), Version 15.2(7)E8, RELEASE SOFTWARE (fc3)
+Technical Support: http://www.cisco.com/techsupport
+Copyright (c) 1986-2023 by Cisco Systems, Inc.
+Compiled Tue 28-Mar-23 05:41 by mcpre
+
+Time remaining: 98 seconds
+System Capabilities: B
+Enabled Capabilities: B
+Management Addresses:
+    IP: 192.0.2.21
+Auto Negotiation - not supported
+Physical media capabilities - not advertised
+Media Attachment Unit type - not advertised
+Vlan ID: 1
+
+------------------------------------------------
+Local Intf: Gi1/0/48
+Chassis id: 0000.5e00.5320
+Port id: port1
+Port Description: port1
+System Name: edge-fw1
+
+System Description: 
+FortiGate-60F v7.2.8,build1639,240313 (GA.M)
+
+Time remaining: 110 seconds
+System Capabilities: B,R
+Enabled Capabilities: R
+Management Addresses:
+    IP: 192.0.2.1
+Auto Negotiation - supported, enabled
+Physical media capabilities:
+    1000baseT(FD)
+    100base-TX(FD)
+Media Attachment Unit type: 30
+Vlan ID: - not advertised
+
+Total entries displayed: 2
