@@ -3,7 +3,7 @@
   <section class="card summary-group">
     <h2>{{ title }}</h2>
     {% for label, count, pct, link, pressed in rows %}
-    {% if link %}<a class="breakdown" href="{{ link }}" hx-get="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="summary-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">{% else %}<span class="breakdown">{% endif %}
+    {% if link %}<a class="breakdown" href="{{ link }}" hx-post="{{ link }}" hx-push-url="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="summary-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">{% else %}<span class="breakdown">{% endif %}
       <span>{{ label }}</span><strong>{{ count }}</strong>
       <span class="bar" aria-hidden="true"><span style="width: {{ pct }}%"></span></span>
     {% if link %}</a>{% else %}</span>{% endif %}

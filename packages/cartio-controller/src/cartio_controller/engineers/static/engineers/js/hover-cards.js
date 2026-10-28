@@ -24,6 +24,11 @@ for (const name of ["mouseout", "focusout"]) {
     if (cell && !cell.contains(event.relatedTarget)) cell.classList.remove("card-dismissed");
   });
 }
+// Touch browsers can keep focus on a tapped host, so a tap elsewhere closes its card.
+document.addEventListener("pointerdown", (event) => {
+  const active = document.activeElement;
+  if (active && active.closest(".host-cell") && !event.target.closest(".host-cell")) active.blur();
+});
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   for (const cell of document.querySelectorAll(".host-cell:hover, .host-cell:focus-within")) {

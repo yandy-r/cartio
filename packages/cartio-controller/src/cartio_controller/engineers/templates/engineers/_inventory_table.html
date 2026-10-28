@@ -8,19 +8,19 @@
     <th class="select-cell">
       {% if view.rows %}
       {% with all_selected=view.selected_visible|length %}
-      <input type="checkbox" id="select-visible" aria-label="Select every visible device"{% if all_selected == view.rows|length %} checked hx-get="{{ view.select_none_link }}"{% else %} hx-get="{{ view.select_visible_link }}"{% endif %} hx-push-url="false" hx-replace-url="true">
+      <input type="checkbox" id="select-visible" aria-label="Select every visible device"{% if all_selected == view.rows|length %} checked hx-post="{{ view.select_none_link }}"{% else %} hx-post="{{ view.select_visible_link }}"{% endif %}>
       {% endwith %}
       {% endif %}
     </th>
     {% for label, link, aria, arrow in view.columns %}
-    <th{% if link %} aria-sort="{{ aria }}"{% endif %}>{% if link %}<a class="sort" href="{{ link }}" hx-get="{{ link }}" id="sort-{{ forloop.counter }}">{{ label }}<span aria-hidden="true">{{ arrow }}</span></a>{% else %}<span class="th-text">{{ label }}</span>{% endif %}</th>
+    <th{% if link %} aria-sort="{{ aria }}"{% endif %}>{% if link %}<a class="sort" href="{{ link }}" hx-post="{{ link }}" hx-push-url="{{ link }}" id="sort-{{ forloop.counter }}">{{ label }}<span aria-hidden="true">{{ arrow }}</span></a>{% else %}<span class="th-text">{{ label }}</span>{% endif %}</th>
     {% endfor %}
     <th><span class="sr-only">Actions</span></th>
   </tr></thead>
   <tbody>
   {% for device in view.rows %}
     <tr>
-      <td class="select-cell"><input type="checkbox" form="inventory-export" name="selected" value="{{ device.pk }}" id="select-{{ device.pk }}" aria-label="Select {{ device.name }}"{% if device.selected %} checked{% endif %} hx-get="{{ view.here }}" hx-push-url="false" hx-replace-url="true"></td>
+      <td class="select-cell"><input type="checkbox" form="inventory-export" name="selected" value="{{ device.pk }}" id="select-{{ device.pk }}" aria-label="Select {{ device.name }}"{% if device.selected %} checked{% endif %} hx-post="{{ view.here }}"></td>
       <td class="host-cell">
         <button type="button" class="host mono" aria-describedby="card-{{ device.pk }}">{{ device.name }}</button>
         {% include "engineers/_device_card.html" %}

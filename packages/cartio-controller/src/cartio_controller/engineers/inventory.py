@@ -290,10 +290,15 @@ def export_row(device) -> list:
 
 
 def filename(customer, engagement, fmt: str, at=None) -> str:
-    """The export's file name names the customer, engagement and time (DESIGN.md, Export)."""
+    """The export's file name names the customer, engagement and time (DESIGN.md, Export).
+
+    ASCII only: browsers don't decode an encoded `filename="..."` in Content-Disposition.
+    """
     at = at or timezone.now()
     parts = ["cartio-inventory", customer.name, engagement.name, at.strftime("%Y%m%dT%H%MZ")]
-    safe = "-".join("".join(c if c.isalnum() else "-" for c in p).strip("-") for p in parts)
+    safe = "-".join(
+        "".join(c if c.isascii() and c.isalnum() else "-" for c in p).strip("-") for p in parts
+    )
     while "--" in safe:
         safe = safe.replace("--", "-")
     return f"{safe}.{fmt}"

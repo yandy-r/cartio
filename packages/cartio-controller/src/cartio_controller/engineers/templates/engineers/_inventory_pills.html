@@ -1,7 +1,7 @@
 <div id="inventory-pills" class="pill-groups"{% if oob %} hx-swap-oob="true"{% endif %}>
   <span class="pill-label">Vendor</span>
-  {% for label, link, pressed in view.vendor_pills %}<a class="pill" href="{{ link }}" hx-get="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="pill-vendor-{{ forloop.counter }}">{{ label }}</a>{% endfor %}
+  {% for label, link, pressed in view.vendor_pills %}<a class="pill" href="{{ link }}" hx-post="{{ link }}" hx-push-url="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="pill-vendor-{{ forloop.counter }}">{{ label }}</a>{% endfor %}
   <span class="pill-label">OS</span>
-  {% for label, link, pressed in view.os_pills %}<a class="pill" href="{{ link }}" hx-get="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="pill-os-{{ forloop.counter }}">{{ label }}</a>{% endfor %}
-  {% if view.site %}<span class="pill-label">Site</span><a class="pill" href="{{ view.clear_site_link }}" hx-get="{{ view.clear_site_link }}" aria-pressed="true" id="pill-site">{{ view.site }} <span aria-hidden="true">×</span><span class="sr-only">(clear)</span></a>{% endif %}
+  {% for label, link, pressed in view.os_pills %}<a class="pill" href="{{ link }}" hx-post="{{ link }}" hx-push-url="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="pill-os-{{ forloop.counter }}">{{ label }}</a>{% endfor %}
+  {% if view.site %}<span class="pill-label">Site</span><a class="pill" href="{{ view.clear_site_link }}" hx-post="{{ view.clear_site_link }}" hx-push-url="{{ view.clear_site_link }}" aria-pressed="true" id="pill-site">{{ view.site }} <span aria-hidden="true">×</span><span class="sr-only">(clear)</span></a>{% endif %}
 </div>

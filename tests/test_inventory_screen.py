@@ -3,6 +3,7 @@
 import csv
 import io
 import re
+import uuid
 import zipfile
 from datetime import UTC, datetime
 
@@ -386,3 +387,40 @@ def test_xlsx_cells_are_text_never_formulas():
     assert 't="inlineStr"' in sheet and "=cmd()" in sheet
     assert "&lt;b&gt;&amp;" in sheet and "\x01" not in sheet
     assert 'r="C1"' in sheet
+
+
+def test_htmx_posts_the_selection_so_it_needs_no_long_url(client, engineer, acme):
+    engagement = _engagement(acme)
+    devices = _devices(engagement)
+    # Filters in the URL, the selection (and here many unknown ids) in the body.
+    picked = [str(devices["core-sw-01"].pk)] + [str(uuid.uuid4()) for _ in range(800)]
+    response = client.post(f"{_url(engagement)}?vendor=Cisco", {"selected": picked}, **HTMX)
+    page = response.content.decode()
+    assert response.status_code == 200
+    assert "1 of 2 selected" in page
+    assert "HX-Push-Url" not in response
+
+    # The search box posts its filters in the body; they win, and the search goes in history.
+    response = client.post(
+        f"{_url(engagement)}?vendor=Fortinet",
+        {"q": "east", "vendor": "Cisco"},
+        HTTP_HX_TRIGGER="inventory-filters",
+        **HTMX,
+    )
+    assert _hosts(response.content.decode()) == ["east-sw-01"]
+    assert response["HX-Push-Url"] == f"{_url(engagement)}?q=east&vendor=Cisco"
+
+    # A plain post isn't how the screen is used.
+    assert client.post(_url(engagement), {"selected": picked}).status_code == 400
+
+
+def test_export_file_name_is_ascii(client, engineer):
+    customer = Customer.objects.create(name="Müller Klinik 東京")
+    engagement = _engagement(customer, "Prüfung")
+    device = Device.objects.for_customer(customer).create(engagement=engagement, name="sw-01")
+    response = client.post(
+        _url(engagement, "inventory/export"), {"format": "csv", "selected": [str(device.pk)]}
+    )
+    name = re.search(r'filename="([^"]+)"', response["Content-Disposition"]).group(1)
+    assert name.isascii()
+    assert name.startswith("cartio-inventory-M-ller-Klinik-Pr-fung-")

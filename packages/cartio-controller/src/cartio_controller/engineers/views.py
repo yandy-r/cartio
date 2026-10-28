@@ -26,7 +26,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from cartio_controller.collectors import audit
 from cartio_controller.collectors.models import (
@@ -331,16 +331,29 @@ def customer_detail(request, customer, engagement=None):
     )
 
 
+@require_http_methods(["GET", "POST"])
+@csrf_protect
 @never_cache
 @engineer_required
 def inventory(request, customer, engagement=None):
     customer, engagements, engagement = shell.resolve(customer, engagement)
-    view = inventory_screen.View(customer, engagement, request.GET)
+    # Filters come in the URL. htmx posts the selection in the body, since hundreds of selected
+    # ids don't fit in a URL; the body's filters, from the search box, win over the URL's.
+    params = request.GET.copy()
+    for key, values in request.POST.lists():
+        params.setlist(key, values)
+    view = inventory_screen.View(customer, engagement, params)
     extra = {"view": view, "lifecycle": inventory_screen.LIFECYCLE}
     # Filters, sorting and selection swap the results in place (htmx), without the shell.
     if request.headers.get("HX-Request") and not customer.inside_access_only:
         context = shell.context("inventory", customer, engagements, engagement) | extra
-        return render(request, "engineers/_inventory_results.html", context)
+        response = render(request, "engineers/_inventory_results.html", context)
+        # A new search goes into the history, as a link with the filters and no selection.
+        if request.headers.get("HX-Trigger") == "inventory-filters":
+            response["HX-Push-Url"] = request.path + view.here
+        return response
+    if request.method == "POST":
+        return HttpResponseBadRequest("Post only from the inventory screen.")
     return render_screen(
         request,
         "inventory",

@@ -16,10 +16,10 @@
 {% else %}
 <form id="inventory-export" method="post" action="{% url 'engineers:inventory-export' customer=customer.pk engagement=engagement.pk %}">{% csrf_token %}</form>
 {# Links and controls below swap the results in place; each also works as a plain link. #}
-<div class="inventory" hx-target="#inventory-results" hx-push-url="true" hx-include="[form=inventory-export][name=selected]">
+<div class="inventory" hx-target="#inventory-results" hx-include="[form=inventory-export][name=selected]" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <section class="card inventory-main">
     <div class="inventory-toolbar">
-      <form id="inventory-filters" role="search" method="get" action="" hx-get="{{ request.path }}" hx-trigger="input changed delay:300ms from:#inventory-q, search from:#inventory-q, submit">
+      <form id="inventory-filters" role="search" method="get" action="" hx-post="{{ request.path }}" hx-trigger="input changed delay:300ms from:#inventory-q, search from:#inventory-q, submit">
         <label class="search-field">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
           <span class="sr-only">Filter devices</span>
