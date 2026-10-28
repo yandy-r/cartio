@@ -1,0 +1,50 @@
+{# The customer list: tabs and rows. Search and the tabs swap this in place (htmx). #}
+<input type="hidden" name="mode" value="{{ view.tab }}" form="customer-search">
+<div class="overview-toolbar">
+  <nav class="pill-groups" aria-label="Filter by data mode">
+    {% for tab in view.tabs %}
+      <a class="pill" href="{{ tab.url }}" hx-get="{{ tab.url }}" hx-target="#customer-results"{% if tab.key == view.tab %} aria-current="true"{% endif %}>{{ tab.label }} <span class="pill-count">{{ tab.count }}</span></a>
+    {% endfor %}
+  </nav>
+  <span class="small muted">Hover or focus a collector for its health</span>
+</div>
+<div class="table-scroll">
+<table class="customer-table">
+  <thead><tr><th>Customer</th><th>Current engagement</th><th>Collectors</th><th>Devices</th><th>Open findings</th><th><span class="sr-only">Open</span></th></tr></thead>
+  <tbody>
+  {% for customer in view.customers %}
+    <tr>
+      <td><a class="customer-link" href="{{ customer.open_url }}">{{ customer.name }}</a>
+        <div class="customer-tags">
+          <span class="mode{% if customer.is_on_site %} on-site{% endif %}">{{ customer.get_data_mode_display }}</span>
+          {% for tag in customer.tags %}<span class="small muted">{{ tag }}</span>{% endfor %}
+          {% if customer.is_archived %}<span class="tag muted">archived</span>{% endif %}
+        </div></td>
+      <td>{% if customer.engagement %}
+            <div>{{ customer.engagement.name }}</div>
+            <div class="sub"><span class="status-dot {{ customer.engagement.status }}"></span> {{ customer.engagement.get_status_display }} · {{ customer.site_list|length }} site{{ customer.site_list|length|pluralize }}</div>
+          {% else %}
+            <div class="muted">No engagement yet</div>
+            <div class="sub">{{ customer.site_list|length }} site{{ customer.site_list|length|pluralize }}</div>
+          {% endif %}
+          {% if can_add_engagement and not customer.is_archived %}<a class="row-action" href="{% url 'admin:collectors_engagement_add' %}?customer={{ customer.pk }}">+ New engagement</a>{% endif %}</td>
+      <td><div class="chips">
+        {% for collector in customer.collector_list %}
+          <span class="host-cell">
+            <button type="button" class="chip mono" aria-describedby="collector-{{ collector.pk }}"><span class="health-dot {{ collector.health|slugify }}"></span>{{ collector.name }}<span class="sr-only">, {{ collector.health }}</span></button>
+            {% include "engineers/_collector_card.html" %}
+          </span>
+        {% empty %}
+          <span class="muted small">None yet</span>
+        {% endfor %}
+      </div></td>
+      <td class="mono">{% if customer.device_count is None %}<span aria-hidden="true">–</span><span class="sr-only">{% if customer.is_on_site %}Kept on site{% else %}No engagement{% endif %}</span>{% else %}{{ customer.device_count }}{% endif %}</td>
+      <td class="small muted findings-cell">{% if customer.inside_access_only %}Live view is off for this customer. Open from inside their network.{% else %}No findings yet{% endif %}</td>
+      <td><a class="row-open" href="{{ customer.open_url }}" aria-label="Open {{ customer.name }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="muted">{% if view.query %}No customers match “{{ view.query }}”.{% elif view.tab == "archived" %}No archived customers.{% else %}No customers here.{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

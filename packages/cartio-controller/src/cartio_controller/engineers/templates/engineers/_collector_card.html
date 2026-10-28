@@ -1,0 +1,13 @@
+{# A collector's health from data already on the page: no request on hover (DESIGN.md). #}
+<div class="hover-card" role="tooltip" id="collector-{{ collector.pk }}">
+  <div class="card-head"><span class="mono">{{ collector.name }}</span><span class="state health {{ collector.health|slugify }}">{{ collector.health|capfirst }}</span></div>
+  <dl>
+    <dt>Last check-in</dt><dd>{% if collector.last_check_in %}{{ collector.last_check_in|timesince }} ago{% else %}Never{% endif %}</dd>
+    <dt>Runs on</dt><dd>{{ collector.hostname|default:"–" }}{% if collector.platform %} · {{ collector.platform }}{% endif %}</dd>
+    <dt>Version</dt><dd class="mono">{{ collector.version|default:"–" }}</dd>
+    {# Client certificates (YAN-1650) and the job queue (YAN-1651) aren't built yet. #}
+    <dt>Certificate</dt><dd>Not tracked yet</dd>
+    <dt>Queue</dt><dd>Not tracked yet</dd>
+  </dl>
+  <div class="card-foot">Dials out on 443 · never listens</div>
+</div>

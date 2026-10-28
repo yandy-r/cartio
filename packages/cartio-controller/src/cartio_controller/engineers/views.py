@@ -7,7 +7,6 @@ issued (`cartio-controller enroll_engineer`), before the first sign-in completes
 """
 
 import time
-from datetime import timedelta
 from functools import wraps
 
 from django.conf import settings
@@ -17,11 +16,11 @@ from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import patch_vary_headers
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -29,15 +28,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
 from cartio_controller.collectors import audit
-from cartio_controller.collectors.models import (
-    CollectionRun,
-    Collector,
-    Customer,
-    Site,
-)
+from cartio_controller.collectors.models import CollectionRun, Site
 
 from . import inventory as inventory_screen
-from . import shell, totp
+from . import overview, shell, totp
+from .health import ONLINE_WITHIN
+from .health import collectors as _collectors
 from .models import EngineerMFA
 
 PENDING = "cartio_pending_sign_in"
@@ -50,10 +46,6 @@ TOO_MANY_FAILURES = "Too many failed sign-ins. Wait {minutes} minutes and try ag
 
 def _too_many_failures_error() -> str:
     return TOO_MANY_FAILURES.format(minutes=settings.SIGN_IN_LOCKOUT_MINUTES)
-
-
-# Collectors check in every minute by default. Three missed check-ins and it shows as offline.
-ONLINE_WITHIN = timedelta(minutes=3)
 
 
 def _is_engineer(user) -> bool:
@@ -252,42 +244,24 @@ def sign_out(request):
     return redirect("engineers:sign-in")
 
 
-def collector_health(collector, now=None) -> str:
-    if collector.enrolled_at is None:
-        return "not enrolled"
-    if collector.last_check_in is None:
-        return "never checked in"
-    now = now or timezone.now()
-    return "online" if now - collector.last_check_in <= ONLINE_WITHIN else "offline"
-
-
-def _collectors(customer):
-    collectors = list(Collector.objects.for_customer(customer).order_by("name"))
-    now = timezone.now()
-    for collector in collectors:
-        collector.health = collector_health(collector, now)
-    return collectors
-
-
 @never_cache
 @engineer_required
 def customers(request):
-    show_archived = request.GET.get("archived") == "1"
-    online = Q(
-        collectors__enrolled_at__isnull=False,
-        collectors__last_check_in__gte=timezone.now() - ONLINE_WITHIN,
-    )
-    rows = Customer.objects.annotate(
-        collector_count=Count("collectors", distinct=True),
-        online_count=Count("collectors", filter=online, distinct=True),
-    )
-    if not show_archived:
-        rows = rows.filter(archived_at__isnull=True)
-    return render(
-        request,
-        "engineers/customers.html",
-        {"customers": rows, "show_archived": show_archived},
-    )
+    """All customers (DESIGN.md section 1). Search and tabs swap the list in place (htmx)."""
+    view = overview.Overview(request.GET)
+    context = {
+        "view": view,
+        "can_add_customer": request.user.has_perm("collectors.add_customer"),
+        "can_add_engagement": request.user.has_perm("collectors.add_engagement"),
+    }
+    # htmx restoring history without a cached snapshot needs the whole page, not the list.
+    if request.headers.get("HX-Request") and not request.headers.get("HX-History-Restore-Request"):
+        response = render(request, "engineers/_customer_results.html", context)
+        response["HX-Push-Url"] = request.get_full_path()
+    else:
+        response = render(request, "engineers/customers.html", context)
+    patch_vary_headers(response, ["HX-Request", "HX-History-Restore-Request"])
+    return response
 
 
 def _can_see_jobs(user) -> bool:

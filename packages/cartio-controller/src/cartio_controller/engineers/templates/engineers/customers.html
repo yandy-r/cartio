@@ -1,28 +1,80 @@
 {% extends "engineers/base.html" %}
+{% load static %}
 {% block title %}Customers{% endblock %}
-{% block page_context %}Connected once · every customer you assess{% endblock %}
+{% block page_context %}Connected once · {{ view.counts.all }} customer{{ view.counts.all|pluralize }} · {{ view.collector_count }} collector{{ view.collector_count|pluralize }}{% endblock %}
 {% block page_title %}All customers{% endblock %}
 {% block page_actions %}
-  {% if show_archived %}<a class="btn" href="?">Hide archived customers</a>{% else %}<a class="btn" href="?archived=1">Show archived customers</a>{% endif %}
+  {% if view.any_customers %}
+  <form id="customer-search" class="search-field header-search" role="search" method="get" action="{% url 'engineers:customers' %}"
+        hx-get="{% url 'engineers:customers' %}" hx-target="#customer-results" hx-trigger="input changed delay:250ms from:#customer-q, search from:#customer-q, submit">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    <label class="sr-only" for="customer-q">Search customers</label>
+    <input id="customer-q" type="search" name="q" value="{{ view.query }}" placeholder="Search customers, sites, collectors" autocomplete="off">
+  </form>
+  {% endif %}
+  {% if can_add_engagement %}
+    <a class="btn" href="{% url 'admin:collectors_engagement_add' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7M17 15v6M14 18h6"></path></svg>New engagement</a>
+  {% endif %}
+  {% if can_add_customer %}
+    <a class="btn primary" href="{% url 'admin:collectors_customer_add' %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New customer</a>
+  {% endif %}
 {% endblock %}
 {% block content %}
-<table>
-  <thead><tr><th>Customer</th><th>Data mode</th><th>Collectors online</th></tr></thead>
-  <tbody>
-  {% for customer in customers %}
-    <tr>
-      <td><a href="{% url 'engineers:customer' customer=customer.pk %}">{{ customer.name }}</a>
-          {% if customer.is_archived %}<span class="tag muted">archived</span>{% endif %}</td>
-      <td><span class="mode{% if customer.is_on_site %} on-site{% endif %}">{{ customer.get_data_mode_display }}</span>
-          {% if customer.is_on_site %}<span class="muted">{% if customer.live_view_allowed %}Live view on{% else %}Inside access only{% endif %}</span>{% endif %}</td>
-      <td>{% if customer.collector_count %}
-            <span class="{% if customer.online_count == customer.collector_count %}online{% else %}offline{% endif %}">
-              {{ customer.online_count }} of {{ customer.collector_count }}</span>
-          {% else %}<span class="muted">none yet</span>{% endif %}</td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="3" class="muted">No customers yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% if not view.any_customers %}
+<section class="card empty-state">
+  <h2>No customers yet</h2>
+  <p class="muted">Add the first customer to start an engagement. Its collectors, sites and findings show here.</p>
+  {% if can_add_customer %}
+    <a class="btn primary" href="{% url 'admin:collectors_customer_add' %}">New customer</a>
+  {% else %}
+    <p class="muted">Ask an admin to add customers.</p>
+  {% endif %}
+</section>
+{% else %}
+<section aria-label="Summary" class="kpis">
+  <div class="card kpi"><div class="kpi-label">Collectors online</div>
+    <div><span class="kpi-value">{{ view.online_count }} / {{ view.collector_count }}</span>
+      {% if view.offline_count %}<span class="kpi-sub warn">{{ view.offline_count }} offline</span>{% endif %}</div></div>
+  <div class="card kpi"><div class="kpi-label">Active engagements</div>
+    <div><span class="kpi-value">{{ view.active_count }}</span>
+      {% if view.planned_count %}<span class="kpi-sub">{{ view.planned_count }} planned</span>{% endif %}</div></div>
+  <div class="card kpi"><div class="kpi-label">Devices discovered</div>
+    <div><span class="kpi-value">{{ view.device_count }}</span><span class="kpi-sub">in current engagements, Hosted only</span></div></div>
+</section>
+
+<div class="overview">
+  <section aria-label="Customers" class="card overview-main" id="customer-results">
+    {% include "engineers/_customer_results.html" %}
+  </section>
+
+  <aside class="overview-side">
+    <section class="card side-card">
+      <h2>Needs attention</h2>
+      {% for item in view.attention %}
+        <div class="attention-item">
+          <span class="attention-mark {{ item.health|slugify }}" aria-hidden="true">!</span>
+          <div><div class="attention-title">{{ item.title }}</div>
+            <div class="muted">{{ item.customer.name }} · {{ item.detail }}</div>
+            <a href="{{ item.url }}">Check collector</a></div>
+        </div>
+      {% empty %}
+        <p class="muted">Nothing needs attention. Every collector is online.</p>
+      {% endfor %}
+    </section>
+    <section class="card side-card">
+      <h2>Recent activity</h2>
+      <ol class="activity">
+      {% for event in view.activity %}
+        <li><time class="mono" datetime="{{ event.at|date:'c' }}" title="{{ event.at|date:'Y-m-d H:i' }}">{{ event.at|date:"M j H:i" }}</time>
+          <span><span class="activity-what">{{ event.get_action_display }} · {{ event.customer_name }}</span><br>
+          <span class="muted">{{ event.object_name|default:event.object_type }}{% if event.actor %} · by {{ event.actor }}{% endif %}</span></span></li>
+      {% empty %}
+        <li class="muted">No activity yet.</li>
+      {% endfor %}
+      </ol>
+    </section>
+  </aside>
+</div>
+<script src="{% static 'engineers/js/hover-cards.js' %}" defer></script>
+{% endif %}
 {% endblock %}
