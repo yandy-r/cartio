@@ -1,0 +1,49 @@
+{# The current filters, for the search box and for export. #}
+{% for name, value in view.params.items %}{% if name != "q" %}<input type="hidden" form="inventory-filters" name="{{ name }}" value="{{ value }}">{% endif %}<input type="hidden" form="inventory-export" name="{{ name }}" value="{{ value }}">{% endfor %}
+{# Selected rows the filters hide stay selected, but don't count and aren't exported. #}
+{% for pk in view.selected_hidden %}<input type="hidden" form="inventory-export" name="selected" value="{{ pk }}">{% endfor %}
+<div class="table-scroll">
+<table class="inventory-table">
+  <thead><tr>
+    <th class="select-cell">
+      {% if view.rows %}
+      {% with all_selected=view.selected_visible|length %}
+      <input type="checkbox" id="select-visible" aria-label="Select every visible device"{% if all_selected == view.rows|length %} checked hx-get="{{ view.select_none_link }}"{% else %} hx-get="{{ view.select_visible_link }}"{% endif %} hx-push-url="false" hx-replace-url="true">
+      {% endwith %}
+      {% endif %}
+    </th>
+    {% for label, link, aria, arrow in view.columns %}
+    <th{% if link %} aria-sort="{{ aria }}"{% endif %}>{% if link %}<a class="sort" href="{{ link }}" hx-get="{{ link }}" id="sort-{{ forloop.counter }}">{{ label }}<span aria-hidden="true">{{ arrow }}</span></a>{% else %}<span class="th-text">{{ label }}</span>{% endif %}</th>
+    {% endfor %}
+    <th><span class="sr-only">Actions</span></th>
+  </tr></thead>
+  <tbody>
+  {% for device in view.rows %}
+    <tr>
+      <td class="select-cell"><input type="checkbox" form="inventory-export" name="selected" value="{{ device.pk }}" id="select-{{ device.pk }}" aria-label="Select {{ device.name }}"{% if device.selected %} checked{% endif %} hx-get="{{ view.here }}" hx-push-url="false" hx-replace-url="true"></td>
+      <td class="host-cell">
+        <button type="button" class="host mono" aria-describedby="card-{{ device.pk }}">{{ device.name }}</button>
+        {% include "engineers/_device_card.html" %}
+      </td>
+      <td class="mono small">{{ device.management_ip|default:"–" }}</td>
+      <td><div>{{ device.manufacturer|default:"–" }}</div>{% if device.model %}<div class="sub">{{ device.model }}</div>{% endif %}</td>
+      <td class="mono small">{{ device.serial|default:"–" }}</td>
+      <td><span class="mono small">{{ device.os_version|default:"–" }}</span> <span class="state {{ device.os_state }}">{{ device.os_state_label }}</span></td>
+      <td>{{ device.site.name|default:"–" }}</td>
+      <td><span class="source"><span class="source-dot {{ device.source.kind|default:'unknown' }}" aria-hidden="true"></span>{{ device.source_label }}</span></td>
+      {# Findings come with YAN-1738. #}
+      <td class="muted">–</td>
+      <td class="small muted">{% if device.last_seen %}<time datetime="{{ device.last_seen|date:'c' }}">{{ device.last_seen|date:"Y-m-d H:i" }}</time>{% else %}–{% endif %}</td>
+      <td class="actions-cell"><button type="button" class="connect" disabled title="Connecting to a device isn't built yet" aria-label="Connect to {{ device.name }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"></path></svg>Connect</button></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="12" class="muted">{% if view.all_devices %}No devices match these filters.{% else %}No devices in this engagement yet.{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="inventory-footer">
+  <span>{{ view.selected_visible|length }} of {{ view.rows|length }} selected{% if view.selected_hidden %} · {{ view.selected_hidden|length }} selected device{{ view.selected_hidden|length|pluralize:" is,s are" }} hidden by the filters and won't be exported{% endif %}</span>
+  <span>Source key: <span class="source-dot live_run" aria-hidden="true"></span>discovery · <span class="source-dot upload" aria-hidden="true"></span>import · <span class="source-dot tool_export" aria-hidden="true"></span>tool export</span>
+</div>

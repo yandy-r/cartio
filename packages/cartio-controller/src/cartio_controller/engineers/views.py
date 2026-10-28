@@ -16,8 +16,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -35,6 +36,7 @@ from cartio_controller.collectors.models import (
     Site,
 )
 
+from . import inventory as inventory_screen
 from . import shell, totp
 from .models import EngineerMFA
 
@@ -327,6 +329,58 @@ def customer_detail(request, customer, engagement=None):
         engagements,
         engagement,
     )
+
+
+@never_cache
+@engineer_required
+def inventory(request, customer, engagement=None):
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    view = inventory_screen.View(customer, engagement, request.GET)
+    extra = {"view": view, "lifecycle": inventory_screen.LIFECYCLE}
+    # Filters, sorting and selection swap the results in place (htmx), without the shell.
+    if request.headers.get("HX-Request") and not customer.inside_access_only:
+        context = shell.context("inventory", customer, engagements, engagement) | extra
+        return render(request, "engineers/_inventory_results.html", context)
+    return render_screen(
+        request,
+        "inventory",
+        "engineers/inventory.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+        network_data=True,
+    )
+
+
+EXPORT_TYPES = {
+    "csv": "text/csv; charset=utf-8",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+
+
+@require_POST
+@csrf_protect
+@never_cache
+@engineer_required
+def inventory_export(request, customer, engagement):
+    """The selected visible rows as CSV or XLSX, audit-logged."""
+    customer, _, engagement = shell.resolve(customer, engagement)
+    # Inside access only: the controller holds no network data to export (ADR-0005).
+    if customer.inside_access_only:
+        raise Http404
+    fmt = request.POST.get("format", "")
+    if fmt not in EXPORT_TYPES:
+        return HttpResponseBadRequest("Export as csv or xlsx.")
+    view = inventory_screen.View(customer, engagement, request.POST)
+    if not view.selected_visible:
+        return HttpResponseBadRequest("Select the devices to export.")
+    with transaction.atomic():
+        content = inventory_screen.export(view, request.user.get_username(), fmt)
+    response = HttpResponse(content, content_type=EXPORT_TYPES[fmt])
+    name = inventory_screen.filename(customer, engagement, fmt)
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
+    return response
 
 
 JOBS_SHOWN = 100

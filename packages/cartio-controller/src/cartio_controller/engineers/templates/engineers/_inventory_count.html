@@ -1,0 +1,1 @@
+<span id="inventory-count" class="title-count"{% if oob %} hx-swap-oob="true"{% endif %}>{% if view.filtered %}{{ view.rows|length }} of {{ view.all_devices|length }} devices{% else %}{{ view.all_devices|length }} device{{ view.all_devices|length|pluralize }}{% endif %}</span>

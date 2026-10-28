@@ -1,0 +1,14 @@
+<aside id="inventory-summary" class="inventory-summary" aria-label="Inventory summary"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% for title, rows in view.summary %}
+  <section class="card summary-group">
+    <h2>{{ title }}</h2>
+    {% for label, count, pct, link, pressed in rows %}
+    {% if link %}<a class="breakdown" href="{{ link }}" hx-get="{{ link }}" aria-pressed="{{ pressed|yesno:'true,false' }}" id="summary-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">{% else %}<span class="breakdown">{% endif %}
+      <span>{{ label }}</span><strong>{{ count }}</strong>
+      <span class="bar" aria-hidden="true"><span style="width: {{ pct }}%"></span></span>
+    {% if link %}</a>{% else %}</span>{% endif %}
+    {% endfor %}
+  </section>
+  {% endfor %}
+  <p class="muted small">Counts cover the whole engagement. Pick a row to filter by it, and pick it again to clear it.</p>
+</aside>

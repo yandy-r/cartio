@@ -68,7 +68,7 @@ def _rows(customer):
         }
 
 
-def _spreadsheet_safe(value: str) -> str:
+def spreadsheet_safe(value: str) -> str:
     # A cell starting with one of these runs as a formula in a spreadsheet (CSV injection).
     return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
 
@@ -85,7 +85,7 @@ def _csv_lines(customer):
     yield writer.writerow(EXPORT_FIELDS)
     for row in _rows(customer):
         row["detail"] = json.dumps(row["detail"], sort_keys=True)
-        yield writer.writerow([_spreadsheet_safe(row[name]) for name in EXPORT_FIELDS])
+        yield writer.writerow([spreadsheet_safe(row[name]) for name in EXPORT_FIELDS])
 
 
 def _json_items(customer):
