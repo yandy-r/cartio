@@ -270,7 +270,8 @@ class AuditEventViewSet(
     def get_queryset(self):
         return self.scoped_queryset()
 
-    @action(detail=False, methods=["get"])
+    # A POST, since exporting writes an `audit.exported` event: a cross-site link can't add one.
+    @action(detail=False, methods=["post"])
     def export(self, request, *args, **kwargs):
         """The whole log, oldest first, as a file: `?type=csv` or `?type=json` (the default)."""
         fmt = request.query_params.get("type", "json")

@@ -661,7 +661,8 @@ class LoginEvent(models.Model):
     """An append-only record of a sign-in, sign-out or failed sign-in to the controller.
 
     Sign-ins aren't tied to a customer, so unlike every other record this one isn't
-    customer-owned. It never holds a password, only the username that was tried.
+    customer-owned. It never holds a password, only the username that was tried. Its failures
+    drive the sign-in limits, and `purge_login_events` drops entries past the retention period.
     """
 
     class Kind(models.TextChoices):
@@ -679,6 +680,11 @@ class LoginEvent(models.Model):
     class Meta:
         ordering = ["-at"]
         base_manager_name = "objects"
+        # The sign-in limits count recent failures by account and by address.
+        indexes = [
+            models.Index(fields=["username", "at"], name="login_event_user_at"),
+            models.Index(fields=["ip_address", "at"], name="login_event_address_at"),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(kind__in=["logged_in", "logged_out", "failed"]),

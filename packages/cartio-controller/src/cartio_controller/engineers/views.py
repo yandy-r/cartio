@@ -10,6 +10,7 @@ import time
 from datetime import timedelta
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.signals import user_login_failed
@@ -25,6 +26,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 
+from cartio_controller.collectors import audit
 from cartio_controller.collectors.models import (
     CollectionRun,
     Collector,
@@ -40,6 +42,13 @@ PENDING = "cartio_pending_sign_in"
 # The second step must follow the password soon after, with a few tries at most.
 PENDING_SECONDS = 300
 MAX_CODE_TRIES = 5
+
+TOO_MANY_FAILURES = "Too many failed sign-ins. Wait {minutes} minutes and try again."
+
+
+def _too_many_failures_error() -> str:
+    return TOO_MANY_FAILURES.format(minutes=settings.SIGN_IN_LOCKOUT_MINUTES)
+
 
 # Collectors check in every minute by default. Three missed check-ins and it shows as offline.
 ONLINE_WITHIN = timedelta(minutes=3)
@@ -78,7 +87,12 @@ def _pending_user(request):
         request.session.pop(PENDING, None)
         return None
     user = auth.get_user_model()._default_manager.filter(pk=pending["user"]).first()
-    if user is None or not _is_engineer(user):
+    # A pending sign-in ends when the account runs out of failed sign-ins, before another code.
+    if (
+        user is None
+        or not _is_engineer(user)
+        or audit.too_many_failed_sign_ins(request, user.get_username())
+    ):
         request.session.pop(PENDING, None)
         return None
     user.backend = pending["backend"]
@@ -92,7 +106,10 @@ def _code_failed(request, user, mfa) -> bool:
         credentials={auth.get_user_model().USERNAME_FIELD: user.get_username()},
         request=request,
     )
-    if mfa.record_failure() - request.session[PENDING]["failed_before"] >= MAX_CODE_TRIES:
+    tries = mfa.record_failure() - request.session[PENDING]["failed_before"]
+    # Wrong codes count toward the account's failed sign-ins too, so restarting from the password
+    # doesn't give anyone with the password unlimited guesses at the code.
+    if tries >= MAX_CODE_TRIES or audit.too_many_failed_sign_ins(request, user.get_username()):
         request.session.pop(PENDING)
         return True
     return False
@@ -113,6 +130,21 @@ def sign_in(request):
     if request.user.is_authenticated and _is_engineer(request.user):
         return redirect(_next_url(request, request.GET.get("next", "")))
     form = AuthenticationForm(request, data=request.POST or None)
+    # The username as the form cleans it (trimmed, NFKC), which is how failures are logged.
+    username = form.fields["username"].to_python(request.POST.get("username", ""))
+    if request.method == "POST" and audit.too_many_failed_sign_ins(request, username):
+        # Refused before the password is checked, and not logged, so a flood of guesses
+        # neither learns anything nor grows the sign-in log.
+        return render(
+            request,
+            "engineers/sign_in.html",
+            {
+                "form": AuthenticationForm(request),
+                "error": _too_many_failures_error(),
+                "next": request.POST.get("next", ""),
+            },
+            status=429,
+        )
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
         if not _is_engineer(user):

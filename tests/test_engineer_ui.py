@@ -16,6 +16,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.management import CommandError, call_command
+from django.db.models import QuerySet
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -254,3 +255,67 @@ def test_shell_pages_need_sign_in(client):
         response = client.get(url)
         assert response.status_code == 302
         assert response.url.startswith("/sign-in?next=")
+
+
+def test_failed_sign_ins_are_throttled_per_account(client, settings):
+    settings.SIGN_IN_MAX_FAILURES = 3
+    _engineer()
+    for _ in range(3):
+        assert _password(client, password="nope").status_code == 200
+    # Refused before the password is checked, even the right one, and not logged.
+    response = _password(client)
+    assert response.status_code == 429
+    assert "Too many failed sign-ins" in response.content.decode()
+    assert _kinds() == [LoginEvent.Kind.FAILED] * 3
+    # A padded username still names the same account.
+    assert _password(client, " engineer ").status_code == 429
+    # Signing out with nobody signed in isn't logged either.
+    client.post("/sign-out")
+    assert _kinds() == [LoginEvent.Kind.FAILED] * 3
+    # Other accounts aren't affected, and the limit lifts once the failures age out.
+    _engineer("other")
+    assert _password(client, "other").url == "/sign-in/authenticator"
+    settings.SIGN_IN_LOCKOUT_MINUTES = 0
+    assert _password(client).status_code == 302
+
+
+def test_wrong_codes_count_toward_the_account_limit(client, settings):
+    user = _engineer()
+    _signed_in(client, user)
+    client.post("/sign-out")
+    settings.SIGN_IN_MAX_FAILURES = 2
+    _password(client)
+    assert client.post("/sign-in/code", {"code": "000000"}).status_code == 200
+    # The second wrong code uses up the account's failures, well before MAX_CODE_TRIES.
+    assert client.post("/sign-in/code", {"code": "000000"}).url == "/sign-in"
+    assert _password(client).status_code == 429
+
+
+def test_failed_sign_ins_are_throttled_per_address(client, settings):
+    settings.SIGN_IN_MAX_FAILURES_PER_ADDRESS = 3
+    _engineer()
+    # Made-up usernames are logged without one, so only the address limit stops them.
+    for name in ("a", "b", "c"):
+        _password(client, name, password="nope")
+    assert _password(client).status_code == 429
+    elsewhere = client.post(
+        "/sign-in", {"username": "engineer", "password": PASSWORD}, REMOTE_ADDR="192.0.2.9"
+    )
+    assert elsewhere.url == "/sign-in/authenticator"
+    settings.SIGN_IN_MAX_FAILURES_PER_ADDRESS = 0
+    assert _password(client).status_code == 302
+
+
+def test_purge_login_events_keeps_the_retention_period(capsys):
+    old = LoginEvent.objects.create(kind=LoginEvent.Kind.FAILED)
+    recent = LoginEvent.objects.create(kind=LoginEvent.Kind.LOGGED_IN, username="engineer")
+    # Backdated with a plain queryset: the append-only one refuses updates.
+    QuerySet(LoginEvent).filter(pk=old.pk).update(at=timezone.now() - timedelta(days=400))
+    call_command("purge_login_events")
+    assert "Deleted 1 " in capsys.readouterr().out
+    assert list(LoginEvent.objects.values_list("pk", flat=True)) == [recent.pk]
+    with pytest.raises(CommandError):
+        call_command("purge_login_events", "--older-than-days", "0")
+    # Nothing else can delete from the log.
+    with pytest.raises(Exception, match="can't"):
+        LoginEvent.objects.all().delete()

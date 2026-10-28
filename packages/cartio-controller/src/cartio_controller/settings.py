@@ -13,6 +13,12 @@ Everything that differs per environment comes from environment variables:
   it too.
 - CARTIO_SESSION_HOURS: how long an engineer stays signed in, 8 hours by default. Sessions also
   end when the browser closes.
+- CARTIO_SIGN_IN_MAX_FAILURES: failed sign-ins (passwords and codes) an account may have in the
+  last CARTIO_SIGN_IN_LOCKOUT_MINUTES (15 by default) before it's refused, 10 by default.
+- CARTIO_SIGN_IN_MAX_FAILURES_PER_ADDRESS: the same for one client address, 50 by default. Behind
+  a reverse proxy every sign-in comes from the proxy's address, so this limit then covers all
+  engineers together. 0 turns either limit off.
+- CARTIO_LOGIN_LOG_DAYS: how long `purge_login_events` keeps the sign-in log, 365 days by default.
 """
 
 import os
@@ -97,6 +103,15 @@ LOGIN_REDIRECT_URL = "engineers:customers"
 
 SESSION_COOKIE_AGE = int(float(os.environ.get("CARTIO_SESSION_HOURS", "8")) * 3600)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Failed sign-ins are counted from the sign-in log (collectors.LoginEvent), so the limits hold
+# across every controller process. A refused attempt isn't logged, which keeps the log bounded.
+SIGN_IN_MAX_FAILURES = int(os.environ.get("CARTIO_SIGN_IN_MAX_FAILURES", "10"))
+SIGN_IN_MAX_FAILURES_PER_ADDRESS = int(
+    os.environ.get("CARTIO_SIGN_IN_MAX_FAILURES_PER_ADDRESS", "50")
+)
+SIGN_IN_LOCKOUT_MINUTES = int(os.environ.get("CARTIO_SIGN_IN_LOCKOUT_MINUTES", "15"))
+LOGIN_LOG_DAYS = int(os.environ.get("CARTIO_LOGIN_LOG_DAYS", "365"))
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
