@@ -10,6 +10,11 @@ let anyone holding masked configs guess short passwords, and a shared key would 
 customers use the same secret. The placeholder names the key version, so a key rotation can be
 told apart from a config change.
 
+SNMPv1/v2c community strings are judged here too, because only the collector sees the value.
+A default or weak community gets a marked placeholder, `<masked:k1:3fa1c0de5b7a9e21:weak>`, so
+the assessment checks can flag it (YAN-1744). The marker says the value is short or on a list of
+well-known defaults, and nothing else about it.
+
 Masking fails closed: after the rules run, a scan looks for anything that still looks like a
 secret and raises `UnmaskedSecretError` rather than return it. Error messages name the line and
 the kind of secret, never the value.
@@ -31,6 +36,40 @@ PLACEHOLDER_PREFIX = "<masked:"
 _KEY_VERSION = re.compile(r"[A-Za-z0-9_.-]{1,16}")
 _MIN_KEY_BYTES = 32
 _DIGEST_HEX_CHARS = 16
+WEAK_MARKER = ":weak"
+
+# Communities that ship as defaults or are commonly guessed. Compared ignoring case.
+_WEAK_COMMUNITIES = frozenset(
+    {
+        "public",
+        "private",
+        "community",
+        "cisco",
+        "fortinet",
+        "admin",
+        "manager",
+        "monitor",
+        "secret",
+        "snmp",
+        "snmpd",
+        "default",
+        "read",
+        "write",
+        "readonly",
+        "readwrite",
+        "test",
+        "password",
+        "network",
+        "system",
+        "security",
+        "router",
+        "switch",
+        "all private",
+        "ilmi",
+    }
+)
+# Anything shorter is quick to guess over the network.
+_MIN_COMMUNITY_CHARS = 8
 
 
 class Platform(StrEnum):
@@ -64,9 +103,17 @@ class MaskingKey:
     def __repr__(self) -> str:
         return f"MaskingKey(version={self.version!r}, secret=<hidden>)"
 
-    def placeholder(self, value: str) -> str:
+    def placeholder(self, value: str, weak: bool = False) -> str:
         digest = hmac.new(self.secret, value.encode("utf-8", "surrogatepass"), hashlib.sha256)
-        return f"{PLACEHOLDER_PREFIX}{self.version}:{digest.hexdigest()[:_DIGEST_HEX_CHARS]}>"
+        marker = WEAK_MARKER if weak else ""
+        return (
+            f"{PLACEHOLDER_PREFIX}{self.version}:{digest.hexdigest()[:_DIGEST_HEX_CHARS]}{marker}>"
+        )
+
+
+def weak_community(value: str) -> bool:
+    """Is this SNMPv1/v2c community a well-known default, or too short?"""
+    return len(value) < _MIN_COMMUNITY_CHARS or value.strip().lower() in _WEAK_COMMUNITIES
 
 
 @dataclass(frozen=True)
@@ -98,7 +145,10 @@ class UnmaskedSecret:
 # block (IOS: the last unindented line; FortiOS: the innermost `config` path). Rules see tabs
 # as spaces, and IOS rules ignore case, as IOS does.
 
-_PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]{1,16}:[0-9a-f]{16}>")
+_PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]{1,16}:[0-9a-f]{16}(?::weak)?>")
+# A placeholder for a default or weak SNMP community.
+WEAK_PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]{1,16}:[0-9a-f]{16}:weak>")
+_COMMUNITY_KIND = "SNMP community"
 _T = r"(?: [0-9](?= ))?+"  # Cisco's optional encryption type before a value: 0, 5, 7, 8, 9...
 _REST = r"(?P<v>\S(?:.*\S)?)"  # The value runs to the end of the line, spaces included.
 _WORD = r"(?P<v>\S+)"
@@ -235,10 +285,10 @@ def mask_config(text: str, platform: Platform | str, key: MaskingKey) -> MaskedC
     platform = Platform(platform)
     count = 0
 
-    def replace(value: str) -> str:
+    def replace(value: str, weak: bool = False) -> str:
         nonlocal count
         count += 1
-        return key.placeholder(value)
+        return key.placeholder(value, weak)
 
     def replace_group(match: re.Match[str]) -> str:
         if _PLACEHOLDER.fullmatch(match["v"]):
@@ -273,14 +323,14 @@ def _split_lines(text: str) -> list[str]:
 
 
 def _mask_lines(
-    lines: list[str], rules: list[_Rule], blocks: list[str], replace: Callable[[str], str]
+    lines: list[str], rules: list[_Rule], blocks: list[str], replace: Callable[[str, bool], str]
 ) -> list[str]:
     out = []
     for line, block in zip(lines, blocks, strict=True):
         body = line.rstrip("\r\n")
         ending = line[len(body) :]
         view = body.replace("\t", " ")  # Same length, so spans carry over to body.
-        spans: list[tuple[int, int]] = []
+        spans: list[tuple[int, int, bool]] = []
         for rule in rules:
             if rule.block and not rule.block.search(block):
                 continue
@@ -291,15 +341,20 @@ def _mask_lines(
                     start, end = match.span(name)
                     if _PLACEHOLDER.fullmatch(value) or _overlaps(spans, start, end):
                         continue
-                    spans.append((start, end))
-        for start, end in sorted(spans, reverse=True):
-            body = body[:start] + replace(body[start:end]) + body[end:]
+                    # A match that starts inside a value already taken, such as a community
+                    # named "secret", doesn't start a secret: what follows it is ordinary.
+                    if _overlaps(spans, match.start(), match.start() + 1):
+                        continue
+                    weak = rule.kind == _COMMUNITY_KIND and weak_community(value)
+                    spans.append((start, end, weak))
+        for start, end, weak in sorted(spans, reverse=True):
+            body = body[:start] + replace(body[start:end], weak) + body[end:]
         out.append(body + ending)
     return out
 
 
-def _overlaps(spans: list[tuple[int, int]], start: int, end: int) -> bool:
-    return any(start < b and a < end for a, b in spans)
+def _overlaps(spans: list[tuple[int, int, bool]], start: int, end: int) -> bool:
+    return any(start < b and a < end for a, b, _ in spans)
 
 
 def _unindented(line: str) -> bool:

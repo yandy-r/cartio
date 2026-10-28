@@ -2,8 +2,9 @@
 
 Each reader takes one masked config and returns what it says about management access, time,
 logging and SNMP. They read text only, never a device. Secrets are already placeholders
-(ADR-0003), so a community string can be counted and described but never judged weak: that
-would need the value.
+(ADR-0003), so a community string can be counted and described but not judged here. The
+collector judges it before masking and marks the placeholder of a default or weak one
+(`WEAK_PLACEHOLDER`, YAN-1744).
 
 IOS and IOS-XE share a reader. FortiOS configs are nested `config` / `edit` / `set` blocks, read
 by `_forti_blocks`.
@@ -18,7 +19,9 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import lru_cache
 
-from .masking import Platform
+from .masking import WEAK_PLACEHOLDER, Platform
+
+WEAK_COMMUNITY = "An SNMPv1/v2c community is a default or weak string."
 
 
 @dataclass(frozen=True)
@@ -132,6 +135,8 @@ def _read_ios(config: str) -> ConfigFacts:
                 communities.append("An SNMPv1/v2c community has write (RW) access.")
             if not access or not access["acl"]:
                 communities.append("An SNMPv1/v2c community has no access list.")
+            if WEAK_PLACEHOLDER.fullmatch(match[1]):
+                communities.append(WEAK_COMMUNITY)
         elif match := _NTP.match(header):
             ntp.add(match[1].lower())
         elif match := _LOGGING_HOST.match(header):
@@ -141,6 +146,10 @@ def _read_ios(config: str) -> ConfigFacts:
         elif match := _TRAP_HOST.match(header):
             if (match[2] or "1") != "3":
                 v1_v2c.append(f"SNMP notifications to {match[1]} use v{match[2] or '1'}.")
+                if WEAK_PLACEHOLDER.search(header):
+                    communities.append(
+                        f"SNMP notifications to {match[1]} use a default or weak community."
+                    )
         elif match := _V3_GROUP.match(header):
             if match[2].lower() == "noauth":
                 v3_without_auth.append(f"SNMPv3 group {match[1]} uses noauth.")
@@ -228,7 +237,7 @@ def _setting(block: _Block, key: str, default: str = "") -> str:
 
 def _read_fortios(config: str) -> ConfigFacts:
     blocks = _forti_blocks(config)
-    telnet, http, undetermined = [], [], []
+    telnet, http, communities, undetermined = [], [], [], []
     interfaces = _blocks_at(blocks, "system interface")
     if not interfaces:
         undetermined.append("The config has no interface settings.")
@@ -270,6 +279,8 @@ def _read_fortios(config: str) -> ConfigFacts:
     for block in _blocks_at(blocks, "system snmp community"):
         if _setting(block, "status", "enable") == "enable":
             v1_v2c.append(f"SNMP community {block.edits[-1] if block.edits else ''}".strip() + ".")
+            if WEAK_PLACEHOLDER.fullmatch(" ".join(block.settings.get("name", []))):
+                communities.append(WEAK_COMMUNITY)
     for block in _blocks_at(blocks, "system snmp user"):
         name = block.edits[-1] if block.edits else "An SNMPv3 user"
         if _setting(block, "status", "enable") != "enable":
@@ -280,7 +291,7 @@ def _read_fortios(config: str) -> ConfigFacts:
         else:
             v3.append(f"SNMPv3 user {name} uses {level}.")
     return ConfigFacts(
-        ManagementAccess(tuple(telnet), tuple(http), (), tuple(undetermined)),
+        ManagementAccess(tuple(telnet), tuple(http), tuple(communities), tuple(undetermined)),
         TimeAndLogging(ntp, frozenset(syslog)),
         Snmp(tuple(v1_v2c), tuple(v3_without_auth), tuple(v3)),
     )

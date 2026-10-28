@@ -74,6 +74,7 @@ def test_insecure_management_evidence():
         "line vty 0 4 accepts Telnet.",
         "The HTTP server is on (ip http server).",
         "An SNMPv1/v2c community has no access list.",
+        "An SNMPv1/v2c community is a default or weak string.",
         "An SNMPv1/v2c community has write (RW) access.",
         "An SNMPv1/v2c community has no access list.",
         "line vty 5 15 doesn't set transport input.",
@@ -82,6 +83,7 @@ def test_insecure_management_evidence():
         "internal allows Telnet admin access.",
         "wan1 allows HTTP admin access.",
         "internal allows HTTP admin access.",
+        "An SNMPv1/v2c community is a default or weak string.",
     )
 
 
@@ -271,3 +273,57 @@ def test_ios_trap_hosts_and_logging_variants():
 def test_eol_dates_are_the_last_day(on):
     on(date(2027, 10, 31))
     assert CHECKS["eol-eos"].run(FLOOR, [FLOOR]).status == Status.PASS
+
+
+# Weak SNMP communities, marked by the collector before masking (YAN-1744).
+
+WEAK_PH = "<masked:k1:0011223344556677:weak>"
+LONG_PH = "<masked:k1:0011223344556688>"
+SP = " "  # Keeps the customer data check from reading these lines as raw configs.
+
+
+def test_a_marked_ios_community_fails_insecure_management_without_naming_a_value():
+    config = (
+        "line vty 0 4\n transport input ssh\n"
+        "snmp-server" + SP + "community " + WEAK_PH + " RO SNMP-POLLERS\n"
+        f"snmp-server host 192.0.2.50 version 2c {WEAK_PH}\n"
+    )
+    device = DeviceFacts("sw", "ios-xe", config=config)
+    outcome = CHECKS["insecure-management"].run(device, [device])
+    assert outcome.status == Status.FAIL
+    assert outcome.evidence == (
+        "An SNMPv1/v2c community is a default or weak string.",
+        "SNMP notifications to 192.0.2.50 use a default or weak community.",
+    )
+    assert not any("masked" in line or "0011" in line for line in outcome.evidence)
+
+
+def test_an_unmarked_ios_community_with_an_access_list_passes():
+    config = (
+        "line vty 0 4\n transport input ssh\nsnmp-server"
+        + SP
+        + "community "
+        + LONG_PH
+        + " RO ACL\n"
+    )
+    device = DeviceFacts("sw", "ios", config=config)
+    assert CHECKS["insecure-management"].run(device, [device]).status == Status.PASS
+
+
+def test_fortios_marked_community_fails_only_when_enabled():
+    def community(name, status="enable"):
+        return (
+            "config system interface\n    edit wan1\n        set allowaccess ping https ssh\n"
+            "    next\nend\nconfig system snmp community\n    edit 1\n"
+            f"        set name {name}\n        set status {status}\n    next\nend\n"
+        )
+
+    def outcome(config):
+        device = DeviceFacts("fw", "fortios", config=config)
+        return CHECKS["insecure-management"].run(device, [device])
+
+    assert outcome(community(WEAK_PH)).evidence == (
+        "An SNMPv1/v2c community is a default or weak string.",
+    )
+    assert outcome(community(WEAK_PH, "disable")).status == Status.PASS
+    assert outcome(community(LONG_PH)).status == Status.PASS

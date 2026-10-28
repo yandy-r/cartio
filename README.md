@@ -112,6 +112,11 @@ taken over the masked text. If anything that looks like a secret survives maskin
 `UnmaskedSecretError` instead of returning the config; `find_unmasked` runs the same scan on
 configs the controller receives.
 
+SNMPv1/v2c communities are also judged on the collector, since the controller never sees their
+values. One that is shorter than 8 characters or on a list of well-known defaults (public,
+private, cisco...) gets a marked placeholder, `<masked:<key version>:<digest>:weak>`, and the
+insecure-management check fails on it (YAN-1744).
+
 To support a new platform, add its rules to `_RULES` in `masking.py` and a test for every secret
 type it can hold in `tests/test_masking.py`. Build test configs at runtime, as that file does, so
 the commit hooks don't flag them.

@@ -45,7 +45,7 @@ TAGS = {
     "open": "Open",
 }
 
-_PLACEHOLDER = re.compile(r"<masked:([A-Za-z0-9_.-]{1,16}):([0-9a-f]{16})>")
+_PLACEHOLDER = re.compile(r"<masked:([A-Za-z0-9_.-]{1,16}):([0-9a-f]{16})(?::weak)?>")
 
 
 def ordered(engagements) -> list:
