@@ -10,8 +10,9 @@ into [docs/adr](docs/adr/README.md). Branches, target releases and backports fol
 controller (ADR-0006).
 
 `.claude/settings.json` enables the `ycc` Claude Code plugin from
-[yandy-r/ystack](https://github.com/yandy-r/ystack), so skills such as `/ycc:release-model` and
-`/ycc:backport` work in cloud sessions too.
+[yandy-r/ystack](https://github.com/yandy-r/ystack) for local sessions, which gives skills such as
+`/ycc:release-model` and `/ycc:backport`. Cloud sessions ignore plugins declared there; in a
+Claude Code project, add the plugin under Project settings > Plugins instead.
 
 ## Layout
 
