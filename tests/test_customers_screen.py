@@ -104,6 +104,14 @@ def test_search_and_tabs_swap_the_list_in_place(client, engineer):
     assert ">Ostrander<" in page and ">Acme<" not in page
     assert response["HX-Push-Url"] == "/?q=ostr"
 
+    # Back to a pushed URL with no cached snapshot: htmx asks for the whole page.
+    page = client.get(
+        "/",
+        {"q": "ostr"},
+        headers={"HX-Request": "true", "HX-History-Restore-Request": "true"},
+    ).content.decode()
+    assert "<html" in page and ">Ostrander<" in page
+
     page = _page(client, mode="on_site")
     assert ">Ostrander<" in page and ">Acme<" not in page
     page = _page(client, mode="hosted")

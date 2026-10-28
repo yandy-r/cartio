@@ -20,6 +20,7 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import patch_vary_headers
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -253,11 +254,14 @@ def customers(request):
         "can_add_customer": request.user.has_perm("collectors.add_customer"),
         "can_add_engagement": request.user.has_perm("collectors.add_engagement"),
     }
-    if request.headers.get("HX-Request"):
+    # htmx restoring history without a cached snapshot needs the whole page, not the list.
+    if request.headers.get("HX-Request") and not request.headers.get("HX-History-Restore-Request"):
         response = render(request, "engineers/_customer_results.html", context)
         response["HX-Push-Url"] = request.get_full_path()
-        return response
-    return render(request, "engineers/customers.html", context)
+    else:
+        response = render(request, "engineers/customers.html", context)
+    patch_vary_headers(response, ["HX-Request", "HX-History-Restore-Request"])
+    return response
 
 
 def _can_see_jobs(user) -> bool:
