@@ -39,10 +39,48 @@ def _customer_pk(customer) -> int:
     pk = getattr(customer, "pk", customer)
     if pk is None:
         raise UnscopedQueryError("The customer has no id yet. Save it first.")
-    return pk
+    return Customer._meta.pk.to_python(pk)
 
 
-class CustomerScopedQuerySet(models.QuerySet):
+def _link_fields(model) -> set[str]:
+    """Names of the fields that tie a record to a customer: `customer` and parent records."""
+    names = set()
+    for field in model._meta.concrete_fields:
+        if field.name == "customer" or (
+            (field.many_to_one or field.one_to_one)
+            and issubclass(field.related_model, CustomerOwned)
+        ):
+            names |= {field.name, field.attname}
+    return names
+
+
+class CustomerOwnedQuerySet(models.QuerySet):
+    """Customer-owned rows. Bulk writes can't move rows to another customer or relink them."""
+
+    def update(self, **kwargs):
+        self._refuse_bulk_relink(kwargs)
+        return super().update(**kwargs)
+
+    def bulk_update(self, objs, fields, *args, **kwargs):
+        self._refuse_bulk_relink(fields)
+        return super().bulk_update(objs, fields, *args, **kwargs)
+
+    def bulk_create(self, objs, *args, **kwargs):
+        objs = list(objs)
+        self._refuse_bulk_relink(kwargs.get("update_fields") or ())
+        for obj in objs:
+            obj.check_customer_links()
+        return super().bulk_create(objs, *args, **kwargs)
+
+    def _refuse_bulk_relink(self, fields) -> None:
+        if _link_fields(self.model) & set(fields):
+            raise CrossCustomerError(
+                f"A {self.model.__name__}'s customer and parent records can't change in bulk. "
+                f"Save each record instead."
+            )
+
+
+class CustomerScopedQuerySet(CustomerOwnedQuerySet):
     """Rows of exactly one customer. Records created through it belong to that customer."""
 
     _customer_id = None
@@ -53,14 +91,27 @@ class CustomerScopedQuerySet(models.QuerySet):
         return clone
 
     def create(self, **kwargs):
-        if self._customer_id is None:
-            raise UnscopedQueryError("Create records through .for_customer(customer).")
+        self._require_scope()
         given = kwargs.pop("customer", None)
         given_id = kwargs.pop("customer_id", None)
         for other in (given, given_id):
             if other is not None and _customer_pk(other) != self._customer_id:
                 raise CrossCustomerError("This record belongs to another customer.")
         return super().create(customer_id=self._customer_id, **kwargs)
+
+    def bulk_create(self, objs, *args, **kwargs):
+        self._require_scope()
+        objs = list(objs)
+        for obj in objs:
+            if obj.customer_id is None:
+                obj.customer_id = self._customer_id
+            elif _customer_pk(obj.customer_id) != self._customer_id:
+                raise CrossCustomerError("This record belongs to another customer.")
+        return super().bulk_create(objs, *args, **kwargs)
+
+    def _require_scope(self) -> None:
+        if self._customer_id is None:
+            raise UnscopedQueryError("Create records through .for_customer(customer).")
 
 
 class CustomerScopedManager(models.Manager.from_queryset(CustomerScopedQuerySet)):
@@ -113,28 +164,48 @@ class Customer(Archivable):
 class CustomerOwned(models.Model):
     """Base for every record that belongs to one customer (all models except Customer).
 
-    Isolation is enforced here, below the API: `objects` only answers queries scoped to one
-    customer, and saving a record that points at another customer's record fails.
-    Queryset `update()` and `bulk_create()` skip `save()`, so scope them with `for_customer()`.
+    Isolation is enforced here, below the API:
+
+    - `objects` only answers queries scoped to one customer with `for_customer()`.
+    - A record's customer never changes once saved.
+    - Saving a record that points at another customer's record fails.
+    - Bulk writes (`update()`, `bulk_update()`, related-manager `add()`) can't change a
+      record's customer or parent records.
     """
 
     customer = models.ForeignKey("Customer", on_delete=models.PROTECT, related_name="%(class)ss")
 
     # Declared first, so Django's own machinery (admin, related managers) uses it.
-    all_customers = models.Manager()
+    all_customers = models.Manager.from_queryset(CustomerOwnedQuerySet)()
     objects = CustomerScopedManager()
 
     class Meta:
         abstract = True
+        # Related-manager writes and deletes go through the guarded queryset too.
+        base_manager_name = "all_customers"
+
+    @classmethod
+    def from_db(cls, db, field_names, values, **kwargs):
+        instance = super().from_db(db, field_names, values, **kwargs)
+        instance._saved_customer_id = instance.__dict__.get("customer_id")
+        return instance
 
     def save(self, *args, **kwargs):
-        self.check_customer_links()
+        update_fields = kwargs.get("update_fields")
+        if update_fields is None or _link_fields(type(self)) & set(update_fields):
+            self.check_customer_links()
         super().save(*args, **kwargs)
+        self._saved_customer_id = self.customer_id
 
     def check_customer_links(self) -> None:
         """Take the customer from a parent record, and refuse a parent of another customer."""
+        saved = getattr(self, "_saved_customer_id", None)
+        if saved is not None and self.customer_id != saved:
+            raise CrossCustomerError("A record can't move to another customer.")
         for field in self._meta.concrete_fields:
-            if not (field.many_to_one and issubclass(field.related_model, CustomerOwned)):
+            if not (field.many_to_one or field.one_to_one) or not issubclass(
+                field.related_model, CustomerOwned
+            ):
                 continue
             parent = getattr(self, field.name)
             if parent is None:
@@ -163,7 +234,7 @@ class Engagement(Archivable, CustomerOwned):
     assessment = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta(CustomerOwned.Meta):
         ordering = ["customer__name", "-start_date", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_engagement_name"),
@@ -192,7 +263,7 @@ class Site(Archivable, CustomerOwned):
     seed_hints = models.JSONField(default=list, blank=True, validators=[validate_seed_hints])
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta(CustomerOwned.Meta):
         ordering = ["customer__name", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_site_name"),
@@ -223,7 +294,7 @@ class Collector(CustomerOwned):
     platform = models.CharField(max_length=200, blank=True)
     last_check_in = models.DateTimeField(null=True, blank=True)
 
-    class Meta:
+    class Meta(CustomerOwned.Meta):
         ordering = ["customer__name", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_collector_name"),
@@ -276,6 +347,6 @@ class CheckIn(CustomerOwned):
     version = models.CharField(max_length=50)
     platform = models.CharField(max_length=200)
 
-    class Meta:
+    class Meta(CustomerOwned.Meta):
         ordering = ["-at"]
         get_latest_by = "at"

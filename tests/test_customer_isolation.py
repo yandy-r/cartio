@@ -83,7 +83,7 @@ def test_a_customer_scope_never_shows_another_customers_rows(model, acme, globex
     assert not model.objects.for_customer(acme).filter(pk=theirs.pk).exists()
     # Chained querysets keep the scope.
     assert not model.objects.for_customer(acme).exclude(pk=mine.pk).filter(pk=theirs.pk)
-    assert model.objects.for_customer(acme).filter(pk=theirs.pk).update(customer=acme) == 0
+    assert model.objects.for_customer(acme).filter(pk=theirs.pk).delete()[0] == 0
     # The explicit admin path sees both.
     assert set(model.all_customers.all()) == {mine, theirs}
 
@@ -178,3 +178,63 @@ def test_a_collector_cannot_act_as_another_customers_collector(client, acme, glo
     )
     assert response.status_code == 401
     assert not CheckIn.all_customers.exists()
+
+
+def test_a_record_never_moves_to_another_customer(acme, globex):
+    records = _records(acme)
+    for model in (Engagement, Site, Collector):
+        record = model.all_customers.get(pk=records[model].pk)
+        record.customer = globex
+        with pytest.raises(CrossCustomerError):
+            record.save()
+        with pytest.raises(CrossCustomerError):
+            model.objects.for_customer(acme).update_or_create(
+                pk=record.pk, defaults={"customer": globex}
+            )
+    assert not Collector.all_customers.filter(customer=globex).exists()
+
+
+@pytest.mark.parametrize("manager", ["scoped", "all_customers"])
+def test_bulk_writes_cannot_move_or_relink_records(manager, acme, globex):
+    records = _records(acme)
+    globex_collector, _ = _collector(globex, name="vm02")
+
+    def rows(model):
+        if manager == "scoped":
+            return model.objects.for_customer(acme)
+        return model.all_customers.all()
+
+    for kwargs in ({"customer": globex}, {"customer_id": globex.pk}):
+        with pytest.raises(CrossCustomerError):
+            rows(Site).update(**kwargs)
+    with pytest.raises(CrossCustomerError):
+        rows(CheckIn).update(collector=globex_collector)
+    site = records[Site]
+    site.customer = globex
+    with pytest.raises(CrossCustomerError):
+        rows(Site).bulk_update([site], ["customer"])
+    with pytest.raises(CrossCustomerError):
+        rows(CheckIn).bulk_create(
+            [CheckIn(customer=acme, collector=globex_collector, hostname="x", version="1")]
+        )
+    with pytest.raises(CrossCustomerError):
+        globex.sites.add(Site.all_customers.get(pk=site.pk))
+
+    assert set(Site.objects.for_customer(acme)) == {records[Site]}
+    assert CheckIn.all_customers.get().collector == records[Collector]
+
+
+def test_scoped_bulk_create_pins_the_customer(acme, globex):
+    created = Site.objects.for_customer(acme).bulk_create([Site(name="A"), Site(name="B")])
+    assert {site.customer_id for site in created} == {acme.pk}
+    with pytest.raises(CrossCustomerError):
+        Site.objects.for_customer(acme).bulk_create([Site(customer=globex, name="C")])
+    with pytest.raises(UnscopedQueryError):
+        Site.objects.bulk_create([Site(customer=acme, name="D")])
+
+
+def test_scoped_create_accepts_the_same_customer_in_any_form(acme):
+    assert (
+        Site.objects.for_customer(acme).create(name="A", customer_id=str(acme.pk)).customer == acme
+    )
+    assert Site.objects.for_customer(str(acme.pk)).create(name="B", customer=acme).customer == acme

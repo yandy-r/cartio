@@ -66,9 +66,13 @@ class CollectorAdmin(admin.ModelAdmin):
     ]
     exclude = ["enrollment_token_hash", "secret_hash"]
 
+    def get_readonly_fields(self, request, obj=None):
+        # A collector belongs to one customer for good (YAN-1649).
+        return [*self.readonly_fields, "customer"] if obj is not None else self.readonly_fields
+
 
 @admin.register(CheckIn)
 class CheckInAdmin(admin.ModelAdmin):
     list_display = ["collector", "at", "hostname", "version", "platform"]
     list_filter = ["collector__customer"]
-    readonly_fields = ["collector", "at", "hostname", "version", "platform"]
+    readonly_fields = ["customer", "collector", "at", "hostname", "version", "platform"]
