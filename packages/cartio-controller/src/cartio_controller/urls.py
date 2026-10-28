@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 from rest_framework.routers import SimpleRouter
 
 from cartio_controller.collectors import api, views
@@ -21,8 +22,14 @@ router.register(
 )
 
 urlpatterns = [
+    # The admin signs in through the engineer sign-in too, so it needs the authenticator code.
+    path(
+        "admin/login/",
+        RedirectView.as_view(pattern_name="engineers:sign-in", query_string=True),
+    ),
     path("admin/", admin.site.urls),
     path("api/v1/enroll", views.enroll, name="enroll"),
     path("api/v1/checkin", views.checkin, name="checkin"),
     path("api/v1/", include(router.urls)),
+    path("", include("cartio_controller.engineers.urls")),
 ]

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Cartio{% endblock %} · Cartio</title>
+  <style>
+    :root { --fg: #1d2330; --muted: #5c6475; --line: #dde1e8; --bg: #f6f7f9; --accent: #2456c7;
+            --ok: #1f7a3f; --warn: #a45a00; --bad: #b3261e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+    header { display: flex; align-items: center; gap: 1.5rem; padding: .75rem 1.5rem;
+             background: #fff; border-bottom: 1px solid var(--line); }
+    header .brand { font-weight: 700; color: var(--fg); text-decoration: none; }
+    header nav { flex: 1; display: flex; gap: 1rem; }
+    header form { margin: 0; }
+    main { max-width: 64rem; margin: 1.5rem auto; padding: 0 1.5rem; }
+    a { color: var(--accent); }
+    h1 { font-size: 1.4rem; margin: 0 0 1rem; }
+    h2 { font-size: 1.1rem; margin: 2rem 0 .5rem; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); }
+    th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); }
+    th { font-weight: 600; color: var(--muted); font-size: .85rem; }
+    .muted { color: var(--muted); }
+    .tag { display: inline-block; padding: 0 .5rem; border-radius: 1rem; font-size: .85rem;
+           border: 1px solid currentColor; }
+    .online { color: var(--ok); } .offline, .never-checked-in { color: var(--bad); } .not-enrolled { color: var(--warn); }
+    .card { max-width: 24rem; margin: 4rem auto; padding: 1.5rem; background: #fff;
+            border: 1px solid var(--line); border-radius: .5rem; }
+    .card label { display: block; margin-top: .75rem; font-weight: 600; }
+    .card input { width: 100%; padding: .5rem; font: inherit; border: 1px solid var(--line);
+                  border-radius: .25rem; }
+    button { margin-top: 1rem; padding: .5rem 1rem; font: inherit; color: #fff; background: var(--accent);
+             border: 0; border-radius: .25rem; cursor: pointer; }
+    header button { margin: 0; background: none; color: var(--accent); padding: 0; }
+    .error { color: var(--bad); }
+    code.key { display: block; padding: .5rem; margin: .5rem 0; font-size: 1.1rem; background: var(--bg);
+               word-break: break-all; }
+  </style>
+</head>
+<body>
+{% if user.is_authenticated %}
+  <header>
+    <a class="brand" href="{% url 'engineers:customers' %}">Cartio</a>
+    <nav>
+      <a href="{% url 'engineers:customers' %}">Customers</a>
+      {% if user.is_superuser %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+    </nav>
+    <span class="muted">{{ user.get_username }}</span>
+    <form method="post" action="{% url 'engineers:sign-out' %}">{% csrf_token %}<button type="submit">Sign out</button></form>
+  </header>
+{% endif %}
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

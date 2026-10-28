@@ -1,0 +1,35 @@
+{% extends "engineers/base.html" %}
+{% block title %}Add an authenticator{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Add an authenticator</h1>
+{% if closed %}
+  <p>Every sign-in needs a code from an authenticator app, and this account doesn't have one yet.</p>
+  <p>Ask a controller admin for an enrollment code. They run
+     <code>cartio-controller enroll_engineer &lt;your username&gt;</code>. Then sign in again.</p>
+  <p><a href="{% url 'engineers:sign-in' %}">Back to sign-in</a></p>
+{% elif need_token %}
+  <p>Enter the one-time enrollment code an admin gave you.</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_enrollment_code">Enrollment code</label>
+    <input id="id_enrollment_code" name="enrollment_code" autocomplete="off" required autofocus>
+    <button type="submit">Continue</button>
+  </form>
+{% else %}
+  <p>Every sign-in needs a code from an authenticator app. Add Cartio to your app with this key
+     (time-based, 6 digits):</p>
+  <code class="key">{{ key }}</code>
+  <p class="muted">Or open this link on the device with the app: <a href="{{ uri }}">add to authenticator</a></p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_code">Code from the app</label>
+    <input id="id_code" name="code" inputmode="numeric" autocomplete="one-time-code"
+           pattern="[0-9 ]*" maxlength="8" required autofocus>
+    <button type="submit">Confirm and sign in</button>
+  </form>
+{% endif %}
+</div>
+{% endblock %}

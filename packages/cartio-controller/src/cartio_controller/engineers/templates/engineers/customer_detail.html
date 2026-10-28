@@ -1,0 +1,53 @@
+{% extends "engineers/base.html" %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'engineers:customers' %}">Customers</a></p>
+<h1>{{ customer.name }} {% if customer.is_archived %}<span class="tag muted">archived</span>{% endif %}</h1>
+<p class="muted">Data mode: {{ customer.get_data_mode_display }}
+  {% if can_see_jobs %} · <a href="{% url 'engineers:jobs' customer.pk %}">Jobs</a>{% endif %}</p>
+
+<h2>Collectors</h2>
+<table>
+  <thead><tr><th>Name</th><th>Health</th><th>Last check-in</th><th>Version</th><th>Host</th></tr></thead>
+  <tbody>
+  {% for collector in collectors %}
+    <tr>
+      <td>{{ collector.name }}</td>
+      <td><span class="tag {{ collector.health|slugify }}">{{ collector.health }}</span></td>
+      <td>{% if collector.last_check_in %}<time datetime="{{ collector.last_check_in|date:'c' }}">{{ collector.last_check_in|date:"Y-m-d H:i" }} UTC</time>
+            <span class="muted">({{ collector.last_check_in|timesince }} ago)</span>{% else %}<span class="muted">never</span>{% endif %}</td>
+      <td>{{ collector.version|default:"–" }}</td>
+      <td>{{ collector.hostname|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="muted">No collectors yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">A collector shows as online when it checked in within the last {{ online_within_minutes }} minutes.</p>
+
+<h2>Engagements</h2>
+<table>
+  <thead><tr><th>Name</th><th>Status</th><th>Dates</th></tr></thead>
+  <tbody>
+  {% for engagement in engagements %}
+    <tr><td>{{ engagement.name }}</td><td>{{ engagement.get_status_display }}</td>
+        <td>{{ engagement.start_date|default:"" }}{% if engagement.end_date %} to {{ engagement.end_date }}{% endif %}</td></tr>
+  {% empty %}
+    <tr><td colspan="3" class="muted">No engagements yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Sites</h2>
+<table>
+  <thead><tr><th>Name</th><th>Location</th></tr></thead>
+  <tbody>
+  {% for site in sites %}
+    <tr><td>{{ site.name }}</td><td>{{ site.location|default:"–" }}</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="muted">No sites yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
