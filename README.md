@@ -90,7 +90,8 @@ The controller reads its settings from the environment:
 | `CARTIO_SECRET_KEY` | Django secret key. Required unless `CARTIO_DEBUG=1`. |
 | `CARTIO_DEBUG` | `1` for local development only. |
 | `CARTIO_ALLOWED_HOSTS` | Comma-separated host names the controller answers to. |
-| `DATABASE_URL` | PostgreSQL URL. Defaults to a local SQLite file for development. |
+| `DATABASE_URL` | PostgreSQL URL. Defaults to a local SQLite file for development. The controller connects as the app role, and `migrate` as the owner role ([database roles](docs/deploy/database.md)). |
+| `CARTIO_DB_APP_ROLE` | The PostgreSQL role the controller runs as. `migrate`, run as the owner, grants it row access only: no `TRUNCATE`, no table changes, nothing that rewrites the audit log. |
 | `CARTIO_SESSION_HOURS` | How long an engineer stays signed in. Defaults to 8. Sessions also end when the browser closes. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
 

@@ -5,7 +5,10 @@ Everything that differs per environment comes from environment variables:
 - CARTIO_SECRET_KEY: required unless CARTIO_DEBUG is set.
 - CARTIO_DEBUG: "1" for local development.
 - CARTIO_ALLOWED_HOSTS: comma-separated host names.
-- DATABASE_URL: PostgreSQL in any shared environment. Defaults to a local SQLite file.
+- DATABASE_URL: PostgreSQL in any shared environment. Defaults to a local SQLite file. The
+  controller connects as the app role; run `migrate` with the owner role's URL instead.
+- CARTIO_DB_APP_ROLE: the PostgreSQL role the controller runs as. `migrate`, run as the owner,
+  grants it row access and nothing more (collectors/db_grants.py, docs/deploy/database.md).
 - CARTIO_MASTER_KEY_FILE: a file holding the base64 32-byte master key that wraps each customer's
   credential key (ADR-0003). Keep it out of the database and its backups, and back it up on its
   own: losing it means re-entering every credential. CARTIO_MASTER_KEY can hold the key instead.
@@ -88,6 +91,8 @@ DATABASES = {
         conn_max_age=60,
     )
 }
+
+DB_APP_ROLE = os.environ.get("CARTIO_DB_APP_ROLE", "")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

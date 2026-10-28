@@ -1,6 +1,7 @@
 """Engineer sign-in with an authenticator code, and the UI shell (YAN-1655)."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 from cartio_controller.collectors.models import (
@@ -16,7 +17,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.management import CommandError, call_command
-from django.db.models import QuerySet
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -307,10 +307,10 @@ def test_failed_sign_ins_are_throttled_per_address(client, settings):
 
 
 def test_purge_login_events_keeps_the_retention_period(capsys):
-    old = LoginEvent.objects.create(kind=LoginEvent.Kind.FAILED)
+    # Backdated as it's written: nothing may update the log, not even the app role (YAN-1724).
+    with patch("django.utils.timezone.now", return_value=timezone.now() - timedelta(days=400)):
+        LoginEvent.objects.create(kind=LoginEvent.Kind.FAILED)
     recent = LoginEvent.objects.create(kind=LoginEvent.Kind.LOGGED_IN, username="engineer")
-    # Backdated with a plain queryset: the append-only one refuses updates.
-    QuerySet(LoginEvent).filter(pk=old.pk).update(at=timezone.now() - timedelta(days=400))
     call_command("purge_login_events")
     assert "Deleted 1 " in capsys.readouterr().out
     assert list(LoginEvent.objects.values_list("pk", flat=True)) == [recent.pk]

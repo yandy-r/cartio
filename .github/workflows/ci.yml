@@ -63,12 +63,22 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgres://cartio:cartio@localhost:5432/cartio
+      # The owner role migrates; the controller runs as this one (docs/deploy/database.md).
+      CARTIO_DB_APP_ROLE: cartio_app
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
-      - run: uv run pytest
+      - name: Create the app role
+        run: psql postgres://cartio:cartio@localhost:5432/cartio -c "CREATE ROLE cartio_app LOGIN PASSWORD 'cartio_app'"
+      - name: Tests as the owner role, which creates, migrates and grants the test database
+        run: uv run pytest --create-db --reuse-db
+        env:
+          DATABASE_URL: postgres://cartio:cartio@localhost:5432/cartio
+      - name: Tests as the app role, on the same test database
+        run: uv run pytest --reuse-db
+        env:
+          DATABASE_URL: postgres://cartio_app:cartio_app@localhost:5432/cartio
 
   test:
     # Collectors run on customer Linux VMs, with a Windows laptop as the fallback.
