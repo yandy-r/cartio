@@ -49,7 +49,7 @@
     </div>
   </form>
   {% else %}
-  <p class="banner inside-access" role="note">This token is shown once, on this page only, and works once. Only its hash is stored. If it's lost, revoke the collector and add it again.</p>
+  <p class="banner inside-access" role="note">This token is shown once, on this page only, and works once. Only its hash is stored. If it's lost, revoke the collector and add a new one under another name.</p>
   <div class="token-head"><span><strong class="mono">{{ added.name }}</strong>{% if added.site %} <span class="muted">· {{ added.site.name }}</span>{% endif %}</span>
     <button class="btn" type="button" data-copy="enroll-command">Copy command</button></div>
   <code class="command" id="enroll-command">{{ command }}</code>

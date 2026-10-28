@@ -9,8 +9,8 @@
 {% endblock %}
 {% block content %}
 {% include "engineers/_operations_tabs.html" %}
-<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement. Starting a discovery or a health check from here comes with the job channel; until then, jobs start from the collector.</p>
-<div class="table-scroll">
+<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement. Starting a discovery or a health check isn't available yet; it comes with the job channel.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Jobs">
 <table class="jobs-table">
   <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Progress</th><th>State</th></tr></thead>
   <tbody>

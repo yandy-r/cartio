@@ -107,7 +107,9 @@ def revoke(customer, collector_id, actor: str) -> Collector | None:
     with transaction.atomic():
         collector = (
             Collector.objects.for_customer(customer)
-            .select_for_update()
+            # No ordering, so the lock doesn't join (and lock) the customer row too.
+            .order_by()
+            .select_for_update(of=("self",))
             .filter(pk=collector_id, revoked_at__isnull=True)
             .first()
         )

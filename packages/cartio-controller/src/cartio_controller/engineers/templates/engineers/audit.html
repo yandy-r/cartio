@@ -13,14 +13,14 @@
     {% for filter in filters %}<a class="pill" href="{{ filter.url }}"{% if filter.key == kind %} aria-current="true"{% endif %}>{{ filter.label }}</a>{% endfor %}
   </div>
 </div>
-<div class="table-scroll">
+<div class="table-scroll" tabindex="0" role="region" aria-label="Audit entries">
 <table class="audit-table">
   <thead><tr><th>When</th><th>Event</th><th>Who</th><th>Collector</th><th>Detail</th></tr></thead>
   <tbody>
   {% for event in events %}
     <tr>
       <td class="mono">{{ event.at|date:"Y-m-d H:i" }} UTC</td>
-      <td>{% if event.kind %}<span class="kind {{ event.kind|slugify }}">{{ event.kind }}</span> {% endif %}{{ event.get_action_display }}{% if event.object_name %} · {{ event.object_name }}{% endif %}</td>
+      <td>{% if event.kind %}<span class="kind {{ event.kind|slugify }}">{{ event.kind }}</span> {% endif %}{{ event.get_action_display }} · <span class="muted">{{ event.object_type }}</span> {{ event.object_name|default:event.object_id }}</td>
       <td>{{ event.actor|default:"system" }}</td>
       <td class="mono">{{ event.collector.name|default:"–" }}</td>
       <td class="muted">{{ event.summary|default:"–" }}</td>
