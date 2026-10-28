@@ -1,5 +1,7 @@
-# Cartio for local testing: PostgreSQL, the controller and, optionally, a collector.
+# Cartio for development: PostgreSQL, the controller with the sanitized lab and, optionally, a
+# collector. The source is mounted from ./packages and the controller reloads when it changes.
 # Development settings only (CARTIO_DEBUG=1, plain http, default passwords). See the README.
+#   docker compose -f compose.dev.yml up -d --build
 
 name: cartio
 
@@ -7,9 +9,11 @@ x-cartio: &cartio
   build:
     context: .
     dockerfile: docker/Dockerfile
-  image: cartio-local
+    target: dev
+  image: cartio-dev
   volumes:
     - keys:/keys
+    - ./packages:/app/packages:ro
 
 x-env: &env
   CARTIO_DEBUG: "1"

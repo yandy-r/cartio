@@ -96,15 +96,28 @@ http://127.0.0.1:8000/admin/ uses the same sign-in. Sessions end after `CARTIO_S
 
 ## Try it with Docker Compose
 
-[compose.yaml](compose.yaml) runs PostgreSQL and the controller with the sanitized lab loaded, so
-every screen has data. It's for local testing only: development settings, plain http on
-127.0.0.1 and default passwords (override them with `CARTIO_APP_PASSWORD`,
-`CARTIO_OWNER_PASSWORD`, `POSTGRES_PASSWORD` and `CARTIO_ENGINEER_PASSWORD`).
+There are two compose files. [compose.dev.yml](compose.dev.yml) is for development and local
+testing, with the lab loaded and the code reloading as you edit it. [compose.yml](compose.yml) is
+an example production deployment.
+
+### Development
+
+compose.dev.yml runs PostgreSQL and the controller with the sanitized lab loaded, so every screen
+has data. It uses development settings, plain http on 127.0.0.1 and default passwords (override
+them with `CARTIO_APP_PASSWORD`, `CARTIO_OWNER_PASSWORD`, `POSTGRES_PASSWORD` and
+`CARTIO_ENGINEER_PASSWORD`).
 
 ```sh
+export COMPOSE_FILE=compose.dev.yml   # or pass -f compose.dev.yml to every command
 docker compose up -d --build
 docker compose exec controller cartio-controller enroll_engineer engineer
 ```
+
+`./packages` is mounted into the containers, and the controller runs Django's `runserver`, so a
+change to Python code, a template or CSS shows up on the next page load without a rebuild (Python
+changes restart the server in a second or two). Rebuild with `docker compose up -d --build` only
+when dependencies in `pyproject.toml` or `uv.lock` change. For a new migration, run
+`docker compose run --rm migrate`.
 
 Startup follows the [database roles](docs/deploy/database.md): `db` creates `cartio_owner` and
 `cartio_app`, `migrate` runs as the owner, and `seed` and the controller run as the app role. The
@@ -132,6 +145,45 @@ CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
 ```
 
 `docker compose down -v` removes everything, including the database and the master key.
+
+### Production example
+
+compose.yml runs PostgreSQL, the controller under gunicorn and [Caddy](https://caddyserver.com/)
+in front of it for TLS and the static files. It builds the image without the source mounts, the
+lab or `load_lab`, and nothing has a default password. It is a starting point, not a hardened
+deployment: add backups of the database and the master key, and monitoring, to suit your site.
+
+1. Put the master key in `secrets/master.key`, readable by uid 1000 (the controller's user), and
+   back it up on its own ([master key](docs/deploy/master-key.md)). `secrets/` is ignored by git.
+
+   ```sh
+   mkdir -p secrets && openssl rand -base64 32 > secrets/master.key
+   ```
+
+2. Set the rest in `.env` next to compose.yml (also ignored by git). Compose refuses to start
+   without them:
+
+   ```sh
+   CARTIO_DOMAIN=cartio.example.com      # localhost uses Caddy's own local certificate authority
+   CARTIO_SECRET_KEY=...                 # openssl rand -hex 32
+   POSTGRES_PASSWORD=...
+   CARTIO_OWNER_PASSWORD=...
+   CARTIO_APP_PASSWORD=...
+   ```
+
+3. Start it, then create the first engineer and their enrollment code:
+
+   ```sh
+   docker compose up -d --build
+   docker compose exec controller cartio-controller createsuperuser --username <name>
+   docker compose exec controller cartio-controller enroll_engineer <name>
+   ```
+
+Caddy gets a certificate for `CARTIO_DOMAIN` from Let's Encrypt, so ports 80 and 443 must be
+reachable for a public name. The controller listens only on the compose network, and
+`CARTIO_TLS_PROXY=1` tells it the proxy terminated TLS. Every sign-in comes from Caddy's address,
+so the per-address sign-in limit covers all engineers together. The two compose files use
+different project names (`cartio` and `cartio-prod`), so their volumes never mix.
 
 ## Engineer API
 
@@ -161,6 +213,7 @@ The controller reads its settings from the environment:
 | `CARTIO_MASTER_KEY_FILE` | File holding the base64 32-byte master key that wraps every credential key. Back it up on its own ([master key](docs/deploy/master-key.md)). `CARTIO_MASTER_KEY` can hold the key instead. |
 | `CARTIO_PREVIOUS_MASTER_KEY_FILE` | Set only while `rotate_master_key` replaces the master key: the old key, used to open what it wrapped. `CARTIO_PREVIOUS_MASTER_KEY` can hold it instead. |
 | `CARTIO_SESSION_HOURS` | How long an engineer stays signed in. Defaults to 8. Sessions also end when the browser closes. |
+| `CARTIO_TLS_PROXY` | `1` when a reverse proxy in front of the controller terminates TLS and sets `X-Forwarded-Proto`. Only set it when nothing else can reach the controller. |
 | `CARTIO_ENROLLMENT_TOKEN_HOURS` | How long a new collector's one-time enrollment token works. Defaults to 24. |
 | `CARTIO_TLS_PINS` | Comma-separated pins of the controller's TLS keys (base64 SHA-256 of the SubjectPublicKeyInfo), handed to collectors at enrollment so they can report TLS inspection. Empty: each collector pins the key it sees when it enrolls. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
