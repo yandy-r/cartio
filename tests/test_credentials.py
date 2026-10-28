@@ -9,7 +9,11 @@ import json
 
 import pytest
 from cartio_controller.collectors import vault
-from cartio_controller.collectors.credentials import CredentialNotAvailable, deliver_credentials
+from cartio_controller.collectors.credentials import (
+    CredentialNotAvailable,
+    deliver_credentials,
+    update_credential,
+)
 from cartio_controller.collectors.models import (
     AppendOnlyError,
     AuditEvent,
@@ -22,6 +26,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -242,7 +247,7 @@ def test_wrong_master_key_opens_nothing(api, acme, monkeypatch):
     monkeypatch.setenv(
         "CARTIO_MASTER_KEY", base64.b64encode(b"another key, also 32 bytes long!").decode()
     )
-    with pytest.raises(vault.VaultError):
+    with pytest.raises(ImproperlyConfigured, match="another master key"):
         Credential.objects.for_customer(acme).get().secret()
 
 
@@ -346,3 +351,68 @@ def test_a_failed_write_leaves_no_audit_event(api, acme):
     body = {"name": "core", "kind": "snmp_v2c", "secret": {"community": COMMUNITY}}
     assert _send(api, "post", _url(acme), body).status_code == 400
     assert AuditEvent.objects.for_customer(acme).count() == 1
+
+
+def test_audit_rows_cannot_be_overwritten_by_insert_or_upsert(api, acme):
+    _ssh(api, acme)
+    event = AuditEvent.objects.for_customer(acme).get()
+    forged = AuditEvent(
+        pk=event.pk, customer=acme, action="credential.deleted", object_type="x", object_id="1"
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        forged.save()
+    upsert = AuditEvent(
+        pk=event.pk, customer=acme, action="credential.deleted", object_type="x", object_id="1"
+    )
+    with pytest.raises(AppendOnlyError):
+        AuditEvent.objects.for_customer(acme).bulk_create(
+            [upsert], update_conflicts=True, unique_fields=["id"], update_fields=["action"]
+        )
+    assert AuditEvent.all_customers.get().action == "credential.created"
+
+
+def test_a_stale_update_keeps_a_newer_secret(api, acme):
+    created = _ssh(api, acme)
+    stale = Credential.objects.for_customer(acme).get()
+    newer = PASSWORD + "-newer"
+    _send(api, "patch", _url(acme, created["id"]), {"secret": {"password": newer}})
+    update_credential(stale, "someone", name="renamed")
+    stored = Credential.objects.for_customer(acme).get()
+    assert stored.name == "renamed"
+    assert stored.secret() == {"password": newer}
+
+
+def test_unreadable_key_file_and_rotated_key_are_clear_errors(api, acme, monkeypatch, tmp_path):
+    _ssh(api, acme)
+    body = {"name": "two", "kind": "snmp_v2c", "secret": {"community": COMMUNITY}}
+
+    monkeypatch.setenv("CARTIO_MASTER_KEY_FILE", str(tmp_path / "missing.key"))
+    response = _send(api, "post", _url(acme), body)
+    assert response.status_code == 503
+    assert "Can't read the master key file" in response.json()["detail"]
+
+    monkeypatch.delenv("CARTIO_MASTER_KEY_FILE")
+    other = base64.b64encode(b"another key, also 32 bytes long!").decode()
+    monkeypatch.setenv("CARTIO_MASTER_KEY", other)
+    response = _send(api, "post", _url(acme), body)
+    assert response.status_code == 503
+    assert "another master key" in response.json()["detail"]
+    assert Credential.objects.for_customer(acme).count() == 1
+
+
+def test_delivery_refuses_malformed_ids(api, acme):
+    _ssh(api, acme)
+    with pytest.raises(CredentialNotAvailable):
+        deliver_credentials(_collector(acme), ["not-a-uuid"])
+
+
+def test_an_optional_secret_field_may_be_empty(api, acme):
+    body = {
+        "name": "key",
+        "kind": "ssh_key",
+        "username": "a",
+        "secret": {"private_key": "k" * 40, "passphrase": ""},
+    }
+    response = _send(api, "post", _url(acme), body)
+    assert response.status_code == 201, response.json()
+    assert Credential.objects.for_customer(acme).get().secret() == {"private_key": "k" * 40}

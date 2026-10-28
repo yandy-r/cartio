@@ -4,7 +4,10 @@ Every change and every delivery writes an audit event in the same transaction, s
 credential change without a record of who made it.
 """
 
+import uuid
+
 from django.db import transaction
+from django.views.decorators.debug import sensitive_variables
 
 from .models import AuditEvent, Collector, Credential, Customer
 
@@ -25,6 +28,7 @@ def _audit(credential: Credential, action: str, actor: str = "", collector=None,
     )
 
 
+@sensitive_variables("secret")
 def create_credential(customer: Customer, actor: str, secret: dict, **fields) -> Credential:
     with transaction.atomic():
         credential = Credential(customer=customer, **fields)
@@ -34,11 +38,18 @@ def create_credential(customer: Customer, actor: str, secret: dict, **fields) ->
     return credential
 
 
+@sensitive_variables("secret")
 def update_credential(
     credential: Credential, actor: str, secret: dict | None = None, **fields
 ) -> Credential:
     """Change a credential's settings, and replace its secret when one is given."""
     with transaction.atomic():
+        # Lock the row, so a concurrent change can't be overwritten by this one's stale copy.
+        credential = (
+            Credential.objects.for_customer(credential.customer_id)
+            .select_for_update()
+            .get(pk=credential.pk)
+        )
         for name, value in fields.items():
             setattr(credential, name, value)
         if secret is not None:
@@ -60,14 +71,19 @@ def delete_credential(credential: Credential, actor: str) -> None:
         credential.delete()
 
 
+@sensitive_variables("delivered")
 def deliver_credentials(collector: Collector, credential_ids, job: str = "") -> list[dict]:
     """The decrypted credentials a job sends to `collector`. Only its own customer's.
 
     The job channel (YAN-1651) calls this and sends the result inside the job, never storing it.
+    A wrong master key raises `vault.VaultError` or `ImproperlyConfigured`; the job then fails.
     """
     if collector.enrolled_at is None:
         raise CredentialNotAvailable("The collector hasn't enrolled.")
-    ids = [str(credential_id) for credential_id in credential_ids]
+    try:
+        ids = [str(uuid.UUID(str(credential_id))) for credential_id in credential_ids]
+    except ValueError as exc:
+        raise CredentialNotAvailable("One or more credentials aren't available.") from exc
     with transaction.atomic():
         found = {str(c.pk): c for c in collector.scoped(Credential).filter(pk__in=ids)}
         if len(found) != len(set(ids)):

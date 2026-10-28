@@ -102,7 +102,7 @@ class CredentialSerializer(CustomerScopedSerializer):
     """Credentials are written with a `secret` and never read back (ADR-0003)."""
 
     secret = serializers.DictField(
-        child=serializers.CharField(max_length=16384, trim_whitespace=False),
+        child=serializers.CharField(max_length=16384, trim_whitespace=False, allow_blank=True),
         write_only=True,
         required=False,
     )

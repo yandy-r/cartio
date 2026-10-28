@@ -22,6 +22,7 @@ from .serializers import (
     EngagementSerializer,
     SiteSerializer,
 )
+from .vault import VaultError
 
 _TRUE = {"1", "true", "yes"}
 
@@ -161,6 +162,10 @@ class CredentialViewSet(
                 return action()
         except ImproperlyConfigured as exc:
             raise ServiceUnavailable(str(exc)) from exc
+        except VaultError as exc:
+            raise ServiceUnavailable(
+                "Stored credentials can't be decrypted with the configured master key."
+            ) from exc
         except IntegrityError as exc:
             if _is_unique_violation(exc):
                 raise serializers.ValidationError({"name": "This name is already taken."}) from exc

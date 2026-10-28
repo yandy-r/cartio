@@ -4,8 +4,10 @@ import json
 import secrets
 import uuid
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Lower
+from django.views.decorators.debug import sensitive_variables
 
 from .validators import validate_seed_hints
 
@@ -82,6 +84,8 @@ class CustomerOwnedQuerySet(models.QuerySet):
 
     def bulk_create(self, objs, *args, **kwargs):
         objs = list(objs)
+        if kwargs.get("update_conflicts"):
+            self._refuse_append_only_change()
         self._refuse_bulk_relink(kwargs.get("update_fields") or ())
         for obj in objs:
             obj.check_customer_links()
@@ -209,8 +213,11 @@ class CustomerOwned(models.Model):
         return instance
 
     def save(self, *args, **kwargs):
-        if self.append_only and not self._state.adding:
-            raise AppendOnlyError(f"{type(self).__name__} records can't be changed.")
+        if self.append_only:
+            if not self._state.adding:
+                raise AppendOnlyError(f"{type(self).__name__} records can't be changed.")
+            # Never an UPDATE, even for a new instance that names an existing pk.
+            kwargs["force_insert"] = True
         update_fields = kwargs.get("update_fields")
         if update_fields is None or _link_fields(type(self)) & set(update_fields):
             self.check_customer_links()
@@ -411,6 +418,7 @@ class CustomerDataKey(CustomerOwned):
         return f"cartio data key / customer {customer_id}".encode()
 
     @classmethod
+    @sensitive_variables("data_key")
     def key_for(cls, customer_id) -> bytes:
         """The customer's plain data key, created on first use. Callers keep it in memory only."""
         from . import vault
@@ -419,6 +427,11 @@ class CustomerDataKey(CustomerOwned):
         context = cls._context(customer_id)
         keys = cls.objects.for_customer(customer_id)
         record = keys.first()
+        if record is not None and record.master_key_id != master.key_id:
+            raise ImproperlyConfigured(
+                f"{record.customer}'s data key was wrapped by another master key "
+                f"({record.master_key_id}). Restore that key file."
+            )
         if record is None:
             data_key = vault.new_data_key()
             try:
@@ -430,6 +443,10 @@ class CustomerDataKey(CustomerOwned):
             except IntegrityError:
                 # Another request created it first. Use theirs.
                 record = keys.get()
+                if record.master_key_id != master.key_id:
+                    raise ImproperlyConfigured(
+                        "The data key was wrapped by another master key."
+                    ) from None
         return master.unwrap(record.wrapped_key, context)
 
 
@@ -486,6 +503,7 @@ class Credential(CustomerOwned):
         # Binds the ciphertext to this row, customer and kind, so it can't be copied elsewhere.
         return f"cartio credential / customer {self.customer_id} / {self.pk} / {self.kind}".encode()
 
+    @sensitive_variables("values", "payload")
     def set_secret(self, values: dict[str, str]) -> None:
         """Encrypt `values` (the kind's secret fields) under the customer's data key."""
         from . import vault
@@ -500,6 +518,7 @@ class Credential(CustomerOwned):
             CustomerDataKey.key_for(self.customer_id), payload, self._context()
         )
 
+    @sensitive_variables("key")
     def secret(self) -> dict[str, str]:
         """The decrypted secret. Only the delivery path calls this, never the API."""
         from . import vault

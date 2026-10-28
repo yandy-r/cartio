@@ -19,6 +19,7 @@ from pathlib import Path
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.core.exceptions import ImproperlyConfigured
+from django.views.decorators.debug import sensitive_variables
 
 KEY_BYTES = 32
 _NONCE_BYTES = 12
@@ -28,12 +29,14 @@ class VaultError(Exception):
     """A secret couldn't be decrypted: wrong key, or the stored bytes were changed or moved."""
 
 
+@sensitive_variables("key", "plaintext")
 def encrypt(key: bytes, plaintext: bytes, context: bytes) -> bytes:
     """AES-256-GCM. `context` is bound to the ciphertext, so it can't be moved to another row."""
     nonce = secrets.token_bytes(_NONCE_BYTES)
     return nonce + AESGCM(key).encrypt(nonce, plaintext, context)
 
 
+@sensitive_variables("key")
 def decrypt(key: bytes, blob: bytes, context: bytes) -> bytes:
     nonce, ciphertext = bytes(blob[:_NONCE_BYTES]), bytes(blob[_NONCE_BYTES:])
     try:
@@ -67,10 +70,18 @@ class MasterKey:
         return decrypt(self._key, wrapped, context)
 
 
+@sensitive_variables("encoded", "key")
 def master_key() -> MasterKey:
     """Load the master key from CARTIO_MASTER_KEY_FILE or CARTIO_MASTER_KEY (base64, 32 bytes)."""
     path = os.environ.get("CARTIO_MASTER_KEY_FILE", "")
-    encoded = Path(path).read_text().strip() if path else os.environ.get("CARTIO_MASTER_KEY", "")
+    try:
+        encoded = (
+            Path(path).read_text().strip() if path else os.environ.get("CARTIO_MASTER_KEY", "")
+        )
+    except OSError as exc:
+        raise ImproperlyConfigured(
+            f"Can't read the master key file {path}: {exc.strerror}."
+        ) from exc
     if not encoded:
         raise ImproperlyConfigured(
             "Credentials need a master key. Set CARTIO_MASTER_KEY_FILE to a file holding a "
