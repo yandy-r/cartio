@@ -162,6 +162,22 @@ The landing page after sign-in. An engineer connects once and sees every custome
   critical findings) and **Recent activity** from the audit log.
 * **Empty state:** no customers yet, with **New customer** as the one action.
 
+Until the screens and data they lean on land, the controller's version (YAN-1733) differs:
+
+* A row opens the customer's Overview, with the engagement in the URL, until the Site map
+  (YAN-1663) exists.
+* **New customer** and **New engagement** open the admin's add forms until the onboarding wizard
+  (YAN-1734) and engagement setup (YAN-1735) exist. Engineers without the add permission don't
+  see them.
+* Open findings say "No findings yet" until findings (YAN-1738) exist, and the summary has no
+  critical findings tile. Tags show live view on and inside access only. Customers have no
+  compliance tags (HIPAA, PCI) yet.
+* The collector hover card says "Not tracked yet" for the certificate and queue until client
+  certificates (YAN-1650) and the job channel (YAN-1651) exist. Needs attention lists offline,
+  never checked in and not yet enrolled collectors.
+* Tabs (All, Hosted, On site, Archived) replace the old "show archived" link. The prototype's
+  **Export list** is left out: the issue doesn't ask for it.
+
 ### 2. Onboard a customer
 
 A six-step wizard that can be repeated. When it finishes, "Onboard another customer" starts a
