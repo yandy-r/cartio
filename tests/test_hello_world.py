@@ -33,7 +33,7 @@ def test_collector_enrolls_and_checks_in(live_server, tmp_path, capsys):
     assert saved.customer == "Acme"
 
     assert main(["--config", str(config_path), "checkin", "--once"]) == 0
-    assert "Checked in: ok, 0 job(s) waiting." in capsys.readouterr().out
+    assert "Checked in: ok." in capsys.readouterr().out
 
     collector.refresh_from_db()
     assert collector.last_check_in is not None

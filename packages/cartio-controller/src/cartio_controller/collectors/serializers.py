@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import AuditEvent, CollectionRun, Credential, Customer, Engagement, Site
+from .models import AuditEvent, CollectionRun, Credential, Customer, Engagement, Job, Site
 from .validators import MAX_SEED_HINTS, normalize_seed_hint
 
 
@@ -17,6 +17,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "name",
             "data_mode",
             "live_view_allowed",
+            "require_uninspected_path",
             "compliance",
             "notes",
             "created_at",
@@ -267,3 +268,55 @@ class AuditEventSerializer(serializers.ModelSerializer):
             "detail",
         ]
         read_only_fields = fields
+
+
+class JobSerializer(serializers.ModelSerializer):
+    """A job and its state. Created with a collector, a type, optional engagement, settings and
+    credential ids; everything else is the channel's to set."""
+
+    customer = serializers.PrimaryKeyRelatedField(read_only=True)
+    collector = serializers.UUIDField(source="collector_id")
+    engagement = serializers.IntegerField(
+        source="engagement_id", required=False, allow_null=True, min_value=1
+    )
+    type = serializers.ChoiceField(choices=Job.Type.choices)
+    params = serializers.DictField(required=False)
+    credentials = serializers.ListField(
+        child=serializers.UUIDField(), required=False, write_only=True, max_length=100
+    )
+
+    class Meta:
+        model = Job
+        fields = [
+            "id",
+            "customer",
+            "collector",
+            "engagement",
+            "type",
+            "params",
+            "credentials",
+            "credential_ids",
+            "status",
+            "run",
+            "created_by",
+            "created_at",
+            "started_at",
+            "finished_at",
+            "progress_message",
+            "progress_percent",
+            "result_id",
+            "result_size",
+        ]
+        read_only_fields = [
+            "credential_ids",
+            "status",
+            "run",
+            "created_by",
+            "created_at",
+            "started_at",
+            "finished_at",
+            "progress_message",
+            "progress_percent",
+            "result_id",
+            "result_size",
+        ]

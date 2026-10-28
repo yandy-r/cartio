@@ -9,7 +9,7 @@ import uuid
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, transaction
-from django.http import StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers, viewsets
@@ -18,16 +18,27 @@ from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
-from . import audit
+from . import audit, jobs
 from .credentials import create_credential, delete_credential, update_credential
-from .models import AuditEvent, CollectionRun, Credential, Customer, Engagement, Site
-from .permissions import ViewModelPermissions
+from .models import (
+    AuditEvent,
+    CollectionRun,
+    Collector,
+    Credential,
+    Customer,
+    Engagement,
+    Job,
+    Site,
+)
+from .permissions import JobPermissions, ViewModelPermissions
+from .runs import RunNotAllowed
 from .serializers import (
     AuditEventSerializer,
     CollectionRunSerializer,
     CredentialSerializer,
     CustomerSerializer,
     EngagementSerializer,
+    JobSerializer,
     SiteSerializer,
 )
 from .vault import VaultError
@@ -254,6 +265,69 @@ class CollectionRunViewSet(
             except ValueError as exc:
                 raise serializers.ValidationError({"collector": "Give a collector id."}) from exc
         return runs
+
+
+class JobViewSet(
+    CustomerScopeMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Queue jobs for a customer's collectors, follow their state, cancel them, read results.
+
+    Queuing writes the run's `run.started` event and cancelling a `job.cancelled` event.
+    """
+
+    model = Job
+    serializer_class = JobSerializer
+    permission_classes = [IsAdminUser, JobPermissions]
+
+    def get_queryset(self):
+        return self.scoped_queryset().select_related("collector", "engagement")
+
+    def perform_create(self, serializer):
+        customer = self.get_customer()
+        data = serializer.validated_data
+        collector = Collector.objects.for_customer(customer).filter(pk=data["collector_id"]).first()
+        if collector is None:
+            raise serializers.ValidationError({"collector": "No such collector for this customer."})
+        engagement = None
+        if data.get("engagement_id") is not None:
+            engagement = (
+                Engagement.objects.for_customer(customer).filter(pk=data["engagement_id"]).first()
+            )
+            if engagement is None:
+                raise serializers.ValidationError(
+                    {"engagement": "No such engagement for this customer."}
+                )
+        try:
+            serializer.instance = jobs.queue_job(
+                collector,
+                data["type"],
+                self.request.user.get_username(),
+                engagement=engagement,
+                params=data.get("params") or {},
+                credential_ids=data.get("credentials") or [],
+            )
+        except (jobs.JobError, RunNotAllowed) as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, *args, **kwargs):
+        try:
+            job = jobs.cancel_job(self.get_object(), request.user.get_username())
+        except jobs.JobClosed as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        return Response(self.get_serializer(job).data)
+
+    @action(detail=True, methods=["get"])
+    def result(self, request, *args, **kwargs):
+        """The uploaded result, as the collector sent it."""
+        job = self.get_object()
+        if job.result_id is None:
+            raise serializers.ValidationError("This job has no result yet.")
+        return HttpResponse(job.result_bytes(), content_type="application/octet-stream")
 
 
 class AuditEventViewSet(

@@ -6,6 +6,7 @@ The controller is the live test server behind a small TLS front with a test CA's
 """
 
 import datetime
+import json
 import os
 import shutil
 import socket
@@ -14,11 +15,24 @@ import subprocess
 import threading
 import time
 
+import httpx
 import pytest
+from cartio_collector import jobs as collector_jobs
 from cartio_collector.cli import main
+from cartio_collector.client import Session, enroll
 from cartio_collector.config import CollectorConfig
-from cartio_controller.collectors.models import Collector, Customer
+from cartio_collector.jobs import Outcome
+from cartio_controller.collectors.jobs import queue_job
+from cartio_controller.collectors.models import (
+    CollectionRunResult,
+    Collector,
+    Credential,
+    Customer,
+    JobChunk,
+)
+from cartio_controller.collectors.models import Job as Job_model
 from cartio_core import signing
+from cartio_core.protocol import Job
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -300,3 +314,216 @@ def test_through_a_tls_inspecting_proxy_works_and_is_reported(
     assert collector.tls_inspected
     # The first report can't know yet (the key is seen in the answer), so it is corrected.
     assert [c.tls_inspected for c in collector.check_ins.order_by("at", "pk")] == [False, True]
+
+
+# The job channel (YAN-1651) over the same three paths, and through dropped connections.
+
+
+def _run_once(config_path):
+    return main(["--config", str(config_path), "run", "--once"])
+
+
+def _health_job(collector):
+    collector.refresh_from_db()
+    return queue_job(collector, "health", "engineer")
+
+
+def _assert_done_once(job):
+    job.refresh_from_db()
+    assert job.status == "done", job.run.result.error_summary if job.status == "failed" else ""
+    assert json.loads(job.result_bytes())["version"]
+    assert (
+        CollectionRunResult.objects.for_customer(job.customer_id).filter(run=job.run).count() == 1
+    )
+
+
+def test_jobs_run_directly_over_tls(controller, tmp_path):
+    url, ca_file, _ = controller
+    collector, token = _new_collector()
+    config_path = tmp_path / "collector.json"
+    assert _enroll(config_path, url, token, "--ca-file", ca_file) == 0
+    job = _health_job(collector)
+
+    assert _run_once(config_path) == 0
+    _assert_done_once(job)
+
+
+def test_jobs_run_through_an_explicit_proxy(controller, mitmdump, tmp_path):
+    url, ca_file, _ = controller
+    port, _ = mitmdump(inspect=False)
+    collector, token = _new_collector()
+    config_path = tmp_path / "collector.json"
+    proxy = f"http://cartio:proxy-pass@127.0.0.1:{port}"
+    assert _enroll(config_path, url, token, "--ca-file", ca_file, "--proxy", proxy) == 0
+    job = _health_job(collector)
+
+    assert _run_once(config_path) == 0
+    _assert_done_once(job)
+
+
+def _inspected_collector(controller, mitmdump, tmp_path, monkeypatch, settings):
+    url, _, pin = controller
+    port, mitm_ca = mitmdump(inspect=True)
+    bundle = tmp_path / "bundle.pem"
+    bundle.write_bytes((tmp_path / "ca.pem").read_bytes() + mitm_ca.read_bytes())
+    settings.TLS_PINS = [pin]
+    monkeypatch.setenv("HTTPS_PROXY", f"http://cartio:proxy-pass@127.0.0.1:{port}")
+    collector, token = _new_collector()
+    config_path = tmp_path / "collector.json"
+    assert _enroll(config_path, url, token, "--ca-file", str(bundle)) == 0
+    return collector, config_path
+
+
+def test_jobs_run_through_a_tls_inspecting_proxy_with_credentials_sealed(
+    controller, mitmdump, tmp_path, monkeypatch, settings
+):
+    collector, config_path = _inspected_collector(
+        controller, mitmdump, tmp_path, monkeypatch, settings
+    )
+    credential = Credential(customer=collector.customer, name="snmp", kind="snmp_v2c")
+    credential.set_secret({"community": "n0t-a-real-community"})
+    credential.save()
+    opened = []
+
+    def health(job, credentials, report):
+        opened.extend(credentials)
+        return Outcome("succeeded", b'{"version": "test"}')
+
+    monkeypatch.setitem(collector_jobs.HANDLERS, "health", health)
+    collector.refresh_from_db()
+    job = queue_job(collector, "health", "engineer", credential_ids=[credential.pk])
+
+    assert _run_once(config_path) == 0
+    _assert_done_once(job)
+    # The proxy saw the job, but the credential only as text sealed to the collector.
+    assert opened[0]["community"] == "n0t-a-real-community"
+
+
+def test_require_uninspected_path_stops_jobs_on_an_inspected_path(
+    controller, mitmdump, tmp_path, monkeypatch, settings
+):
+    collector, config_path = _inspected_collector(
+        controller, mitmdump, tmp_path, monkeypatch, settings
+    )
+    Customer.objects.filter(pk=collector.customer_id).update(require_uninspected_path=True)
+    ran = []
+    monkeypatch.setitem(collector_jobs.HANDLERS, "health", lambda *a: ran.append(a))
+    job = _health_job(collector)
+
+    assert _run_once(config_path) == 0
+    job.refresh_from_db()
+    # The check-in reported the inspection, so the controller held the job back.
+    assert job.status == "queued"
+    assert ran == []
+
+    # Even if the controller hands it over, the collector refuses to run it.
+    worker_config = CollectorConfig.load(config_path)
+    with Session(worker_config) as session:
+        session.check_in()
+        worker = collector_jobs.Worker(session, collector_jobs.Journal(tmp_path / "journal"))
+        message = Job(id=str(job.pk), type="health", params={}, credentials="")
+        Job_model.objects.for_customer(collector.customer_id).filter(pk=job.pk).update(
+            status="running"
+        )
+        worker.handle(message, require_uninspected_path=True)
+    job.refresh_from_db()
+    assert job.status == "failed"
+    assert "uninspected" in job.run.result.error_summary
+    assert ran == []
+
+
+class FlakyTransport(httpx.BaseTransport):
+    """Passes requests to the controller, but loses the answer to chosen ones once: the
+    controller did the work, and the collector never heard back."""
+
+    def __init__(self, *drops):
+        self.inner = httpx.HTTPTransport()
+        self.drops = list(drops)
+        self.dropped = []
+
+    def handle_request(self, request):
+        response = self.inner.handle_request(request)
+        response.read()
+        for drop in self.drops:
+            if drop(request, response):
+                self.drops.remove(drop)
+                self.dropped.append(request.url.path)
+                response.close()
+                raise httpx.ReadError("connection dropped", request=request)
+        return response
+
+
+def _carries_a_job(request, response):
+    return request.url.path.endswith("/jobs/next") and response.json().get("jobs")
+
+
+def _path_ends(suffix):
+    return lambda request, response: request.url.path.endswith(suffix)
+
+
+def test_a_job_runs_once_and_its_result_is_stored_once_across_reconnects(
+    live_server, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(collector_jobs, "RETRY_DELAY", 0)
+    monkeypatch.setattr(collector_jobs, "CHUNK_BYTES", 1000)
+    payload = json.dumps({"version": "test", "pad": "x" * 2500}).encode()
+    runs = []
+
+    def health(job, credentials, report):
+        runs.append(job.id)
+        report("Working", 50)
+        return Outcome("succeeded", payload)
+
+    monkeypatch.setitem(collector_jobs.HANDLERS, "health", health)
+    collector, token = _new_collector()
+    config = enroll(live_server.url, token)
+    job = _health_job(collector)
+
+    flaky = FlakyTransport(
+        _carries_a_job, _path_ends("/chunks/1"), _path_ends("/chunks/2"), _path_ends("/result")
+    )
+    with Session(config, http=httpx.Client(transport=flaky)) as session:
+        worker = collector_jobs.Worker(session, collector_jobs.Journal(tmp_path / "journal"))
+        # The answer carrying the job is lost: the poll is sent again, gets the job again, and
+        # runs it. Answers to a chunk and the result are lost too, and those are sent again.
+        assert worker.poll_once(0) == 1
+
+    assert flaky.dropped == [
+        "/api/v1/jobs/next",
+        f"/api/v1/jobs/{job.pk}/chunks/1",
+        f"/api/v1/jobs/{job.pk}/chunks/2",
+        f"/api/v1/jobs/{job.pk}/result",
+    ]
+    assert runs == [str(job.pk)]
+    job.refresh_from_db()
+    assert job.status == "done" and job.result_bytes() == payload
+    assert JobChunk.objects.for_customer(job.customer_id).filter(job=job).count() == 3
+    assert (
+        CollectionRunResult.objects.for_customer(job.customer_id).filter(run=job.run).count() == 1
+    )
+
+
+def test_a_job_interrupted_mid_run_is_not_run_again(live_server, tmp_path, monkeypatch):
+    monkeypatch.setattr(collector_jobs, "RETRY_DELAY", 0)
+    runs = []
+
+    def crash(job, credentials, report):
+        runs.append(job.id)
+        raise KeyboardInterrupt  # The collector host stops mid-job.
+
+    monkeypatch.setitem(collector_jobs.HANDLERS, "health", crash)
+    collector, token = _new_collector()
+    config = enroll(live_server.url, token)
+    job = _health_job(collector)
+    journal = tmp_path / "journal"
+
+    with Session(config) as session, pytest.raises(KeyboardInterrupt):
+        collector_jobs.Worker(session, collector_jobs.Journal(journal)).poll_once(0)
+    # After a restart the controller hands the job over again; the journal says it started.
+    with Session(config) as session:
+        assert collector_jobs.Worker(session, collector_jobs.Journal(journal)).poll_once(0) == 1
+
+    assert runs == [str(job.pk)]
+    job.refresh_from_db()
+    assert job.status == "failed"
+    assert "wasn't run again" in job.run.result.error_summary

@@ -256,11 +256,15 @@ As built (YAN-1736):
   check-in sparkline are left out until the controller records them. There are no client
   certificates (ADR-0009), so the card shows **TLS path** (Direct, Inspected, or Not reported yet)
   instead of certificate expiry, and a collector waiting to enroll shows when its token expires.
-  The offline queue reads "Not tracked yet" until the job channel (YAN-1651) exists.
+  The card's **Queue** counts the collector's queued and running jobs (YAN-1651).
   Enrollment tokens expire after 24 hours; an expired one is replaced by revoking the collector
   and adding a new one.
 * **Start a discovery** and **Run health check** are shown disabled until Engagement setup
   (YAN-1735) and health jobs (YAN-1725) land.
+* Since the job channel (YAN-1651), Jobs shows an open job's state (Queued or Running) and the
+  progress its collector reports, and a run's outcome once it ends. Engineers who may change jobs
+  get a **Cancel** button on queued and running jobs; cancelling is audit-logged. The prototype has
+  no cancel control; the acceptance criteria for YAN-1651 ask for one.
 * The audit filter kinds are Jobs, Collectors, Credentials and Admin. Sign-ins aren't tied to a
   customer (`LoginEvent`), so there is no Logins filter. **Export CSV** downloads the whole log
   and is itself logged.

@@ -9,6 +9,7 @@ from .models import (
     Credential,
     Customer,
     Engagement,
+    Job,
     LoginEvent,
     Site,
 )
@@ -32,8 +33,15 @@ class ArchiveNotDeleteAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(ArchiveNotDeleteAdmin):
-    list_display = ["name", "data_mode", "live_view_allowed", "created_at", "archived_at"]
-    list_filter = ["data_mode", "live_view_allowed"]
+    list_display = [
+        "name",
+        "data_mode",
+        "live_view_allowed",
+        "require_uninspected_path",
+        "created_at",
+        "archived_at",
+    ]
+    list_filter = ["data_mode", "live_view_allowed", "require_uninspected_path"]
     search_fields = ["name"]
     inlines = [CollectorInline]
 
@@ -177,6 +185,16 @@ class CollectionRunAdmin(ReadOnlyAdmin):
     def device_count(self, run):
         result = getattr(run, "result", None)
         return result.device_count if result else None
+
+
+@admin.register(Job)
+class JobAdmin(ReadOnlyAdmin):
+    """Jobs are queued and cancelled through the API and the Jobs screen, which audit."""
+
+    list_display = ["created_at", "customer", "type", "collector", "status", "created_by"]
+    list_filter = ["customer", "type", "status"]
+    list_select_related = ["customer", "collector"]
+    exclude = ["credential_ids"]
 
 
 @admin.register(LoginEvent)

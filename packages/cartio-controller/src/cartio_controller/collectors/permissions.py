@@ -37,3 +37,14 @@ class ViewModelPermissions(DjangoModelPermissions):
         # Only the model matters here. The view's own queryset looks up the customer in the URL,
         # which would tell a user without the permission which customers exist.
         return view.model.all_customers.none()
+
+
+class JobPermissions(ViewModelPermissions):
+    """Reading jobs needs their view permission; cancelling counts as a change."""
+
+    def has_permission(self, request, view):
+        if getattr(view, "action", None) == "cancel":
+            if not request.user or not request.user.is_authenticated:
+                return False
+            return request.user.has_perms(self.get_required_permissions("PATCH", view.model))
+        return super().has_permission(request, view)

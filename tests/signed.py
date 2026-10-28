@@ -2,7 +2,7 @@
 
 import json
 
-from cartio_core import signing
+from cartio_core import sealing, signing
 
 
 def give_key(collector) -> str:
@@ -19,5 +19,8 @@ def signed_post(client, collector_id, private_key, path, body, **sign_options):
     auth = signing.sign(private_key, str(collector_id), "POST", path, data, **sign_options)
     return client.post(path, data=data, content_type="application/json", HTTP_AUTHORIZATION=auth)
 
+
+# A sealing key for enrollment bodies: tests that open sealed credentials make their own.
+SEAL_KEY = sealing.public_key_for(sealing.new_private_key())
 
 CHECKIN = {"hostname": "vm01", "version": "0.1.0", "platform": "Linux", "tls_inspected": False}
