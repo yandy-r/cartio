@@ -305,6 +305,8 @@ def test_svg_figures_draw_the_icons_and_labels():
     line = next(s for s in shapes if s.kind == "line")
     assert line.at == (10, 20, 60, 20) and line.style.opacity == 0.5
     assert next(s for s in shapes if s.kind == "text").text == "a < b"
+    # The engineer UI's Plex fonts load, so the DOCX map matches the screen.
+    assert "Plex" in " ".join(figures._load_font("ibm-plex-mono-latin-500-normal", 12).getname())
     content, w, h = figures.png(svg, 400)
     assert content.startswith(b"\x89PNG") and (w, h) == (400, 200)
     drawing = figures.drawing(svg, 100, 100)

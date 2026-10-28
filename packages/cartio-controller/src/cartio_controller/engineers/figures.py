@@ -11,6 +11,7 @@ Pillow (a ReportLab dependency) using the IBM Plex fonts the engineer UI ships, 
 the size and scaled down so its lines are smooth.
 """
 
+import functools
 import io
 import math
 import re
@@ -92,6 +93,8 @@ def parse(svg: str) -> tuple[float, float, list]:
     if not (width and height):
         box = [_number(v) for v in root.get("viewBox", "0 0 0 0").split()]
         width, height = box[2], box[3]
+    if width <= 0 or height <= 0:
+        raise ValueError("The SVG has no size.")
     shapes: list[Shape] = []
     _walk(root, Style(), 0.0, 0.0, shapes)
     return width, height, shapes
@@ -376,11 +379,16 @@ def _pdf_shape(shape, flip, height):
 
 def _font(style: Style, size: float):
     name = "ibm-plex-mono-latin-500-normal" if style.mono else "ibm-plex-sans-latin-{}-normal"
-    weight = "600" if style.bold else "400"
+    return _load_font(name.format("600" if style.bold else "400"), round(size))
+
+
+@functools.lru_cache(maxsize=32)
+def _load_font(name: str, size: int):
     try:
-        return ImageFont.truetype(str(_FONTS / f"{name.format(weight)}.woff2"), round(size))
+        return ImageFont.truetype(str(_FONTS / f"{name}.woff2"), size)
     except OSError:
-        return ImageFont.load_default(round(size))
+        # FreeType without WOFF2 support: Pillow's own font, so the map still prints.
+        return ImageFont.load_default(size)
 
 
 def _rgb(value: str, alpha: float, background=(250, 251, 252)):
@@ -394,6 +402,9 @@ def _rgb(value: str, alpha: float, background=(250, 251, 252)):
 
 def _dashed(draw, points, colour, width, dash) -> None:
     on, off = (dash + dash)[:2]
+    if on <= 0 or on + off <= 0:
+        draw.line(points, fill=colour, width=width)
+        return
     for (x1, y1), (x2, y2) in zip(points, points[1:], strict=False):
         length = math.hypot(x2 - x1, y2 - y1)
         at = 0.0
