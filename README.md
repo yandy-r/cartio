@@ -97,8 +97,7 @@ them with `CARTIO_APP_PASSWORD`, `CARTIO_OWNER_PASSWORD`, `POSTGRES_PASSWORD` an
 `CARTIO_ENGINEER_PASSWORD`).
 
 ```sh
-export COMPOSE_FILE=compose.dev.yml   # or pass -f compose.dev.yml to every command
-docker compose up -d --build
+docker compose -f compose.dev.yml up -d --build
 docker compose exec controller cartio-controller enroll_engineer engineer
 ```
 
