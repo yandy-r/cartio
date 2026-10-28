@@ -6,11 +6,15 @@ without a record of it.
 
 import csv
 import json
+from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import models, transaction
 from django.dispatch import receiver
+from django.utils import timezone
 
 from .models import AuditEvent, LoginEvent
 
@@ -145,3 +149,41 @@ def _login_failed(sender, credentials, request=None, **kwargs):
     ):
         username = ""
     _login_event(LoginEvent.Kind.FAILED, request, username)
+
+
+def too_many_failed_sign_ins(request, username: str) -> bool:
+    """Whether this account or client address used up its failed sign-ins for now.
+
+    Counted from the sign-in log over the last SIGN_IN_LOCKOUT_MINUTES, so the limit holds across
+    controller processes and lifts on its own. Failures are logged with a username only when it
+    names a real account, so a made-up username is limited by its address alone.
+    """
+    failed = LoginEvent.objects.filter(
+        kind=LoginEvent.Kind.FAILED,
+        at__gte=timezone.now() - timedelta(minutes=settings.SIGN_IN_LOCKOUT_MINUTES),
+    )
+    per_account = settings.SIGN_IN_MAX_FAILURES
+    if per_account > 0 and username and failed.filter(username=username).count() >= per_account:
+        return True
+    per_address = settings.SIGN_IN_MAX_FAILURES_PER_ADDRESS
+    address = _ip(request)
+    return (
+        per_address > 0
+        and address is not None
+        and failed.filter(ip_address=address).count() >= per_address
+    )
+
+
+def purge_login_events(older_than_days: int) -> int:
+    """Delete sign-in log entries older than the given number of days. Returns how many.
+
+    The sign-in log is append-only through the ORM. Retention is the one way out of it, and it
+    only ever takes whole days off the old end, never anything the sign-in limits still count.
+    """
+    keep = timedelta(days=older_than_days)
+    if older_than_days < 1 or keep < timedelta(minutes=settings.SIGN_IN_LOCKOUT_MINUTES):
+        raise ValueError("Keep at least a day of the sign-in log, and no less than the lockout.")
+    with transaction.atomic():
+        # A plain queryset, past the append-only one that refuses deletes.
+        deleted, _ = models.QuerySet(LoginEvent).filter(at__lt=timezone.now() - keep).delete()
+    return deleted

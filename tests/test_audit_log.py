@@ -193,18 +193,20 @@ def test_audit_export_is_per_customer_and_needs_permission(client, acme, globex)
     url = f"{CUSTOMERS}/{acme.pk}/audit-events/export"
 
     client.force_login(_engineer("customer", username="plain"))
-    assert client.get(url).status_code == 403
+    assert client.post(url).status_code == 403
     assert client.get(f"{CUSTOMERS}/{acme.pk}/audit-events").status_code == 403
 
     client.force_login(_engineer("auditevent", username="auditor"))
-    response = client.get(url)
+    # Exporting writes to the log, so a plain link (a GET) can't do it.
+    assert client.get(url).status_code == 405
+    response = client.post(url)
     assert response.status_code == 200
     assert "attachment" in response["Content-Disposition"]
     exported = json.loads(b"".join(response.streaming_content))
     assert [e["action"] for e in exported] == ["run.started", "run.finished", "audit.exported"]
     assert exported[-1]["actor"] == "auditor"
 
-    response = client.get(f"{url}?type=csv")
+    response = client.post(f"{url}?type=csv")
     assert response.status_code == 200
     assert response["Content-Type"].startswith("text/csv")
     rows = list(csv.DictReader(io.StringIO(b"".join(response.streaming_content).decode())))
@@ -212,5 +214,5 @@ def test_audit_export_is_per_customer_and_needs_permission(client, acme, globex)
     # A value that would run as a spreadsheet formula is defused.
     started = next(row for row in rows if row["action"] == "run.started")
     assert started["object_name"].startswith("'=")
-    assert client.get(f"{url}?type=xml").status_code == 400
+    assert client.post(f"{url}?type=xml").status_code == 400
     assert _actions(globex) == ["run.started"]
