@@ -50,7 +50,7 @@ collection and parsing, and treat NetBox as an integration.
 | Multi-vendor getters | **Don't depend on NAPALM** in v1 | Its driver API includes config-push methods, which works against a read-only driver interface |
 | Genie | **Don't use** as core parsing | Doesn't run natively on Windows (laptop collector) |
 | Topology | **Build** the LLDP/CDP crawl on our parsed neighbour data; existing crawl tools are reference only | Small, and it must respect scope and the allow-list |
-| NetBox / Nautobot | **Integrate later** as import/export (DESIGN.md integrations catalogue) | Customers who run NetBox get data in and out without it being our store |
+| NetBox / Nautobot | **Integrate later** as import/export ([DESIGN.md](../design/DESIGN.md) integrations catalogue) | Customers who run NetBox get data in and out without it being our store |
 
 * **[Proposed]** Name fields the way NetBox does where it fits (for example `name`, `serial`,
   `platform`, interface `type`), so a later NetBox export maps cleanly.
