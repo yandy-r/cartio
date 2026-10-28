@@ -152,8 +152,9 @@ class ReadOnlyDriver(ABC):
     """Base for every SSH driver: `run()` checks the allow-list, `_send()` talks to the device.
 
     A transport (scrapli, Netmiko) is wrapped in a subclass that implements `_send()` only.
-    `run()` is the one way in, so a command that isn't allow-listed never reaches `_send()`.
-    No write operation (config mode, commit, file copy) exists on this class or may be added.
+    `run()` is the one way in: a subclass that replaces it, directly or through a mixin, is
+    refused when it's defined. Nothing outside the driver calls `_send()`. No write operation
+    (config mode, commit, file copy) exists on this class or may be added.
     """
 
     def __init__(self, platform: Platform | str) -> None:
@@ -161,7 +162,7 @@ class ReadOnlyDriver(ABC):
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
-        if "run" in cls.__dict__:
+        if cls.run is not ReadOnlyDriver.run:
             raise TypeError(f"{cls.__name__} can't override run(): it enforces the allow-list.")
 
     def run(self, command: str) -> str:

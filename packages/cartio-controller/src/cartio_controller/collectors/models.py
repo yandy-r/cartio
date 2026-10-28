@@ -89,6 +89,7 @@ class CustomerOwnedQuerySet(models.QuerySet):
         self._refuse_bulk_relink(kwargs.get("update_fields") or ())
         for obj in objs:
             obj.check_customer_links()
+            obj.set_derived_fields()
         return super().bulk_create(objs, *args, **kwargs)
 
     def _refuse_bulk_relink(self, fields) -> None:
@@ -221,6 +222,7 @@ class CustomerOwned(models.Model):
         update_fields = kwargs.get("update_fields")
         if update_fields is None or _link_fields(type(self)) & set(update_fields):
             self.check_customer_links()
+        self.set_derived_fields()
         super().save(*args, **kwargs)
         if update_fields is None or {"customer", "customer_id"} & set(update_fields):
             self._saved_customer_id = self.customer_id
@@ -242,6 +244,9 @@ class CustomerOwned(models.Model):
                 .first()
             )
         return saved
+
+    def set_derived_fields(self) -> None:
+        """Fill fields computed from others, such as a digest. Runs on save and bulk create."""
 
     def check_customer_links(self) -> None:
         """Take the customer from a parent record, and refuse a parent of another customer."""
@@ -704,8 +709,8 @@ class Source(CustomerOwned):
 
     def check_customer_links(self) -> None:
         super().check_customer_links()
-        if self.run_id is not None:
-            _check_same_engagement(self.engagement_id, self.run.engagement_id)
+        if self.run_id is not None and self.run.engagement_id != self.engagement_id:
+            raise CrossEngagementError("A live run's source belongs to the run's engagement.")
 
 
 class Device(CustomerOwned):
@@ -746,6 +751,15 @@ class Device(CustomerOwned):
         super().check_customer_links()
         if self.source_id is not None:
             _check_same_engagement(self.engagement_id, self.source.engagement_id)
+        if self.pk is not None and not self._state.adding:
+            saved = (
+                Device.all_customers.filter(pk=self.pk)
+                .values_list("engagement_id", flat=True)
+                .first()
+            )
+            # Its interfaces, outputs and configs stay with the engagement they were found in.
+            if saved is not None and saved != self.engagement_id:
+                raise CrossEngagementError("A device can't move to another engagement.")
 
 
 class Interface(CustomerOwned):
@@ -844,7 +858,7 @@ class RawOutput(CustomerOwned):
     class Meta(CustomerOwned.Meta):
         ordering = ["collected_at"]
         constraints = [
-            # Set by save(). A bulk insert that skips it fails here instead of storing no digest.
+            # Set by set_derived_fields(). Raw SQL that skips it fails here.
             models.CheckConstraint(
                 condition=Exact(Length("sha256"), 64), name="raw_output_has_digest"
             ),
@@ -858,9 +872,8 @@ class RawOutput(CustomerOwned):
         if self.device_id is not None and self.source_id is not None:
             _check_same_engagement(self.source.engagement_id, self.device.engagement_id)
 
-    def save(self, *args, **kwargs):
+    def set_derived_fields(self) -> None:
         self.sha256 = _sha256(self.output)
-        super().save(*args, **kwargs)
 
 
 class ConfigSnapshot(CustomerOwned):
@@ -895,9 +908,8 @@ class ConfigSnapshot(CustomerOwned):
         if self.device_id is not None and self.source_id is not None:
             _check_same_engagement(self.device.engagement_id, self.source.engagement_id)
 
-    def save(self, *args, **kwargs):
+    def set_derived_fields(self) -> None:
         self.sha256 = _sha256(self.content)
-        super().save(*args, **kwargs)
 
 
 class AppendOnlyQuerySet(models.QuerySet):

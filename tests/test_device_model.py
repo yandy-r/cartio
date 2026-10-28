@@ -9,6 +9,8 @@ import hashlib
 import pytest
 from cartio_controller.collectors.models import (
     AppendOnlyError,
+    CollectionRun,
+    Collector,
     ConfigSnapshot,
     CrossCustomerError,
     CrossEngagementError,
@@ -80,6 +82,9 @@ def test_engagements_dont_mix(acme):
         RawOutput.objects.for_customer(acme).create(
             source=old_source, device=device, command="show version", output="x"
         )
+    device.engagement = last_year
+    with pytest.raises(CrossEngagementError):
+        device.save()
     # The same host name is a separate record in each engagement.
     assert scoped.filter(name="core-sw1").count() == 2
 
@@ -96,13 +101,20 @@ def test_output_and_configs_keep_their_digest_and_never_change(acme):
     with pytest.raises(AppendOnlyError):
         RawOutput.objects.for_customer(acme).update(output="x")
 
-    # A bulk insert skips save(), so the database refuses a row without its digest.
-    with pytest.raises(IntegrityError), transaction.atomic():
-        RawOutput.objects.for_customer(acme).bulk_create(
-            [RawOutput(source=source, command="show version", output="x")]
-        )
+    # A bulk insert computes the digest too, whatever it was given.
+    (output,) = RawOutput.objects.for_customer(acme).bulk_create(
+        [RawOutput(source=source, command="show version", output="x", sha256="a" * 64)]
+    )
+    assert RawOutput.objects.for_customer(acme).get(pk=output.pk).sha256 == (
+        hashlib.sha256(b"x").hexdigest()
+    )
 
 
-def test_a_live_run_source_names_its_run(acme):
+def test_a_live_run_source_names_its_run_and_its_engagement(acme):
+    engagement = _engagement(acme)
     with pytest.raises(IntegrityError), transaction.atomic():
-        Source.objects.for_customer(acme).create(engagement=_engagement(acme), kind="live_run")
+        Source.objects.for_customer(acme).create(engagement=engagement, kind="live_run")
+    collector = Collector.objects.for_customer(acme).create(name="vm01")
+    run = CollectionRun.objects.for_customer(acme).create(job_type="discovery", collector=collector)
+    with pytest.raises(CrossEngagementError):
+        Source.objects.for_customer(acme).create(engagement=engagement, kind="live_run", run=run)

@@ -128,6 +128,16 @@ def test_a_driver_cant_replace_the_checked_entry_point():
             def _send(self, command):
                 return ""
 
+    class Unchecking:
+        def run(self, command):
+            return self._send(command)
+
+    with pytest.raises(TypeError):
+
+        class ThroughAMixin(Unchecking, ReadOnlyDriver):
+            def _send(self, command):
+                return ""
+
 
 @pytest.mark.parametrize("operation", ["get", "getnext", "GETBULK", "walk"])
 def test_snmp_reads_are_allowed(operation):
