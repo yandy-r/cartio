@@ -4,8 +4,10 @@ import json
 
 import pytest
 from cartio_controller.collectors.models import (
+    AssessmentRun,
     AuditEvent,
     CheckIn,
+    CheckResult,
     CollectionRun,
     CollectionRunResult,
     Collector,
@@ -70,6 +72,7 @@ def _records(customer):
         engagement=engagement, site=site, source=source, name="core-sw1", platform="ios"
     )
     interface = Interface.objects.for_customer(customer).create(device=device, name="Gi1/0/1")
+    assessment = AssessmentRun.objects.for_customer(customer).create(engagement=engagement)
     return {
         Engagement: engagement,
         Site: site,
@@ -99,6 +102,14 @@ def _records(customer):
         ConfigSnapshot: ConfigSnapshot.objects.for_customer(customer).create(
             device=device, source=source, content="hostname core-sw1"
         ),
+        AssessmentRun: assessment,
+        CheckResult: CheckResult.objects.for_customer(customer).create(
+            run=assessment,
+            device=device,
+            check_id="firmware-drift",
+            severity="medium",
+            status="pass",
+        ),
     }
 
 
@@ -119,6 +130,8 @@ def test_every_table_carries_a_customer():
         "Link",
         "RawOutput",
         "ConfigSnapshot",
+        "AssessmentRun",
+        "CheckResult",
     }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model
