@@ -98,7 +98,7 @@ them with `CARTIO_APP_PASSWORD`, `CARTIO_OWNER_PASSWORD`, `POSTGRES_PASSWORD` an
 
 ```sh
 docker compose -f compose.dev.yml up -d --build
-docker compose exec controller cartio-controller enroll_engineer engineer
+docker compose -f compose.dev.yml exec controller cartio-controller enroll_engineer engineer
 ```
 
 `./packages` is mounted into the containers, and the controller runs Django's `runserver`, so a
@@ -132,7 +132,7 @@ token=$(docker compose exec -T controller cartio-controller create_collector --c
 CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
 ```
 
-`docker compose down -v` removes everything, including the database and the master key.
+`docker compose -f compose.dev.yml down -v` removes everything, including the database and the master key.
 
 ### Production example
 
