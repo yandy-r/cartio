@@ -103,7 +103,8 @@ class EngineerMFA(models.Model):
 
     @property
     def secret(self) -> bytes:
-        return vault.master_key().unwrap(self.secret_encrypted, self._context())
+        key = vault.master_key_for(self.master_key_id)
+        return key.unwrap(self.secret_encrypted, self._context())
 
     @sensitive_variables("code")
     def use_code(self, code: str) -> bool:

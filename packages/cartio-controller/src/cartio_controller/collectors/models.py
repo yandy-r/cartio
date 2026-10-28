@@ -4,7 +4,6 @@ import json
 import secrets
 import uuid
 
-from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Lower
 from django.views.decorators.debug import sensitive_variables
@@ -426,16 +425,11 @@ class CustomerDataKey(CustomerOwned):
         """The customer's plain data key, created on first use. Callers keep it in memory only."""
         from . import vault
 
-        master = vault.master_key()
         context = cls._context(customer_id)
         keys = cls.objects.for_customer(customer_id)
         record = keys.first()
-        if record is not None and record.master_key_id != master.key_id:
-            raise ImproperlyConfigured(
-                f"{record.customer}'s data key was wrapped by another master key "
-                f"({record.master_key_id}). Restore that key file."
-            )
         if record is None:
+            master = vault.master_key()
             data_key = vault.new_data_key()
             try:
                 with transaction.atomic():
@@ -446,11 +440,9 @@ class CustomerDataKey(CustomerOwned):
             except IntegrityError:
                 # Another request created it first. Use theirs.
                 record = keys.get()
-                if record.master_key_id != master.key_id:
-                    raise ImproperlyConfigured(
-                        "The data key was wrapped by another master key."
-                    ) from None
-        return master.unwrap(record.wrapped_key, context)
+        # The current master key, or the previous one while a rotation is under way. Any other
+        # key is a clear error naming the key that's missing.
+        return vault.master_key_for(record.master_key_id).unwrap(record.wrapped_key, context)
 
 
 class Credential(CustomerOwned):
@@ -555,6 +547,7 @@ class AuditEvent(CustomerOwned):
         RUN_STARTED = "run.started", "Collection run started"
         RUN_FINISHED = "run.finished", "Collection run finished"
         AUDIT_EXPORTED = "audit.exported", "Audit log exported"
+        MASTER_KEY_ROTATED = "master_key.rotated", "Data key rewrapped by a new master key"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)

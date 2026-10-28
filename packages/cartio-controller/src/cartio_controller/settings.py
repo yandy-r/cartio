@@ -14,6 +14,8 @@ Everything that differs per environment comes from environment variables:
   own: losing it means re-entering every credential. CARTIO_MASTER_KEY can hold the key instead.
   Generate one with `openssl rand -base64 32`. Engineers' authenticator keys are encrypted with
   it too.
+- CARTIO_PREVIOUS_MASTER_KEY_FILE: set only during a master key rotation, to the old key (or
+  CARTIO_PREVIOUS_MASTER_KEY). Run `rotate_master_key`, then unset it (docs/deploy/master-key.md).
 - CARTIO_SESSION_HOURS: how long an engineer stays signed in, 8 hours by default. Sessions also
   end when the browser closes.
 - CARTIO_SIGN_IN_MAX_FAILURES: failed sign-ins (passwords and codes) an account may have in the
