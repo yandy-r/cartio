@@ -72,3 +72,15 @@ def test_refused_outside_development(settings, engineer):
 def test_needs_a_known_user(debug):
     with pytest.raises(CommandError, match="No user"):
         call_command("load_lab", user="nobody")
+
+
+def test_a_failed_load_leaves_nothing_behind(debug, engineer, monkeypatch):
+    from cartio_controller.collectors.management.commands import load_lab
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("checks failed")
+
+    monkeypatch.setattr(load_lab, "run_assessment", fail)
+    with pytest.raises(RuntimeError):
+        call_command("load_lab", user="eng")
+    assert not Customer.objects.exists()

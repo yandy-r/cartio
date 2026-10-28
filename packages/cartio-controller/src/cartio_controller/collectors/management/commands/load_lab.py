@@ -103,17 +103,14 @@ class Command(BaseCommand):
                 site = Site.objects.for_customer(customer).create(name=site_name)
                 self._created(customer, "site", site, user)
                 sites[site_name] = site
-            engagements = [
-                self._engagement(customer, sites, fixtures, user, *item)
-                for item in ENGAGEMENTS.items()
-            ]
-
-        for engagement in engagements:
-            run = run_assessment(engagement, started_by=user)
-            self.stdout.write(
-                f"{engagement.name}: {run.results.count()} check results "
-                f"on {engagement.devices.count()} devices."
-            )
+            # The checks too, so a failed load leaves nothing behind and can simply be re-run.
+            for item in ENGAGEMENTS.items():
+                engagement = self._engagement(customer, sites, fixtures, user, *item)
+                run = run_assessment(engagement, started_by=user)
+                self.stdout.write(
+                    f"{engagement.name}: {run.results.count()} check results "
+                    f"on {engagement.devices.count()} devices."
+                )
         self.stdout.write(f"Loaded the lab as {customer.name}.")
 
     def _engagement(self, customer, sites, fixtures, user, name, item):
