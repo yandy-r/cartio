@@ -311,6 +311,33 @@ def test_a_routing_neighbor_is_never_matched_in_another_customer_or_engagement(a
     assert not RoutingNeighbor.objects.for_customer(globex).exclude(peer=None).exists()
 
 
+def test_a_routing_peer_follows_its_address(acme):
+    source = _source(acme)
+    _store(source, "core-sw1", "edge-fw1")
+    # edge-fw1 is re-addressed: core-sw1's OSPF neighbor at 192.0.2.1 is no longer edge-fw1.
+    lab = outputs("edge-fw1")
+    lab["get system interface"] = lab["get system interface"].replace(
+        "ip: 192.0.2.1 255.255.255.0", "ip: 192.0.2.2 255.255.255.0"
+    )
+    store_outputs(source, "fortios", lab)
+    ospf = RoutingNeighbor.objects.for_customer(acme).get(device__name="core-sw1")
+    assert ospf.peer is None
+
+
+def test_an_address_on_two_devices_resolves_to_neither(acme):
+    source = _source(acme)
+    _store(source, "edge-fw1")
+    # floor-sw1 claims edge-fw1's 192.0.2.1 too (a shared VIP, or overlapping VRFs).
+    lab = outputs("floor-sw1")
+    lab["show interfaces"] = lab["show interfaces"].replace(
+        "Internet address is 192.0.2.21/24", "Internet address is 192.0.2.1/24"
+    )
+    store_outputs(source, "ios", lab)
+    _store(source, "core-sw1")
+    ospf = RoutingNeighbor.objects.for_customer(acme).get(device__name="core-sw1")
+    assert ospf.peer is None
+
+
 def test_a_routing_neighbor_not_collected_keeps_its_address(acme):
     _store(_source(acme), "core-sw1")
     assert _inventory(acme)[3] == [

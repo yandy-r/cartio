@@ -18,7 +18,7 @@ from collections.abc import Mapping
 
 from cartio_core.masking import find_unmasked
 from cartio_core.parsers import ParsedDevice, expand_interface, parse
-from django.db import transaction
+from django.db import models, transaction
 
 from . import audit
 from .models import (
@@ -188,27 +188,36 @@ def _apply_routing(source, parsed: ParsedDevice, device: Device) -> None:
             peer=_owner(source, found.address, exclude=device),
             source=source,
         )
-    # Neighbors that other devices found at one of this device's addresses before it arrived.
+    # Other devices' neighbors at one of this device's addresses (found before it arrived), or
+    # pointing at it from an address it no longer has: resolve them again.
     addresses = list(
         interfaces.filter(device=device)
         .exclude(ip_address=None)
         .values_list("ip_address", flat=True)
     )
-    for neighbor in neighbors.filter(
-        device__engagement=source.engagement, peer=None, address__in=addresses
-    ).exclude(device=device):
-        neighbor.peer = device
-        neighbor.save()
+    affected = neighbors.filter(device__engagement=source.engagement).filter(
+        models.Q(address__in=addresses) | models.Q(peer=device)
+    )
+    for neighbor in affected.exclude(device=device).select_related("device"):
+        peer = _owner(source, neighbor.address, exclude=neighbor.device)
+        if peer != neighbor.peer:
+            neighbor.peer = peer
+            neighbor.save()
 
 
 def _owner(source, address: str, *, exclude: Device) -> Device | None:
-    """The engagement's device with an interface at this address, if it has been collected."""
-    return (
+    """The engagement's one device with an interface at this address, once it's collected.
+
+    An address on more than one device (VRFs, overlapping ranges, a shared VIP) is ambiguous,
+    so it resolves to no device rather than an arbitrary one.
+    """
+    owners = list(
         Device.objects.for_customer(source.customer)
         .filter(engagement=source.engagement, interfaces__ip_address=address)
         .exclude(pk=exclude.pk)
-        .first()
+        .distinct()[:2]
     )
+    return owners[0] if len(owners) == 1 else None
 
 
 def _interface(source, device_name: str, interface_name: str) -> Interface | None:

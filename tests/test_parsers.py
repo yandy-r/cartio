@@ -150,6 +150,17 @@ def test_a_bgp_peer_that_isnt_up_keeps_its_state_and_a_remote_peer_has_no_interf
     assert bgp == [ParsedRoutingNeighbor("bgp", "198.18.0.1", "", "", 64501, "Active")]
 
 
+def test_fortios_point_to_point_ospf_neighbors_are_kept():
+    lab = outputs("edge-fw1")
+    lab["get router info ospf neighbor"] += (
+        "198.51.100.2      1   Full/ -         00:00:31    198.51.100.2    internal1\n"
+    )
+    ospf = [n for n in parse("fortios", lab).routing_neighbors if n.protocol == "ospf"]
+    assert ospf[-1] == ParsedRoutingNeighbor(
+        "ospf", "198.51.100.2", "internal1", "198.51.100.2", None, "Full/-"
+    )
+
+
 def test_ios_bgp_peers():
     summary = "\n".join(
         [
@@ -159,6 +170,9 @@ def test_ios_bgp_peers():
             "Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd",
             "192.0.2.1       4        64512     120     118        5    0    0 01:52:10        3",
             "198.18.0.1      4        64501       0       0        1    0    0 never    Idle",
+            "198.18.0.9      4      65000.1       0       0        1    0    0 never    Active",
+            # The same peer again, as in a second address family: kept once.
+            "192.0.2.1       4        64512     120     118        5    0    0 01:52:10        3",
         ]
     )
     lab = {**outputs("core-sw1"), "show ip bgp summary": summary}
@@ -166,6 +180,8 @@ def test_ios_bgp_peers():
     assert bgp == [
         ParsedRoutingNeighbor("bgp", "192.0.2.1", "Vlan10", "", 64512, "Established"),
         ParsedRoutingNeighbor("bgp", "198.18.0.1", "", "", 64501, "Idle"),
+        # asdot 65000.1 is 65000 * 65536 + 1.
+        ParsedRoutingNeighbor("bgp", "198.18.0.9", "", "", 4_259_840_001, "Active"),
     ]
 
 

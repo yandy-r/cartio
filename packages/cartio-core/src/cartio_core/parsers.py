@@ -261,7 +261,9 @@ def _parse_fortios(outputs: Mapping[str, str]) -> ParsedDevice:
         )
         for row in _ntc("fortinet", "get system interface", outputs)
     )
-    ospf = _ttp(_FORTIOS_OSPF, outputs.get("get router info ospf neighbor", ""))
+    # A point-to-point neighbor's state is "Full/ -": one column, not two.
+    ospf_text = re.sub(r"/ -(?=\s)", "/-", outputs.get("get router info ospf neighbor", ""))
+    ospf = _ttp(_FORTIOS_OSPF, ospf_text)
     routing = [
         ParsedRoutingNeighbor(
             protocol="ospf",
@@ -298,15 +300,33 @@ def _bgp_peer(address: str, remote_as: str | None, state: str | None) -> ParsedR
     return ParsedRoutingNeighbor(
         protocol="bgp",
         address=address,
-        remote_as=_int(remote_as),
+        remote_as=_as_number(remote_as),
         state="Established" if state.isdigit() else state,
     )
+
+
+def _as_number(value: str | None) -> int | None:
+    """An AS number, also in asdot notation (65000.1 is 65000 * 65536 + 1)."""
+    high, _, low = (value or "").partition(".")
+    if low:
+        high_number, low_number = _int(high), _int(low)
+        if high_number is None or low_number is None:
+            return None
+        return high_number * 65536 + low_number
+    return _int(high)
+
+
+# RoutingNeighbor.state's length.
+_STATE_LENGTH = 32
 
 
 def _with_local_interfaces(
     neighbors: Sequence[ParsedRoutingNeighbor], interfaces: Sequence[ParsedInterface]
 ) -> tuple[ParsedRoutingNeighbor, ...]:
-    """Fill in the local interface of a neighbor whose address is on one of the device's subnets."""
+    """Fill in the local interface of a neighbor whose address is on one of the device's subnets.
+
+    A peer listed again (another address family or VRF of the same summary) is kept once.
+    """
     networks = [
         (
             interface.name,
@@ -315,14 +335,17 @@ def _with_local_interfaces(
         for interface in interfaces
         if interface.ip_address and interface.prefix_length is not None
     ]
-    filled = []
+    filled = {}
     for neighbor in neighbors:
+        if (neighbor.protocol, neighbor.address) in filled:
+            continue
         if not neighbor.local_interface:
             address = ipaddress.ip_address(neighbor.address)
             local = next((name for name, net in networks if address in net.network), "")
             neighbor = replace(neighbor, local_interface=local)
-        filled.append(neighbor)
-    return tuple(filled)
+        neighbor = replace(neighbor, state=neighbor.state[:_STATE_LENGTH])
+        filled[neighbor.protocol, neighbor.address] = neighbor
+    return tuple(filled.values())
 
 
 def _address(ip_address: str, prefix_length) -> dict:
