@@ -25,6 +25,14 @@ class ViewModelPermissions(DjangoModelPermissions):
         "HEAD": ["%(app_label)s.view_%(model_name)s"],
     }
 
+    def has_permission(self, request, view):
+        # The export is a POST because it writes an `audit.exported` event, but it's a read.
+        if getattr(view, "action", None) == "export":
+            if not request.user or not request.user.is_authenticated:
+                return False
+            return request.user.has_perms(self.get_required_permissions("GET", view.model))
+        return super().has_permission(request, view)
+
     def _queryset(self, view):
         # Only the model matters here. The view's own queryset looks up the customer in the URL,
         # which would tell a user without the permission which customers exist.

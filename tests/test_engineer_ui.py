@@ -267,6 +267,11 @@ def test_failed_sign_ins_are_throttled_per_account(client, settings):
     assert response.status_code == 429
     assert "Too many failed sign-ins" in response.content.decode()
     assert _kinds() == [LoginEvent.Kind.FAILED] * 3
+    # A padded username still names the same account.
+    assert _password(client, " engineer ").status_code == 429
+    # Signing out with nobody signed in isn't logged either.
+    client.post("/sign-out")
+    assert _kinds() == [LoginEvent.Kind.FAILED] * 3
     # Other accounts aren't affected, and the limit lifts once the failures age out.
     _engineer("other")
     assert _password(client, "other").url == "/sign-in/authenticator"

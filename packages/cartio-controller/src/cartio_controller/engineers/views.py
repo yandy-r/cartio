@@ -87,7 +87,12 @@ def _pending_user(request):
         request.session.pop(PENDING, None)
         return None
     user = auth.get_user_model()._default_manager.filter(pk=pending["user"]).first()
-    if user is None or not _is_engineer(user):
+    # A pending sign-in ends when the account runs out of failed sign-ins, before another code.
+    if (
+        user is None
+        or not _is_engineer(user)
+        or audit.too_many_failed_sign_ins(request, user.get_username())
+    ):
         request.session.pop(PENDING, None)
         return None
     user.backend = pending["backend"]
@@ -125,9 +130,9 @@ def sign_in(request):
     if request.user.is_authenticated and _is_engineer(request.user):
         return redirect(_next_url(request, request.GET.get("next", "")))
     form = AuthenticationForm(request, data=request.POST or None)
-    if request.method == "POST" and audit.too_many_failed_sign_ins(
-        request, request.POST.get("username", "")
-    ):
+    # The username as the form cleans it (trimmed, NFKC), which is how failures are logged.
+    username = form.fields["username"].to_python(request.POST.get("username", ""))
+    if request.method == "POST" and audit.too_many_failed_sign_ins(request, username):
         # Refused before the password is checked, and not logged, so a flood of guesses
         # neither learns anything nor grows the sign-in log.
         return render(

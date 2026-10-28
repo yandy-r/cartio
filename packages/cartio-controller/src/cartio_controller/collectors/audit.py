@@ -133,7 +133,10 @@ def _logged_in(sender, request, user, **kwargs):
 
 @receiver(user_logged_out, dispatch_uid="cartio_audit_logged_out")
 def _logged_out(sender, request, user, **kwargs):
-    _login_event(LoginEvent.Kind.LOGGED_OUT, request, user.get_username() if user else "")
+    # Signing out when nobody is signed in is a no-op, not an event: anyone can post it.
+    if user is None:
+        return
+    _login_event(LoginEvent.Kind.LOGGED_OUT, request, user.get_username())
 
 
 @receiver(user_login_failed, dispatch_uid="cartio_audit_login_failed")
