@@ -9,7 +9,10 @@ Everything that differs per environment comes from environment variables:
 - CARTIO_MASTER_KEY_FILE: a file holding the base64 32-byte master key that wraps each customer's
   credential key (ADR-0003). Keep it out of the database and its backups, and back it up on its
   own: losing it means re-entering every credential. CARTIO_MASTER_KEY can hold the key instead.
-  Generate one with `openssl rand -base64 32`.
+  Generate one with `openssl rand -base64 32`. Engineers' authenticator keys are encrypted with
+  it too.
+- CARTIO_SESSION_HOURS: how long an engineer stays signed in, 8 hours by default. Sessions also
+  end when the browser closes.
 """
 
 import os
@@ -40,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "cartio_controller.collectors",
+    "cartio_controller.engineers",
 ]
 
 MIDDLEWARE = [
@@ -86,9 +90,18 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# The engineer API. Engineers sign in to the controller (staff accounts until the login and UI
-# shell issue lands) and need the matching model permissions to make changes. Collectors use
-# their own endpoints and never reach this API.
+# Engineers sign in with a password and an authenticator code (cartio_controller.engineers),
+# including for the admin. Only staff accounts can sign in.
+LOGIN_URL = "engineers:sign-in"
+LOGIN_REDIRECT_URL = "engineers:customers"
+
+SESSION_COOKIE_AGE = int(float(os.environ.get("CARTIO_SESSION_HOURS", "8")) * 3600)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# The engineer API. Engineers sign in to the controller and need the matching model permissions
+# to make changes. Collectors use their own endpoints and never reach this API.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": [

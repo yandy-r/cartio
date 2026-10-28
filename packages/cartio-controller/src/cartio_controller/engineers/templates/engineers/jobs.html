@@ -1,0 +1,24 @@
+{% extends "engineers/base.html" %}
+{% block title %}Jobs · {{ customer.name }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'engineers:customers' %}">Customers</a> / <a href="{% url 'engineers:customer' customer.pk %}">{{ customer.name }}</a></p>
+<h1>Jobs</h1>
+<p class="muted">The newest {{ limit }} jobs run by this customer's collectors.</p>
+<table>
+  <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Outcome</th></tr></thead>
+  <tbody>
+  {% for run in runs %}
+    <tr>
+      <td>{{ run.started_at|date:"Y-m-d H:i" }} UTC</td>
+      <td>{{ run.job_type }}</td>
+      <td>{{ run.collector.name }}</td>
+      <td>{{ run.engagement.name|default:"–" }}</td>
+      <td>{{ run.started_by|default:"scheduled" }}</td>
+      <td>{% if run.result %}{{ run.result.get_outcome_display }}{% if run.result.device_count %} ({{ run.result.device_count }} devices){% endif %}{% else %}<span class="muted">running</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="muted">No jobs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

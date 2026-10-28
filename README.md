@@ -46,6 +46,7 @@ Run a controller and a collector locally:
 export CARTIO_DEBUG=1
 uv run cartio-controller migrate
 uv run cartio-controller createsuperuser
+uv run cartio-controller enroll_engineer <username>
 uv run cartio-controller create_collector --customer "Lab" --name "lab-vm"
 uv run cartio-controller runserver
 ```
@@ -57,13 +58,18 @@ uv run cartio-collector enroll --controller http://127.0.0.1:8000 --token <token
 uv run cartio-collector checkin --once
 ```
 
-The check-in appears under Collectors in the admin at http://127.0.0.1:8000/admin/.
+Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
+enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every
+sign-in after that needs a code from the app. The customers list shows each collector's health
+(online when it checked in within the last 3 minutes, last check-in, version), and the admin at
+http://127.0.0.1:8000/admin/ uses the same sign-in. Sessions end after `CARTIO_SESSION_HOURS`
+(8 by default) or when the browser closes. Engineers are staff accounts; run
+`enroll_engineer --reset <username>` to replace a lost authenticator.
 
 ## Engineer API
 
-Customers, engagements and sites are managed through a JSON API under `/api/v1/`. Until the
-engineer login lands, it accepts a signed-in staff session (sign in through the admin first),
-writes need the user's model permissions for that record type, and writes need the CSRF token.
+Customers, engagements and sites are managed through a JSON API under `/api/v1/`. It accepts a
+signed-in staff session (sign in at `/sign-in`, with the authenticator code), writes need the user's model permissions for that record type, and writes need the CSRF token.
 
 | Path | What it does |
 | -- | -- |
@@ -84,6 +90,7 @@ The controller reads its settings from the environment:
 | `CARTIO_DEBUG` | `1` for local development only. |
 | `CARTIO_ALLOWED_HOSTS` | Comma-separated host names the controller answers to. |
 | `DATABASE_URL` | PostgreSQL URL. Defaults to a local SQLite file for development. |
+| `CARTIO_SESSION_HOURS` | How long an engineer stays signed in. Defaults to 8. Sessions also end when the browser closes. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
 
 ## Secret masking
