@@ -19,7 +19,7 @@ from cartio_controller.collectors.models import (
     Engagement,
 )
 from django.apps import apps
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, ProgrammingError, connection, transaction
 
 pytestmark = pytest.mark.django_db
 
@@ -53,14 +53,23 @@ def _tie(table, column):
     return f'"{db_guards.tie_name(table, column)}"'
 
 
-def _refused(sql, params, match):
+def _refused(sql, params, match, error=IntegrityError):
     """The statement fails on the guard named by `match`, not on some other constraint."""
     with (
-        pytest.raises(IntegrityError, match=match),
+        pytest.raises(error, match=match),
         transaction.atomic(),
         connection.cursor() as cursor,
     ):
         cursor.execute(sql, params)
+
+
+def _owns_tables():
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT pg_has_role(tableowner, 'USAGE') FROM pg_tables WHERE tablename = %s",
+            ["collectors_collector"],
+        )
+        return cursor.fetchone()[0]
 
 
 def _checkin(collector):
@@ -101,6 +110,8 @@ def test_a_collector_with_check_ins_cant_move_to_another_customer(collector, glo
     _checkin(collector)
     move = "UPDATE collectors_collector SET customer_id = %s WHERE id = %s"
     _refused(move, [globex.pk, collector.pk], MOVED)
+    if not _owns_tables():
+        return  # Only the owner can disable a trigger (test_db_roles).
     # The check-ins' tie holds on its own too, without the collector's trigger.
     with transaction.atomic():
         with connection.cursor() as cursor:
@@ -170,8 +181,10 @@ def audit_rows(collector):
 def test_audit_records_cant_be_changed_or_deleted(audit_rows, table, column):
     # Table and column names come from the parametrize list above, never from input.
     pk = audit_rows[table]
-    _refused(f"UPDATE {table} SET customer_id = customer_id WHERE {column} = %s", [pk], APPEND_ONLY)  # noqa: S608
-    _refused(f"DELETE FROM {table} WHERE {column} = %s", [pk], APPEND_ONLY)  # noqa: S608
+    # The app role isn't even granted these (test_db_roles); the owner hits the trigger.
+    refusal = (APPEND_ONLY,) if _owns_tables() else ("permission denied", ProgrammingError)
+    _refused(f"UPDATE {table} SET customer_id = customer_id WHERE {column} = %s", [pk], *refusal)  # noqa: S608
+    _refused(f"DELETE FROM {table} WHERE {column} = %s", [pk], *refusal)  # noqa: S608
 
 
 # A new table must get the same rules in its migration. These read the live schema.
