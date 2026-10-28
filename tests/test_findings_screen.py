@@ -289,3 +289,32 @@ def test_nav_and_switcher_keep_the_findings_screen(client, engineer, acme):
         in page
     )
     assert "The checks haven't run on this engagement yet." in page
+
+
+def test_form_errors_swap_in_with_htmx(client, engineer, acme):
+    engagement = _engagement(acme)
+    _assessed(engagement)
+    response = client.post(
+        _url(engagement),
+        {"action": "remove", "finding": "firmware-drift"},
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 200
+    assert "Give a reason." in response.content.decode()
+
+
+def test_archived_customers_are_read_only(client, engineer, acme):
+    engagement = _engagement(acme)
+    _assessed(engagement)
+    Customer.objects.filter(pk=acme.pk).update(archived_at="2026-10-28T00:00:00Z")
+    response = client.post(_url(engagement), {"action": "exclude", "finding": "firmware-drift"})
+    assert response.status_code == 403
+
+
+def test_no_change_writes_nothing(client, engineer, acme):
+    engagement = _engagement(acme)
+    _assessed(engagement)
+    client.post(_url(engagement), {"action": "include", "finding": "firmware-drift"})
+    client.post(_url(engagement), {"action": "note", "finding": "firmware-drift", "note": ""})
+    assert not Finding.objects.for_customer(acme).exists()
+    assert not _events(acme, AuditEvent.Action.FINDING_UPDATED)

@@ -534,7 +534,8 @@ def findings(request, customer, engagement=None):
             found = findings_screen.Findings(customer, engagement)
             extra["error"] = error
             data = request.POST
-            status = 400
+            # htmx swaps only 2xx responses, so a boosted form gets its errors with a 200.
+            status = 200 if request.headers.get("HX-Request") else 400
         screen = findings_screen.Screen(found, params)
         extra.update(
             {

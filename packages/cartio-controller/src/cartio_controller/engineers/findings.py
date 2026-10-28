@@ -251,8 +251,13 @@ class EditError(ValueError):
 
 
 def editable(customer, engagement) -> bool:
-    """Completed engagements are read-only, and On site data isn't kept on the controller."""
-    return engagement.status != engagement.Status.COMPLETED and not customer.is_on_site
+    """Completed engagements and archived customers are read-only, and On site data isn't
+    kept on the controller."""
+    return (
+        engagement.status != engagement.Status.COMPLETED
+        and not customer.is_archived
+        and not customer.is_on_site
+    )
 
 
 def _text(data, name, limit=MAX_TEXT) -> str:
@@ -340,11 +345,13 @@ def edit(findings, item, data, actor) -> list:
         if not values["severity"]:
             values["severity_reason"] = ""
         values.pop("evidence")
+    # Against a blank row while there's none yet, so a no-change save writes nothing.
+    current = item.row or Finding()
+    changed = [name for name, value in values.items() if getattr(current, name) != value]
+    if not changed:
+        return []
     with transaction.atomic():
         row = _row_for(findings, item)
-        changed = [name for name, value in values.items() if getattr(row, name) != value]
-        if not changed:
-            return []
         for name, value in values.items():
             setattr(row, name, value)
         row.updated_by = actor
@@ -358,10 +365,10 @@ def edit(findings, item, data, actor) -> list:
 
 
 def set_included(findings, item, included: bool, actor) -> None:
+    if item.include_in_report == included:
+        return
     with transaction.atomic():
         row = _row_for(findings, item)
-        if row.include_in_report == included:
-            return
         row.include_in_report = included
         row.updated_by = actor
         row.save()
@@ -378,10 +385,10 @@ def set_included(findings, item, included: bool, actor) -> None:
 
 def set_note(findings, item, note: str, actor) -> bool:
     note = note.replace("\r\n", "\n").strip()[:MAX_TEXT]
+    if item.note == note:
+        return False
     with transaction.atomic():
         row = _row_for(findings, item)
-        if row.note == note:
-            return False
         row.note = note
         row.updated_by = actor
         row.save()
