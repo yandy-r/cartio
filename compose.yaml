@@ -1,0 +1,87 @@
+# Cartio for local testing: PostgreSQL, the controller and, optionally, a collector.
+# Development settings only (CARTIO_DEBUG=1, plain http, default passwords). See the README.
+
+name: cartio
+
+x-cartio: &cartio
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  image: cartio-local
+  volumes:
+    - keys:/keys
+
+x-env: &env
+  CARTIO_DEBUG: "1"
+  CARTIO_DB_APP_ROLE: cartio_app
+  CARTIO_MASTER_KEY_FILE: /keys/master.key
+  # The controller and its commands run as the app role (docs/deploy/database.md).
+  DATABASE_URL: postgres://cartio_app:${CARTIO_APP_PASSWORD:-cartio-app-local}@db/cartio
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cartio-postgres-local}
+      CARTIO_OWNER_PASSWORD: ${CARTIO_OWNER_PASSWORD:-cartio-owner-local}
+      CARTIO_APP_PASSWORD: ${CARTIO_APP_PASSWORD:-cartio-app-local}
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./docker/initdb.sh:/docker-entrypoint-initdb.d/cartio.sh:ro
+    healthcheck:
+      # Over TCP, so it waits for the init scripts to finish.
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "postgres", "-d", "cartio"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # Migrations run as the owner role, which then grants the app role row access only.
+  migrate:
+    <<: *cartio
+    command: ["cartio-controller", "migrate", "--noinput"]
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://cartio_owner:${CARTIO_OWNER_PASSWORD:-cartio-owner-local}@db/cartio
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # The engineer account and the sanitized lab, with check results. Safe to run again.
+  seed:
+    <<: *cartio
+    command: ["seed.sh"]
+    environment:
+      <<: *env
+      CARTIO_ENGINEER: ${CARTIO_ENGINEER:-engineer}
+      DJANGO_SUPERUSER_PASSWORD: ${CARTIO_ENGINEER_PASSWORD:-cartio-local}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  controller:
+    <<: *cartio
+    environment: *env
+    ports:
+      - "127.0.0.1:${CARTIO_PORT:-8000}:8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  # Optional: docker compose --profile collector up. Needs CARTIO_ENROLL_TOKEN from
+  # create_collector. It only enrolls and checks in until the job channel lands (YAN-1651).
+  collector:
+    <<: *cartio
+    profiles: ["collector"]
+    command: ["collector.sh"]
+    environment:
+      CARTIO_ENROLL_TOKEN: ${CARTIO_ENROLL_TOKEN:-}
+    volumes:
+      - collector:/collector
+    network_mode: service:controller
+    depends_on:
+      - controller
+
+volumes:
+  db:
+  keys:
+  collector:
