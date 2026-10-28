@@ -1,0 +1,11 @@
+{# What a per-customer screen is showing and from where (DESIGN.md, Context and data modes). #}
+{% if customer.is_on_site %}
+  {% if customer.live_view_allowed %}
+  <div class="banner live-view" role="status">Live view · relayed from the on-site collector, not stored on the controller</div>
+  {% else %}
+  <div class="banner inside-access" role="status">On site · inside access only. This customer's network data stays on its own network; the controller shows customer and collector health only.</div>
+  {% endif %}
+{% endif %}
+{% if engagement.status == "completed" %}
+  <div class="banner completed" role="status">{{ engagement.name }} is completed and read-only.</div>
+{% endif %}

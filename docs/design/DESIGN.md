@@ -96,9 +96,10 @@ Every screen has the same frame (`Main.dc.html` shows it best):
   * The signed-in engineer, with "MFA on".
 * **Header** on each screen: a small context line, the page title, and the screen's main
   actions on the right.
-* **Customer and engagement switcher** (`Switcher.dc.html`) at the top of every per-customer
-  screen. It lists customers with their data mode, and then that customer's engagements with
-  status (Active, Completed). Switching keeps the engineer on the same screen.
+* **Customer and engagement switcher** (`Switcher.dc.html`) in the sidebar, under the search
+  button, on every per-customer screen (where every prototype screen puts it). It lists the
+  current customer's engagements with status (Active, Completed), then customers with their data
+  mode. Switching keeps the engineer on the same screen.
 * The existing shell in `engineers/base.html` (top bar, blue accent) moves to this layout and
   these tokens.
 
@@ -353,9 +354,12 @@ One search for everything an engineer can open, from the sidebar button or **⌘
 
 ### 12. Customer and engagement switcher
 
-A compact control in each screen's header: the current customer and engagement. Its menu lists
-customers (name, data mode, current engagement), and then the chosen customer's engagements
-with status. Picking one reloads the current screen for that context.
+A compact control in the sidebar: the current customer and engagement. Its menu lists the
+current customer's engagements with status, and then customers (name, data mode, and for On site
+whether live view is on). Picking an engagement reloads the current screen for it; picking
+another customer reloads the screen for that customer's current engagement. Typing in the menu
+filters customers with an htmx request. Only the current customer's engagements are listed, so
+the menu never mixes two customers' records.
 
 ### 13. Inside access only notice
 

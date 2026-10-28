@@ -84,6 +84,16 @@ def test_customer_list_update_and_unique_name(api):
     assert _post(api, CUSTOMERS, {"name": "Globex"}).status_code == 400
 
 
+def test_live_view_is_off_until_chosen_and_cannot_change_by_update(api):
+    # ADR-0005: the switch stays off until onboarding sets it.
+    assert _customer(api, data_mode="on_site")["live_view_allowed"] is False
+    bluepeak = _customer(api, name="Bluepeak", data_mode="on_site", live_view_allowed=True)
+    assert bluepeak["live_view_allowed"] is True
+    response = _patch(api, f"{CUSTOMERS}/{bluepeak['id']}", {"live_view_allowed": False})
+    assert response.status_code == 400
+    assert Customer.objects.get(pk=bluepeak["id"]).live_view_allowed
+
+
 def test_customer_data_mode_cannot_change_by_update(api):
     acme = _customer(api)
     response = _patch(api, f"{CUSTOMERS}/{acme['id']}", {"data_mode": "on_site"})

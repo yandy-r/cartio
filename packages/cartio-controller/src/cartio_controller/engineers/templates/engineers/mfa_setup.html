@@ -1,7 +1,7 @@
 {% extends "engineers/base.html" %}
 {% block title %}Add an authenticator{% endblock %}
-{% block content %}
-<div class="card">
+{% block signed_out %}
+<div class="sign-in">
   <h1>Add an authenticator</h1>
 {% if closed %}
   <p>Every sign-in needs a code from an authenticator app, and this account doesn't have one yet.</p>
@@ -15,7 +15,7 @@
     {% csrf_token %}
     <label for="id_enrollment_code">Enrollment code</label>
     <input id="id_enrollment_code" name="enrollment_code" autocomplete="off" required autofocus>
-    <button type="submit">Continue</button>
+    <button class="btn primary" type="submit">Continue</button>
   </form>
 {% else %}
   <p>Every sign-in needs a code from an authenticator app. Add Cartio to your app with this key
@@ -28,7 +28,7 @@
     <label for="id_code">Code from the app</label>
     <input id="id_code" name="code" inputmode="numeric" autocomplete="one-time-code"
            pattern="[0-9 ]*" maxlength="8" required autofocus>
-    <button type="submit">Confirm and sign in</button>
+    <button class="btn primary" type="submit">Confirm and sign in</button>
   </form>
 {% endif %}
 </div>

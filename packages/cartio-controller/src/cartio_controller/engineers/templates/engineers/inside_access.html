@@ -1,0 +1,27 @@
+{% extends "engineers/base.html" %}
+{% block title %}{{ screen_title }} · {{ customer.name }}{% endblock %}
+{% block page_title %}{{ screen_title }}{% endblock %}
+{% block content %}
+{# DESIGN.md section 13: shown in place of a data screen for an On site customer without live view. #}
+<section class="inside-access-notice" aria-label="Inside access only">
+  <div>
+    <span class="lock"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg></span>
+    <h2>{{ screen_title }} is inside access only for {{ customer.name }}</h2>
+    <p>This customer keeps its network data on site, and chose not to allow live view through the controller. The controller holds no inventory, maps, configs or findings for them, so there is nothing to show here. Open the collector's own page from inside their network instead, through their VPN or jump host, or on site, and sign in with your Cartio account and MFA.</p>
+  </div>
+  <aside>
+    <div class="label">What the controller can see</div>
+    <table>
+      <thead><tr><th>Collector</th><th>Health</th></tr></thead>
+      <tbody>
+      {% for collector in collectors %}
+        <tr><td class="mono">{{ collector.name }}</td><td><span class="tag {{ collector.health|slugify }}">{{ collector.health }}</span></td></tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">No collectors yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">The controller only ever receives job status for this customer.</p>
+  </aside>
+</section>
+{% endblock %}

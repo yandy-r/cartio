@@ -1,0 +1,35 @@
+{# Customer and engagement switcher (DESIGN.md section 12). Links keep the engineer on the same screen. #}
+<details class="switcher">
+  <summary aria-label="Switch customer or engagement. Now: {{ customer.name }}{% if engagement %}, {{ engagement.name }}{% endif %}">
+    <span class="switcher-current">
+      <span class="switcher-mode"><span class="mode-dot{% if customer.is_on_site %} on-site{% endif %}"></span>Customer · {{ customer.get_data_mode_display }}</span>
+      <span class="switcher-name">{{ customer.name }}</span>
+      <span class="switcher-engagement">{% if engagement %}{{ engagement.name }} · {{ engagement.get_status_display }}{% else %}No engagement yet{% endif %}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8FA3B5" stroke-width="2" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg>
+  </summary>
+  <div class="switcher-menu">
+    <h2 id="switcher-engagements">{{ customer.name }} engagements</h2>
+    <ul aria-labelledby="switcher-engagements">
+    {% for each in engagements %}
+      <li><a href="{{ each.switch_url }}"{% if each.pk == engagement.pk %} aria-current="true"{% endif %}>
+        <span class="status-dot {{ each.status }}"></span><span class="grow">{{ each.name }}</span>
+        <span class="muted">{{ each.get_status_display }}</span></a></li>
+    {% empty %}
+      <li class="empty">No engagements yet.</li>
+    {% endfor %}
+    </ul>
+    <h2 id="switcher-customers-label">Customers</h2>
+    <label class="switcher-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span class="sr-only">Find a customer</span>
+      <input type="search" name="q" placeholder="Find a customer" autocomplete="off"
+             hx-get="{% url 'engineers:switcher' %}?screen={{ screen|urlencode }}"
+             hx-trigger="input changed delay:200ms, search" hx-target="#switcher-customers">
+    </label>
+    <div class="switcher-scroll" id="switcher-customers" aria-labelledby="switcher-customers-label">
+      {% include "engineers/_switcher_customers.html" %}
+    </div>
+    <div class="switcher-footer"><a href="{% url 'engineers:customers' %}">All customers</a></div>
+  </div>
+</details>

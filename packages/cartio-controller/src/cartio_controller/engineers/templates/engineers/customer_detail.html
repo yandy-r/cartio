@@ -1,12 +1,13 @@
 {% extends "engineers/base.html" %}
 {% block title %}{{ customer.name }}{% endblock %}
+{% block page_context %}{{ customer.get_data_mode_display }} customer{% if customer.is_archived %} · archived{% endif %}{% if engagement %} · {{ engagement.name }}{% endif %}{% endblock %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block page_actions %}
+  {% if can_see_jobs %}<a class="btn" href="{% if engagement %}{% url 'engineers:jobs' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:jobs' customer=customer.pk %}{% endif %}">Jobs</a>{% endif %}
+{% endblock %}
 {% block content %}
-<p><a href="{% url 'engineers:customers' %}">Customers</a></p>
-<h1>{{ customer.name }} {% if customer.is_archived %}<span class="tag muted">archived</span>{% endif %}</h1>
-<p class="muted">Data mode: {{ customer.get_data_mode_display }}
-  {% if can_see_jobs %} · <a href="{% url 'engineers:jobs' customer.pk %}">Jobs</a>{% endif %}</p>
-
-<h2>Collectors</h2>
+<section>
+<h2 id="collectors">Collectors</h2>
 <table>
   <thead><tr><th>Name</th><th>Health</th><th>Last check-in</th><th>Version</th><th>Host</th></tr></thead>
   <tbody>
@@ -25,20 +26,24 @@
   </tbody>
 </table>
 <p class="muted">A collector shows as online when it checked in within the last {{ online_within_minutes }} minutes.</p>
+</section>
 
+<section>
 <h2>Engagements</h2>
 <table>
   <thead><tr><th>Name</th><th>Status</th><th>Dates</th></tr></thead>
   <tbody>
-  {% for engagement in engagements %}
-    <tr><td>{{ engagement.name }}</td><td>{{ engagement.get_status_display }}</td>
-        <td>{{ engagement.start_date|default:"" }}{% if engagement.end_date %} to {{ engagement.end_date }}{% endif %}</td></tr>
+  {% for each in engagements %}
+    <tr><td><a href="{{ each.switch_url }}"{% if each.pk == engagement.pk %} aria-current="true"{% endif %}>{{ each.name }}</a></td><td>{{ each.get_status_display }}</td>
+        <td>{{ each.start_date|default:"" }}{% if each.end_date %} to {{ each.end_date }}{% endif %}</td></tr>
   {% empty %}
     <tr><td colspan="3" class="muted">No engagements yet.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</section>
 
+<section>
 <h2>Sites</h2>
 <table>
   <thead><tr><th>Name</th><th>Location</th></tr></thead>
@@ -50,4 +55,5 @@
   {% endfor %}
   </tbody>
 </table>
+</section>
 {% endblock %}
