@@ -35,8 +35,8 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# Django writes these; keep them as generated.
-extend-exclude = ["**/migrations/**"]
+# Django writes migrations; .claude holds skills vendored from ystack. Keep both as shipped.
+extend-exclude = ["**/migrations/**", ".claude/**"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S"]

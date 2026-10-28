@@ -1,0 +1,151 @@
+# Branching and releases
+
+These rules decide where every change to {{PROJECT_NAME}} goes and how versions ship.
+They apply to humans and agents alike, on every task, without being restated in prompts.
+
+The core idea: **a change's target release is decided before work starts, and the target
+decides the base branch.** A release is a tag on a branch — never a set of commits picked
+from somewhere else after the fact.
+
+## Current state
+
+The block below is read by tools; the table is generated from it. Change both with
+`release-state-update.sh` (or `/release-model`), never by hand.
+
+{{STATE_BLOCK}}
+
+<!-- ycc-release-state:table:begin -->
+<!-- ycc-release-state:table:end -->
+
+## Rules
+
+1. **Know the target before you branch.** Every issue carries a target release (see
+   [Planning](#planning)). No target: a bug in a shipped version is a patch; everything else
+   goes to the next release.
+2. **Branch off `{{TRUNK}}` and PR back into it.** Topic branches are short-lived (days, not
+   weeks) and named `<type>/<issue-id>-<slug>`. If one falls behind, rebase it.
+3. **Never "sync" one long-lived branch into another.** No `sync {{TRUNK}} into …` PRs.
+{{#IF_RELEASE_BRANCHES}}
+   Code moves between `{{TRUNK}}` and `release/X.Y` only by cherry-pick (backport).
+4. **Fix on `{{TRUNK}}` first, then backport.** A fix that must reach the shipped minor lands
+   on `{{TRUNK}}`, gets the `backport:X.Y` label, and is cherry-picked to `release/X.Y` in its
+   own PR. Only when `{{TRUNK}}` has already rewritten the broken code does the fix go straight
+   to `release/X.Y`; say so in the PR.
+{{/IF_RELEASE_BRANCHES}}
+{{#IF_TRUNK_ONLY}}
+4. **Every release comes from `{{TRUNK}}`.** Fixes ship in the next release; there are no
+   maintenance branches and no backports. When an older version needs patches, upgrade the
+   model with `/release-model --upgrade` instead of branching ad hoc.
+{{/IF_TRUNK_ONLY}}
+5. **No new long-lived branches.** Large work lands on `{{TRUNK}}` in small PRs. See
+   [Unfinished work](#unfinished-work).
+6. **`{{TRUNK}}` is always releasable.** CI green, and nothing half-built reachable by users.
+7. **Only maintainers cut releases**, following [Releasing](#releasing). Agents never tag.
+
+## Where does my change go?
+
+{{#IF_RELEASE_BRANCHES}}
+| Change                                    | Target       | PR into         | Backport            |
+| ----------------------------------------- | ------------ | --------------- | ------------------- |
+| Bug users hit in the shipped version      | Patch        | `{{TRUNK}}`     | Yes, `backport:X.Y` |
+| Security fix                              | Patch        | `{{TRUNK}}`     | Yes, `backport:X.Y` |
+| Bug only in unreleased code               | Next release | `{{TRUNK}}`     | No                  |
+| Feature, refactor, perf, docs, tests      | Next release | `{{TRUNK}}`     | No                  |
+| Bug in code `{{TRUNK}}` has since rewritten | Patch      | `release/X.Y`   | n/a — explain in PR |
+| Dependency bump                           | Next release | `{{TRUNK}}`     | Only security bumps |
+{{/IF_RELEASE_BRANCHES}}
+{{#IF_TRUNK_ONLY}}
+Every change targets the next release and goes into `{{TRUNK}}`. Bugs and security fixes
+may prompt an earlier release; they never create a branch of their own.
+{{/IF_TRUNK_ONLY}}
+
+## Unfinished work
+
+Big features merge incrementally instead of living on a side branch. Anything a user could
+reach before it is finished stays hidden: behind a setting or environment variable that
+defaults to off, or simply not wired into navigation or routes until the last PR. When a
+change cannot be hidden (a rename, a data-directory move), prepare everything behind the
+scenes first and make the switch in one final PR shortly before the release.
+
+List the project's feature switches here as they are added, with their default and the
+release that flips them.
+
+{{#IF_RELEASE_BRANCHES}}
+## Backporting
+
+After the `{{TRUNK}}` PR is squash-merged, run `/backport <PR#>`, or by hand:
+
+```bash
+git fetch origin
+git switch -c backport/X.Y/<slug> origin/release/X.Y
+git cherry-pick -x <squash-commit-sha-on-{{TRUNK}}>
+```
+
+Open the PR into `release/X.Y` with the original title and `Backport of #N` in the body, and
+squash-merge it. Resolve conflicts minimally; if the fix needs real rework for the older
+code, write it as its own PR against `release/X.Y`.
+{{/IF_RELEASE_BRANCHES}}
+
+## Releasing
+
+Tags follow `{{TAG_PATTERN}}`. Version files: {{VERSION_FILES}}. Changelog:
+{{CHANGELOG_FILE}}. {{PUBLISH_STEP}}
+
+{{#IF_RELEASE_BRANCHES}}
+### Minor or major release (vX.Y.0) — from `{{TRUNK}}`
+
+1. On `{{TRUNK}}`, run `release-state-update.sh --add-maintenance release/X.Y`, then commit
+   `chore(release): vX.Y.0` with the changelog entry, the version bump and the state change.
+2. Push an annotated tag `vX.Y.0`.
+3. Create the maintenance branch and its label:
+
+   ```bash
+   git push origin vX.Y.0^{commit}:refs/heads/release/X.Y
+   gh label create "backport:X.Y" --description "Cherry-pick to release/X.Y"
+   ```
+
+4. Publish the release notes.
+
+Pre-releases of the next minor are tagged `vX.Y.0-beta.N` from `{{TRUNK}}`.
+
+### Patch release (vX.Y.Z) — from `release/X.Y`
+
+0. **Confirm every backport landed. Do not tag until this is clean.** Every `{{TRUNK}}` PR
+   labelled `backport:X.Y` needs a **merged** `Backport of #N` PR into `release/X.Y` (an
+   open or closed one does not count). Every fix merged into `{{TRUNK}}` since the last
+   `vX.Y.*` tag without the label gets a decision: backport it, or confirm it only fixes
+   trunk code. `/releaser` runs this check; `/backport --audit release/X.Y` runs it
+   on its own. By hand:
+
+   ```bash
+   git fetch origin --tags
+   for n in $(gh pr list --state merged --base {{TRUNK}} --label backport:X.Y --limit 500 --json number --jq '.[].number'); do
+     [ "$(gh pr list --state merged --base release/X.Y --search "\"Backport of #$n\" in:body" --json number --jq length)" = 0 ] && echo "not backported: #$n"
+   done
+   since=$(git log -1 --format=%cI "$(git describe --tags --abbrev=0 origin/release/X.Y)")
+   gh pr list --state merged --base {{TRUNK}} --search "merged:>=$since -label:\"backport:X.Y\"" \
+     --limit 500 --json number,title --jq '.[] | select(.title | test("^fix")) | "#\(.number) \(.title)"'
+   ```
+
+1. On `release/X.Y`, commit `chore(release): vX.Y.Z` with the changelog entry and the
+   version bump.
+2. Push an annotated tag `vX.Y.Z` and publish the release notes.
+3. Carry the changelog entry (not the version bump) back to `{{TRUNK}}` in a
+   `chore(release): record vX.Y.Z in changelog` PR.
+
+Only the maintenance branches in the support window get patch releases.
+{{/IF_RELEASE_BRANCHES}}
+{{#IF_TRUNK_ONLY}}
+### Every release — from `{{TRUNK}}`
+
+1. On `{{TRUNK}}`, commit `chore(release): vX.Y.Z` with the changelog entry and the version
+   bump.
+2. Push an annotated tag `vX.Y.Z`.
+3. Publish the release notes.
+{{/IF_TRUNK_ONLY}}
+
+`/releaser` automates these steps and checks you are on the right branch.
+
+## Planning
+
+{{TRACKER_SECTION}}
