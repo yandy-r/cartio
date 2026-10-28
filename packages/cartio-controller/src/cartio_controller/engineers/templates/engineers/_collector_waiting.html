@@ -1,0 +1,14 @@
+{# A new collector's state on the Add a collector panel. Polls until it enrolls (htmx). #}
+<div class="waiting" id="collector-waiting"{% if collector.health == "not enrolled" %} hx-get="{% url 'engineers:collector-status' customer=collector.customer_id collector=collector.pk %}" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %} role="status">
+  {% if collector.health == "not enrolled" %}
+    <span class="spinner" aria-hidden="true"></span>
+    <div><strong>Waiting for {{ collector.name }} to enroll…</strong>
+      <div class="muted">It must reach the controller on 443, through a proxy if needed. Nothing has to be opened inbound.</div></div>
+  {% elif collector.health == "revoked" %}
+    <span class="health-dot revoked" aria-hidden="true"></span><div><strong>{{ collector.name }} was revoked.</strong></div>
+  {% else %}
+    <span class="health-dot {{ collector.health|slugify }}" aria-hidden="true"></span>
+    <div><strong>{{ collector.name }} enrolled{% if collector.hostname %} from <span class="mono">{{ collector.hostname }}</span>{% endif %}.</strong>
+      <div class="muted">State: {{ collector.health }}. It shows in the list below once you reload.</div></div>
+  {% endif %}
+</div>

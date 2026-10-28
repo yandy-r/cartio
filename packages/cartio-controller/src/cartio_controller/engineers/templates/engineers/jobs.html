@@ -1,23 +1,33 @@
 {% extends "engineers/base.html" %}
 {% block title %}Jobs · {{ customer.name }}{% endblock %}
-{% block page_title %}Jobs{% endblock %}
+{% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %} · collectors dial out on 443 and never listen{% endblock %}
+{% block page_title %}Collectors &amp; jobs{% endblock %}
+{% block page_actions %}
+  {# Starting jobs needs the job channel (YAN-1651): discovery from Engagement setup (YAN-1735), health checks (YAN-1725). #}
+  <button class="btn" type="button" disabled title="Discovery starts from Engagement setup, which isn't built yet">Start a discovery</button>
+  <button class="btn primary" type="button" disabled title="Health jobs need the job channel, which isn't built yet">Run health check</button>
+{% endblock %}
 {% block content %}
-<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement.</p>
-<table>
-  <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Outcome</th></tr></thead>
+{% include "engineers/_operations_tabs.html" %}
+<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement. Starting a discovery or a health check isn't available yet; it comes with the job channel.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Jobs">
+<table class="jobs-table">
+  <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Progress</th><th>State</th></tr></thead>
   <tbody>
   {% for run in runs %}
     <tr>
-      <td>{{ run.started_at|date:"Y-m-d H:i" }} UTC</td>
-      <td>{{ run.job_type }}</td>
-      <td>{{ run.collector.name }}</td>
+      <td class="mono">{{ run.started_at|date:"Y-m-d H:i" }} UTC</td>
+      <td>{{ run.job_type|capfirst }}<div class="mono muted small">{{ run.pk|stringformat:"s"|slice:":8" }}</div></td>
+      <td class="mono">{{ run.collector.name }}</td>
       <td>{{ run.engagement.name|default:"–" }}</td>
       <td>{{ run.started_by|default:"scheduled" }}</td>
-      <td>{% if run.result %}{{ run.result.get_outcome_display }}{% if run.result.device_count %} ({{ run.result.device_count }} devices){% endif %}{% else %}<span class="muted">running</span>{% endif %}</td>
+      <td>{% if run.result %}{% if run.result.device_count %}{{ run.result.device_count }} device{{ run.result.device_count|pluralize }}{% endif %}{% if run.result.error_summary %}{% if run.result.device_count %} · {% endif %}{{ run.result.error_summary }}{% endif %}{% if not run.result.device_count and not run.result.error_summary %}–{% endif %}{% else %}<span class="muted">Waiting for results</span>{% endif %}</td>
+      <td>{% if run.result %}<span class="job-state {{ run.result.outcome }}">{{ run.result.get_outcome_display }}</span>{% else %}<span class="job-state running">Running</span>{% endif %}</td>
     </tr>
   {% empty %}
-    <tr><td colspan="6" class="muted">No jobs yet.</td></tr>
+    <tr><td colspan="7" class="muted">No jobs yet.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

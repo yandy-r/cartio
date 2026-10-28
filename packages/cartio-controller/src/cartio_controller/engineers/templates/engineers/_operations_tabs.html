@@ -1,0 +1,6 @@
+{# The tabs of Collectors, jobs and audit (DESIGN.md section 4). Each is its own URL, so the switcher keeps it. #}
+<nav class="tabs" aria-label="Collectors, jobs and audit">
+  <a class="tab" href="{% if engagement %}{% url 'engineers:collectors' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:collectors' customer=customer.pk %}{% endif %}"{% if screen == "collectors" %} aria-current="page"{% endif %}>Collectors</a>
+  {% if can_see_jobs %}<a class="tab" href="{% if engagement %}{% url 'engineers:jobs' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:jobs' customer=customer.pk %}{% endif %}"{% if screen == "jobs" %} aria-current="page"{% endif %}>Jobs</a>{% endif %}
+  {% if can_see_audit %}<a class="tab" href="{% if engagement %}{% url 'engineers:audit' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:audit' customer=customer.pk %}{% endif %}"{% if screen == "audit" %} aria-current="page"{% endif %}>Audit log</a>{% endif %}
+</nav>

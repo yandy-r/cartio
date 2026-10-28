@@ -12,7 +12,13 @@ from django.urls import reverse
 from cartio_controller.collectors.models import Customer, Engagement
 
 # Per-customer screens, by URL name. The switcher keeps the engineer on one of these.
-SCREENS = {"customer": "Overview", "inventory": "Inventory", "jobs": "Jobs"}
+SCREENS = {
+    "customer": "Overview",
+    "inventory": "Inventory",
+    "collectors": "Collectors & jobs",
+    "jobs": "Collectors & jobs",
+    "audit": "Audit log",
+}
 
 # Which engagement a screen shows when the URL doesn't name one.
 _CURRENT_FIRST = {

@@ -243,6 +243,23 @@ Three tabs for the current customer:
 * **Audit:** the customer's audit log with time, kind, who and what. It can be filtered by kind.
   The sidebar's **Audit log** link opens this tab.
 
+As built (YAN-1736):
+
+* Each tab is its own URL (`collectors`, `jobs`, `audit`), so the switcher and links keep the
+  tab. Jobs and Audit show only with the permissions their APIs ask for.
+* A collector has an optional site. Revoking clears its secret and any unused token, so it can't
+  check in, start a run or receive credentials again; a collector that never enrolled shows
+  **Cancel enrollment** instead. The confirmation is on the collector's card.
+* The wizard asks for name and site only. The prototype's "Runs on" choice and the 24-hour
+  check-in sparkline are left out until the controller records them. Certificate expiry and the
+  offline queue read "Not tracked yet" until client certificates (YAN-1650) and the job channel
+  (YAN-1651) exist. Enrollment tokens don't expire yet.
+* **Start a discovery** and **Run health check** are shown disabled until Engagement setup
+  (YAN-1735) and health jobs (YAN-1725) land.
+* The audit filter kinds are Jobs, Collectors, Credentials and Admin. Sign-ins aren't tied to a
+  customer (`LoginEvent`), so there is no Logins filter. **Export CSV** downloads the whole log
+  and is itself logged.
+
 ### 5. Site map
 
 The per-site L2/L3 map (YAN-1663), the main picture of a customer's network.

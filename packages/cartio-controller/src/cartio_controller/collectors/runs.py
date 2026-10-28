@@ -29,6 +29,10 @@ def start_run(
         # Lock the customer and engagement, so neither is archived while the run starts.
         if collector.enrolled_at is None:
             raise RunNotAllowed("The collector hasn't enrolled.")
+        # Read under a lock, so a revoke that lands meanwhile wins (operations.revoke locks too).
+        locked = Collector.all_customers.select_for_update().get(pk=collector.pk)
+        if locked.revoked_at is not None:
+            raise RunNotAllowed("The collector was revoked.")
         if Customer.objects.select_for_update().get(pk=collector.customer_id).is_archived:
             raise RunNotAllowed("This customer is archived.")
         if engagement is not None:

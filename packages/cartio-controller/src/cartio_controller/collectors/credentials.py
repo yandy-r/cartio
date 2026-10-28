@@ -88,6 +88,9 @@ def deliver_credentials(collector: Collector, credential_ids, job: str = "") -> 
     except ValueError as exc:
         raise CredentialNotAvailable("One or more credentials aren't available.") from exc
     with transaction.atomic():
+        # Read under a lock, so a revoke that lands meanwhile wins (operations.revoke locks too).
+        if Collector.all_customers.select_for_update().get(pk=collector.pk).revoked_at:
+            raise CredentialNotAvailable("The collector was revoked.")
         found = {str(c.pk): c for c in collector.scoped(Credential).filter(pk__in=ids)}
         if len(found) != len(set(ids)):
             # Don't say which ids exist: another customer's id looks the same as a made-up one.

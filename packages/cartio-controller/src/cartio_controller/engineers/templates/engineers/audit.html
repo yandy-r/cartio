@@ -1,0 +1,35 @@
+{% extends "engineers/base.html" %}
+{% block title %}Audit log · {{ customer.name }}{% endblock %}
+{% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %} · collectors dial out on 443 and never listen{% endblock %}
+{% block page_title %}Collectors &amp; jobs{% endblock %}
+{% block page_actions %}
+  <form method="post" action="{% url 'engineers:audit-export' customer=customer.pk %}">{% csrf_token %}<button class="btn" type="submit">Export CSV</button></form>
+{% endblock %}
+{% block content %}
+{% include "engineers/_operations_tabs.html" %}
+<div class="audit-toolbar">
+  <h2>Audit log <span class="label">append-only</span></h2>
+  <div class="pill-groups" aria-label="Filter by kind">
+    {% for filter in filters %}<a class="pill" href="{{ filter.url }}"{% if filter.key == kind %} aria-current="true"{% endif %}>{{ filter.label }}</a>{% endfor %}
+  </div>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Audit entries">
+<table class="audit-table">
+  <thead><tr><th>When</th><th>Event</th><th>Who</th><th>Collector</th><th>Detail</th></tr></thead>
+  <tbody>
+  {% for event in events %}
+    <tr>
+      <td class="mono">{{ event.at|date:"Y-m-d H:i" }} UTC</td>
+      <td>{% if event.kind %}<span class="kind {{ event.kind|slugify }}">{{ event.kind }}</span> {% endif %}{{ event.get_action_display }} · <span class="muted">{{ event.object_type }}</span> {{ event.object_name|default:event.object_id }}</td>
+      <td>{{ event.actor|default:"system" }}</td>
+      <td class="mono">{{ event.collector.name|default:"–" }}</td>
+      <td class="muted">{{ event.summary|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="muted">No audit entries{% if kind %} of this kind{% endif %} yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted">The newest {{ limit }} entries. Export CSV has the whole log, and the export itself is logged. Sign-ins aren't tied to a customer, so they aren't in this log.</p>
+{% endblock %}
