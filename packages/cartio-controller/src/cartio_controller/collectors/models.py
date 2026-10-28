@@ -4,6 +4,9 @@ import secrets
 import uuid
 
 from django.db import models
+from django.db.models.functions import Lower
+
+from .validators import validate_seed_hints
 
 
 def _hash(value: str) -> str:
@@ -11,17 +14,101 @@ def _hash(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-class Customer(models.Model):
+class Archivable(models.Model):
+    """Records are archived, never deleted, so history and audit trails stay intact."""
+
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    @property
+    def is_archived(self) -> bool:
+        return self.archived_at is not None
+
+
+class Customer(Archivable):
     """An organization we assess. No data, collector or credential crosses customers."""
 
+    class DataMode(models.TextChoices):
+        # ADR-0002: where this customer's network data is stored.
+        HOSTED = "hosted", "Hosted"
+        ON_SITE = "on_site", "On site"
+
     name = models.CharField(max_length=200, unique=True)
+    data_mode = models.CharField(max_length=16, choices=DataMode, default=DataMode.HOSTED)
+    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(Lower("name"), name="unique_customer_name_ci"),
+            models.CheckConstraint(
+                condition=models.Q(data_mode__in=["hosted", "on_site"]),
+                name="customer_data_mode_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.name
+
+
+class Engagement(Archivable):
+    """One assessment we run for a customer."""
+
+    class Status(models.TextChoices):
+        PLANNED = "planned", "Planned"
+        ACTIVE = "active", "Active"
+        COMPLETED = "completed", "Completed"
+
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="engagements")
+    name = models.CharField(max_length=200)
+    status = models.CharField(max_length=16, choices=Status, default=Status.PLANNED)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    # The assessment this engagement represents: its scope and goal, in words.
+    assessment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["customer__name", "-start_date", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["customer", "name"], name="unique_engagement_name"),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["planned", "active", "completed"]),
+                name="engagement_status_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(start_date__isnull=True)
+                | models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="engagement_ends_after_start",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.customer} / {self.name}"
+
+
+class Site(Archivable):
+    """A place in a customer's network: an office, a data center, a cloud region."""
+
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="sites")
+    name = models.CharField(max_length=200)
+    location = models.CharField(max_length=500, blank=True)
+    # Where discovery starts: IP addresses, networks (CIDR) or host names.
+    seed_hints = models.JSONField(default=list, blank=True, validators=[validate_seed_hints])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["customer__name", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["customer", "name"], name="unique_site_name"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.customer} / {self.name}"
 
 
 class Collector(models.Model):
