@@ -83,10 +83,14 @@ USE_I18N = True
 USE_TZ = True
 
 # The engineer API. Engineers sign in to the controller (staff accounts until the login and UI
-# shell issue lands); collectors use their own endpoints and never reach this API.
+# shell issue lands) and need the matching model permissions to make changes. Collectors use
+# their own endpoints and never reach this API.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAdminUser"],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAdminUser",
+        "rest_framework.permissions.DjangoModelPermissions",
+    ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",

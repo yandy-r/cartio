@@ -4,6 +4,9 @@ import secrets
 import uuid
 
 from django.db import models
+from django.db.models.functions import Lower
+
+from .validators import validate_seed_hints
 
 
 def _hash(value: str) -> str:
@@ -40,6 +43,7 @@ class Customer(Archivable):
     class Meta:
         ordering = ["name"]
         constraints = [
+            models.UniqueConstraint(Lower("name"), name="unique_customer_name_ci"),
             models.CheckConstraint(
                 condition=models.Q(data_mode__in=["hosted", "on_site"]),
                 name="customer_data_mode_valid",
@@ -94,7 +98,7 @@ class Site(Archivable):
     name = models.CharField(max_length=200)
     location = models.CharField(max_length=500, blank=True)
     # Where discovery starts: IP addresses, networks (CIDR) or host names.
-    seed_hints = models.JSONField(default=list, blank=True)
+    seed_hints = models.JSONField(default=list, blank=True, validators=[validate_seed_hints])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

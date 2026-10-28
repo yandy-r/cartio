@@ -1,6 +1,7 @@
 import pytest
 from cartio_controller.collectors.models import Customer, Engagement, Site
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.management import CommandError, call_command
 from django.db import IntegrityError, transaction
 
@@ -9,10 +10,20 @@ pytestmark = pytest.mark.django_db
 CUSTOMERS = "/api/v1/customers"
 
 
+def _engineer(username="engineer"):
+    staff = get_user_model().objects.create_user(username, password="x", is_staff=True)
+    staff.user_permissions.set(
+        Permission.objects.filter(
+            content_type__app_label="collectors",
+            content_type__model__in=["customer", "engagement", "site"],
+        )
+    )
+    return staff
+
+
 @pytest.fixture
 def api(client):
-    staff = get_user_model().objects.create_user("engineer", password="x", is_staff=True)
-    client.force_login(staff)
+    client.force_login(_engineer())
     return client
 
 
@@ -50,7 +61,7 @@ def test_customer_can_be_created_on_site(api):
 
 
 @pytest.mark.parametrize("mode", ["", None, "cloud"])
-def test_customer_rejects_a_missing_or_unknown_data_mode(api, mode):
+def test_customer_rejects_an_empty_or_unknown_data_mode(api, mode):
     response = _post(api, CUSTOMERS, {"name": "Acme", "data_mode": mode})
     assert response.status_code == 400
     assert "data_mode" in response.json()
@@ -171,7 +182,35 @@ def test_site_lifecycle_and_seed_hints(api):
     assert response.json()["location"] == "Second floor"
 
 
-@pytest.mark.parametrize("hint", ["", "192.0.2.300", "-bad.example", "a b", "x" * 300])
+def test_site_seed_hints_are_normalized(api):
+    acme = _customer(api)
+    hints = ["192.0.2.7/24", "198.51.100.9/32", "Core-SW1.Example.NET.", "192.0.2.0/24"]
+    response = _post(api, f"{CUSTOMERS}/{acme['id']}/sites", {"name": "HQ", "seed_hints": hints})
+    assert response.status_code == 201, response.json()
+    assert response.json()["seed_hints"] == ["192.0.2.0/24", "198.51.100.9", "core-sw1.example.net"]
+
+
+@pytest.mark.parametrize(
+    "hint",
+    [
+        "",
+        "192.0.2.300",
+        "-bad.example",
+        "a b",
+        "x" * 300,
+        "evil\n.example.com",
+        "fe80::1%$(id)",
+        "host;id",
+        "0.0.0.0/0",
+        "::/0",
+        "10.0.0.0/8",
+        "224.0.0.1",
+        "127.0.0.1",
+        "169.254.169.254",
+        "0.0.0.0",  # noqa: S104
+        "localhost",
+    ],
+)
 def test_site_rejects_bad_seed_hints(api, hint):
     acme = _customer(api)
     response = _post(api, f"{CUSTOMERS}/{acme['id']}/sites", {"name": "HQ", "seed_hints": [hint]})
@@ -265,8 +304,7 @@ def test_api_needs_csrf_for_writes():
     from django.test import Client
 
     csrf_client = Client(enforce_csrf_checks=True)
-    staff = get_user_model().objects.create_user("engineer", password="x", is_staff=True)
-    csrf_client.force_login(staff)
+    csrf_client.force_login(_engineer())
     assert _post(csrf_client, CUSTOMERS, {"name": "Acme"}).status_code == 403
 
 
@@ -274,3 +312,46 @@ def test_create_collector_refuses_an_archived_customer():
     Customer.objects.create(name="Acme", archived_at="2026-10-01T00:00:00Z")
     with pytest.raises(CommandError):
         call_command("create_collector", customer="Acme", name="vm01")
+
+
+def test_staff_without_permissions_cannot_write(client):
+    client.force_login(get_user_model().objects.create_user("viewer", is_staff=True))
+    assert _post(client, CUSTOMERS, {"name": "Acme"}).status_code == 403
+    assert not Customer.objects.exists()
+
+
+def test_customer_names_are_unique_ignoring_case(api):
+    _customer(api, "Acme")
+    assert _post(api, CUSTOMERS, {"name": "ACME"}).status_code == 400
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Customer.objects.create(name="acme")
+
+
+@pytest.mark.parametrize("kind", ["engagements", "sites"])
+def test_records_of_an_archived_customer_are_frozen(api, kind):
+    acme = _customer(api)
+    url = f"{CUSTOMERS}/{acme['id']}/{kind}"
+    record = _post(api, url, {"name": "One"}).json()
+    detail = f"{url}/{record['id']}"
+    _post(api, f"{detail}/archive")
+    _post(api, f"{CUSTOMERS}/{acme['id']}/archive")
+
+    assert _names(api.get(url, {"archived": "1"})) == ["One"]
+    assert _patch(api, detail, {"name": "Two"}).status_code == 400
+    assert _post(api, f"{detail}/restore").status_code == 400
+    assert _post(api, f"{detail}/archive").status_code == 400
+
+
+def test_admin_cannot_delete_or_store_bad_seed_hints(client):
+    from django.core.exceptions import ValidationError
+
+    admin_user = get_user_model().objects.create_superuser("root", password="x")
+    client.force_login(admin_user)
+    acme = Customer.objects.create(name="Acme")
+    site = Site.objects.create(customer=acme, name="HQ")
+    assert client.get(f"/admin/collectors/site/{site.pk}/delete/").status_code == 403
+    assert client.get(f"/admin/collectors/customer/{acme.pk}/delete/").status_code == 403
+
+    site.seed_hints = ["$(id)"]
+    with pytest.raises(ValidationError):
+        site.full_clean()

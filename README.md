@@ -56,15 +56,15 @@ The check-in appears under Collectors in the admin at http://127.0.0.1:8000/admi
 ## Engineer API
 
 Customers, engagements and sites are managed through a JSON API under `/api/v1/`. Until the
-engineer login lands, it accepts a signed-in staff session (sign in through the admin first) and
-needs the CSRF token for writes.
+engineer login lands, it accepts a signed-in staff session (sign in through the admin first),
+writes need the user's model permissions for that record type, and writes need the CSRF token.
 
 | Path | What it does |
 | -- | -- |
 | `customers` | List (add `?archived=true` to include archived) and create. `data_mode` is `hosted` (default) or `on_site` (ADR-0002) and can't be changed after creation. |
 | `customers/<id>` | Read and update. |
-| `customers/<id>/engagements`, `customers/<id>/sites` | List and create, always within that customer. |
-| `.../<id>/archive`, `.../<id>/restore` | Archive or restore any of the above. Nothing is deleted through the API. |
+| `customers/<id>/engagements`, `customers/<id>/sites` | List and create, always within that customer. A site's `seed_hints` are IP addresses, networks no wider than /16 (IPv4) or /48 (IPv6), or host names. |
+| `.../<id>/archive`, `.../<id>/restore` | Archive or restore any of the above. Archived records, and everything under an archived customer, are read-only. Nothing is deleted, through the API or the admin. |
 
 The collector only accepts plain `http` for a controller on the same machine. Any other controller URL must use `https`.
 

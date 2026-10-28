@@ -1,12 +1,8 @@
-import ipaddress
-import re
-
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .models import Customer, Engagement, Site
-
-MAX_SEED_HINTS = 256
-_HOSTNAME_LABEL = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+from .validators import MAX_SEED_HINTS, normalize_seed_hint
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -14,6 +10,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = ["id", "name", "data_mode", "notes", "created_at", "archived_at"]
         read_only_fields = ["created_at", "archived_at"]
+
+    def validate_name(self, value):
+        others = Customer.objects.filter(name__iexact=value)
+        if self.instance is not None:
+            others = others.exclude(pk=self.instance.pk)
+        if others.exists():
+            raise serializers.ValidationError("A customer with this name already exists.")
+        return value
 
     def validate_data_mode(self, value):
         # ADR-0002: changing mode moves or deletes network data, so it needs its own audited
@@ -82,26 +86,9 @@ class SiteSerializer(CustomerScopedSerializer):
         read_only_fields = ["created_at", "archived_at"]
 
     def validate_seed_hints(self, value):
-        bad = [hint for hint in value if not _is_seed_hint(hint)]
-        if bad:
-            raise serializers.ValidationError(
-                "Each seed hint must be an IP address, a network in CIDR form or a host name."
-            )
-        return value
-
-
-def _is_seed_hint(value: str) -> bool:
-    try:
-        ipaddress.ip_network(value, strict=False)
-    except ValueError:
-        pass
-    else:
-        return True
-    name = value.rstrip(".")
-    labels = name.split(".")
-    # An all-numeric last label is a mistyped address, not a host name.
-    return (
-        0 < len(name) <= 253
-        and all(_HOSTNAME_LABEL.match(label) for label in labels)
-        and not labels[-1].isdigit()
-    )
+        try:
+            hints = [normalize_seed_hint(hint) for hint in value]
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages) from exc
+        # Keep the order, drop duplicates.
+        return list(dict.fromkeys(hints))

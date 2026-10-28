@@ -8,7 +8,7 @@ customer's path.
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import mixins, serializers, status, viewsets
+from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -36,20 +36,27 @@ class ArchivableViewSet(
         self._save(serializer)
 
     def perform_update(self, serializer):
+        self.check_parent()
         if serializer.instance.is_archived:
             raise serializers.ValidationError("Restore this record before changing it.")
         self._save(serializer)
 
     def _save(self, serializer, **extra):
-        # The serializers check unique names first; this catches a concurrent duplicate.
+        # The serializers check names and dates first; this catches a concurrent conflict.
         try:
             with transaction.atomic():
                 serializer.save(**extra)
         except IntegrityError as exc:
-            raise serializers.ValidationError({"name": "This name is already taken."}) from exc
+            if _is_unique_violation(exc):
+                raise serializers.ValidationError({"name": "This name is already taken."}) from exc
+            raise serializers.ValidationError("The change conflicts with another one.") from exc
+
+    def check_parent(self) -> None:
+        """Refuse changes when the record's parent is archived. Customers have no parent."""
 
     @action(detail=True, methods=["post"])
     def archive(self, request, *args, **kwargs):
+        self.check_parent()
         record = self.get_object()
         if not record.is_archived:
             record.archived_at = timezone.now()
@@ -58,6 +65,7 @@ class ArchivableViewSet(
 
     @action(detail=True, methods=["post"])
     def restore(self, request, *args, **kwargs):
+        self.check_parent()
         record = self.get_object()
         if record.is_archived:
             record.archived_at = None
@@ -92,15 +100,12 @@ class CustomerScopedViewSet(ArchivableViewSet):
             context["customer"] = self.get_customer()
         return context
 
-    def create(self, request, *args, **kwargs):
+    def check_parent(self) -> None:
         if self.get_customer().is_archived:
-            return Response(
-                {"detail": "This customer is archived. Restore it first."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return super().create(request, *args, **kwargs)
+            raise serializers.ValidationError("This customer is archived. Restore it first.")
 
     def perform_create(self, serializer):
+        self.check_parent()
         self._save(serializer, customer=self.get_customer())
 
 
@@ -112,3 +117,12 @@ class EngagementViewSet(CustomerScopedViewSet):
 class SiteViewSet(CustomerScopedViewSet):
     model = Site
     serializer_class = SiteSerializer
+
+
+def _is_unique_violation(exc: IntegrityError) -> bool:
+    cause = exc.__cause__
+    sqlstate = getattr(cause, "sqlstate", None) or getattr(cause, "pgcode", None)
+    if sqlstate is not None:
+        return sqlstate == "23505"
+    # SQLite, used only in local development, has no SQLSTATE.
+    return "UNIQUE" in str(exc)

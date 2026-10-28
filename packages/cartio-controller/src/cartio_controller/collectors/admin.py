@@ -12,8 +12,15 @@ class CollectorInline(admin.TabularInline):
     show_change_link = True
 
 
+class ArchiveNotDeleteAdmin(admin.ModelAdmin):
+    """Customers, engagements and sites are archived, never deleted."""
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
+class CustomerAdmin(ArchiveNotDeleteAdmin):
     list_display = ["name", "data_mode", "created_at", "archived_at"]
     list_filter = ["data_mode"]
     search_fields = ["name"]
@@ -25,7 +32,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 @admin.register(Engagement)
-class EngagementAdmin(admin.ModelAdmin):
+class EngagementAdmin(ArchiveNotDeleteAdmin):
     list_display = ["name", "customer", "status", "start_date", "end_date", "archived_at"]
     list_filter = ["customer", "status"]
     search_fields = ["name"]
@@ -35,7 +42,7 @@ class EngagementAdmin(admin.ModelAdmin):
 
 
 @admin.register(Site)
-class SiteAdmin(admin.ModelAdmin):
+class SiteAdmin(ArchiveNotDeleteAdmin):
     list_display = ["name", "customer", "location", "archived_at"]
     list_filter = ["customer"]
     search_fields = ["name", "location"]
