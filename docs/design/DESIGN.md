@@ -293,7 +293,7 @@ The per-site L2/L3 map (YAN-1663), the main picture of a customer's network.
     with protocol and subnet on the map.
   * **Connect to…** is shown disabled until the Connect modal (YAN-1739) lands. The prototype's
     links table and JSON graph exports and "Add to report" aren't built; the report's topology
-    page (YAN-1745) draws from the same SVG.
+    page (YAN-1745) prints every site's L2 map from the same SVG instead.
   * PNG is drawn in the browser from the SVG the export sends, at twice the size, so the
     controller needs no image library. Every export, PNG included, is logged as
     `sitemap.exported`.
@@ -375,8 +375,11 @@ Two engagements of the same customer side by side (YAN-1667).
   there is nothing to export there yet.
 * **One engagement only:** a customer with a single engagement gets an empty state explaining
   that Compare needs two.
-* **Add to report:** the report's "Changes since the last assessment" page is YAN-1745, so the
-  prototype's "Add to report" button comes with it.
+* **Add to report (YAN-1745):** opens the current engagement's report with its "Changes since
+  the last assessment" page compared against the picked baseline. The report holds no saved
+  state, so the button is a link with the baseline in the URL rather than the prototype's toast.
+  It isn't offered when the baseline is the later engagement, since the report compares only
+  against earlier ones.
 
 ### 9. Report and export
 
@@ -406,6 +409,23 @@ Actions:
   integrations, so they aren't in the report yet. Instead it has an inventory summary and a
   device appendix (the issue's scope). For On site customers export is off with the reason,
   until the on-site collector can build and save reports.
+* **As built (YAN-1745):**
+  * **Topology** is an optional section, on by default: one figure per site that has devices in
+    the engagement, drawn from the Site map's own SVG (`SiteMap.svg()`, L2 layer), with a legend
+    and a numbered caption. The PDF draws it as vectors and the DOCX embeds a PNG of it, so
+    neither needs an image library beyond ReportLab's Pillow. Unconfirmed neighbours and
+    devices on other sites appear as they do on the Site map.
+  * **Changes since the last assessment** is an optional section that reads `Comparison` from
+    Compare against the engagement just before this one, or one picked under **Compare with**
+    (earlier engagements of the same customer only). It's a table of change, count and up to
+    three examples: findings fixed, new and still open (skipped with a note when the checks
+    didn't run on one side), OS changes, devices added and no longer seen, and configurations
+    changed by line count. No config line prints. With no earlier engagement the option shows
+    disabled with "Needs an earlier engagement" and the page is left out.
+  * **Capacity and availability** isn't built: Cartio doesn't collect port status, PoE budget or
+    uptime yet, and monitoring integrations come after v1, so the screen says so instead.
+    That's YAN-1751. Building and saving the report on the on-site collector waits for the job
+    channel (YAN-1651); that's YAN-1752.
 
 ### 10. Connect to device
 

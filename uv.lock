@@ -127,6 +127,7 @@ dependencies = [
     { name = "dj-database-url" },
     { name = "django" },
     { name = "djangorestframework" },
+    { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
     { name = "reportlab" },
 ]
@@ -138,6 +139,7 @@ requires-dist = [
     { name = "dj-database-url", specifier = ">=3.1" },
     { name = "django", specifier = ">=6.1,<6.2" },
     { name = "djangorestframework", specifier = ">=3.18,<3.19" },
+    { name = "pillow", specifier = ">=11" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3" },
     { name = "reportlab", specifier = ">=4.4,<6" },
 ]

@@ -29,6 +29,9 @@
       </select>
     </label>
     <button class="btn" type="submit">Compare</button>
+    {% if view.comparison and not view.reversed %}
+    <a class="btn primary" href="{% url 'engineers:report' customer=customer.pk engagement=engagement.pk %}?baseline={{ view.baseline.pk }}" hx-boost="false" title="Opens {{ engagement.name }}'s report with these changes in it">Add to report</a>
+    {% endif %}
   </form>
 
   {% if not view.baseline %}
