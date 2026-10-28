@@ -342,3 +342,125 @@ def test_weak_or_malformed_keys_are_rejected(version, secret):
 
 def test_key_repr_hides_the_key():
     assert "customer-a" not in repr(KEY)
+
+
+# Found in the adversarial review before the PR.
+MORE_IOS_SECRETS = [
+    (" ip nhrp authentication" + SP + "NhrpKey1", "NhrpKey1"),
+    (" area 1 virtual-link 192.0.2.2 authentication-key" + SP + "VlinkKey1", "VlinkKey1"),
+    (" ipv6 ospf authentication ipsec spi 500 sha1 0123456789ABCDEF0123", "0123456789ABCDEF0123"),
+    (" area 0 authentication ipsec spi 256 md5 FEDCBA9876543210FEDC", "FEDCBA9876543210FEDC"),
+    (" ospfv3 authentication ipsec spi 256 sha1 7 0011223344556677", "0011223344556677"),
+    (" client 10.0.0.1 server-key" + SP + "DynAuthKey1", "DynAuthKey1"),
+    (" server-key" + SP + "7 DynAuthKey2", "DynAuthKey2"),
+    (" security wpa psk set-key ascii" + SP + "0 Wlan Psk1", "Wlan Psk1"),
+    (" glbp 1 authentication text GlbpText1", "GlbpText1"),
+    ("snmp mib community-map MibComm1 context vlan-1", "MibComm1"),
+    (" path scp://admin:UrlPass1@10.0.0.5/backups/", "UrlPass1"),
+    ("event manager environment mail_password EemPass1", "EemPass1"),
+    ("ntp authentication-key 1 sha256 NtpSha1", "NtpSha1"),
+    (" encryption vlan 1 key 1 size 128bit 7 WepKey1 transmit-key", "WepKey1"),
+    ("snmp-server user u g v3 auth sha-2 256 Sha2Auth1", "Sha2Auth1"),
+    ("username bob password\t7\tTabbed1", "Tabbed1"),
+    ("Username bob Secret 0 MixedCase1", "MixedCase1"),
+    ("username bob password" + SP + "0 <masked:NotAPlaceholder1", "NotAPlaceholder1"),
+]
+
+
+@pytest.mark.parametrize(("line", "value"), MORE_IOS_SECRETS)
+def test_more_ios_secret_shapes_are_masked(line, value):
+    result = mask_config(f"hostname r1\n{line}\nend\n", Platform.IOS_XE, KEY)
+    assert value not in result.text
+    assert find_unmasked(result.text) == []
+
+
+def test_ezvpn_group_key_is_masked():
+    config = "crypto isakmp client configuration group G1\n key" + SP + "GroupKey1\n pool P\n"
+    assert "GroupKey1" not in mask_config(config, Platform.IOS, KEY).text
+
+
+MORE_FORTIOS_SECRETS = [
+    ("    set client-secret ClientSecret1", "ClientSecret1"),
+    ('    set secret-key "SecretKey1"', "SecretKey1"),
+    ("    set proxy-password ProxyPass1", "ProxyPass1"),
+    ("    set login-passwd LoginPass1", "LoginPass1"),
+    ("    set auth-string AuthString1", "AuthString1"),
+    ("    set seed Seed1", "Seed1"),
+    ('    set value "Bearer HeaderToken1"', "HeaderToken1"),
+    ('    set resource "https://u:ResPass1@example.net/list.txt"', "ResPass1"),
+    ("    set psksecret\tTabPsk1", "TabPsk1"),
+    ("    set password ENC\tTabEnc1", "TabEnc1"),
+    ('    set passwd "<masked:NotAPlaceholder2"', "NotAPlaceholder2"),
+]
+
+
+@pytest.mark.parametrize(("line", "value"), MORE_FORTIOS_SECRETS)
+def test_more_fortios_secret_shapes_are_masked(line, value):
+    config = f'config system admin\n    edit "a"\n{line}\n    next\nend\n'
+    result = mask_config(config, Platform.FORTIOS, KEY)
+    assert value not in result.text
+    assert find_unmasked(result.text, Platform.FORTIOS) == []
+
+
+def test_fortios_quoted_secret_over_several_lines_is_masked():
+    config = (
+        'config user local\n    edit "u"\n        set passwd "first\nSecondLine1"\n    next\nend\n'
+    )
+    result = mask_config(config, Platform.FORTIOS, KEY)
+    assert "SecondLine1" not in result.text and "first" not in result.text
+
+
+def test_unterminated_fortios_quoted_secret_is_masked():
+    config = 'config user local\n    edit "u"\n        set passwd "NoClose1\n'
+    assert "NoClose1" not in mask_config(config, Platform.FORTIOS, KEY).text
+
+
+def test_line_separators_other_than_newline_do_not_hide_a_value():
+    result = mask_config("username a password" + SP + "0 abc\x85Hidden1\n", Platform.IOS, KEY)
+    assert "Hidden1" not in result.text
+
+
+def test_ssh2_private_keys_are_masked():
+    block = "---- BEGIN SSH2 ENCRYPTED" + SP + "PRIVATE KEY ----\nP2/56wAAAi4AAAA3\n---- END SSH2"
+    block += " ENCRYPTED" + SP + "PRIVATE KEY ----"
+    assert "P2/56w" not in mask_config(f"{block}\n", Platform.IOS, KEY).text
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "ntp authentication-key 7 md5" + SP + "0822455D0A16 7",
+        "ntp authentication-key 6 md5" + SP + "0822455D0A16 7",
+        " ip ospf message-digest-key 7 md5" + SP + "7 0822455D0A16",
+    ],
+)
+def test_key_ids_of_6_or_7_are_not_read_as_a_type(line):
+    result = mask_config(f"{line}\n", Platform.IOS, KEY)
+    assert "0822455D0A16" not in result.text
+
+
+def test_certificate_without_a_body_does_not_swallow_the_next_one():
+    config = (
+        "crypto pki certificate chain TP\n"
+        " certificate self-signed 01 nvram:IOS-Self-Sig#1.cer\n"
+        " certificate ca 02\n"
+        "  3082022B 30820194\n"
+        "  \tquit\n"
+    )
+    lines = mask_config(config, Platform.IOS, KEY).text.splitlines()
+    assert lines[2] == " certificate ca 02"
+    assert "3082022B" not in lines[3]
+
+
+def test_trailing_space_after_password_encryption_is_ordinary():
+    config = "password encryption aes \n"
+    assert mask_config(config, Platform.IOS, KEY).text == config
+
+
+def test_long_lines_stay_fast():
+    import time
+
+    line = "radius-server keyX " * 8000
+    start = time.perf_counter()
+    mask_config(line + "\n", Platform.IOS, KEY)
+    assert time.perf_counter() - start < 2

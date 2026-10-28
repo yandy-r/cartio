@@ -95,12 +95,16 @@ class UnmaskedSecret:
 #
 # A rule is a regex over one line. Every named group whose name starts with "v" is a secret
 # value and is replaced; the rest of the line is kept. A rule can be limited to lines inside a
-# block (IOS: the last unindented line; FortiOS: the innermost `config` path).
+# block (IOS: the last unindented line; FortiOS: the innermost `config` path). Rules see tabs
+# as spaces, and IOS rules ignore case, as IOS does.
 
+_PLACEHOLDER = re.compile(r"<masked:[A-Za-z0-9_.-]{1,16}:[0-9a-f]{16}>")
 _T = r"(?: [0-9](?= ))?+"  # Cisco's optional encryption type before a value: 0, 5, 7, 8, 9...
 _REST = r"(?P<v>\S(?:.*\S)?)"  # The value runs to the end of the line, spaces included.
 _WORD = r"(?P<v>\S+)"
 _FORTI_VALUE = r'(?:"(?P<v1>(?:[^"\\]|\\.)*)"|(?P<v2>\S+))'
+# Credentials in a URL, such as scp://user:pass@host/path, on any platform.
+_URL_USERINFO = r"://[^/\s:@]*:(?P<v>[^@\s/]+)@"
 
 
 @dataclass(frozen=True)
@@ -110,73 +114,97 @@ class _Rule:
     block: re.Pattern[str] | None = None
 
 
-def _rule(kind: str, pattern: str, block: str | None = None) -> _Rule:
-    return _Rule(kind, re.compile(pattern), re.compile(block) if block else None)
+def _rule(kind: str, pattern: str, block: str | None = None, flags: int = 0) -> _Rule:
+    return _Rule(kind, re.compile(pattern, flags), re.compile(block, flags) if block else None)
+
+
+def _ios(kind: str, pattern: str, block: str | None = None) -> _Rule:
+    return _rule(kind, pattern, block, re.IGNORECASE)
 
 
 _IOS_RULES = [
     # Specific shapes first; a later rule never re-masks part of a line an earlier one took.
-    _rule("SNMP community", r"^\s*snmp-server community" + _T + " " + _WORD),
-    _rule(
+    _ios("SNMP community", r"^\s*snmp-server community" + _T + " " + _WORD),
+    _ios(
         "SNMP community",
         r"^\s*snmp-server host \S+(?: vrf \S+)?(?: (?:traps|informs))?"
         r"(?: version (?:1|2c|3 (?:auth|noauth|priv)))? " + _WORD,
     ),
-    _rule("SNMPv3 auth key", r"^\s*snmp-server user .*?\bauth (?:md5|sha\S*) " + _WORD),
-    _rule(
-        "SNMPv3 priv key",
-        r"^\s*snmp-server user .*?\bpriv (?:des56|3des|des|aes(?: (?:128|192|256))?) " + _WORD,
+    _ios("SNMP community", r"^\s*snmp mib community-map " + _WORD),
+    _ios(
+        "SNMPv3 auth key",
+        r"^\s*snmp-server user .*?\bauth (?:md5|sha-2 \d+|sha\S*)(?: [07](?= ))?+ " + _WORD,
     ),
-    _rule("pre-shared key", r"^\s*crypto isakmp key" + _T + " " + _WORD + " (?:address|hostname)"),
-    _rule(
+    _ios(
+        "SNMPv3 priv key",
+        r"^\s*snmp-server user .*?\bpriv (?:des56|3des|des|aes(?: (?:128|192|256))?)"
+        r"(?: [07](?= ))?+ " + _WORD,
+    ),
+    _ios("pre-shared key", r"^\s*crypto isakmp key" + _T + " " + _WORD + " (?:address|hostname)"),
+    _ios(
         "pre-shared key",
         r"\bpre-shared-key (?:address \S+(?: \S+)?|hostname \S+) key" + _T + " " + _REST,
     ),
-    _rule(
+    _ios(
         "pre-shared key",
         r"^\s*pre-shared-key(?: local| remote)?(?! address | hostname )" + _T + " " + _REST,
     ),
-    _rule("pre-shared key", r"\bpre-share key" + _T + " " + _REST),
-    _rule(
-        "NTP key",
-        r"^\s*ntp authentication-key \d+ (?:md5|sha1|sha2|hmac-sha\S*|cmac-aes-128) " + _WORD,
+    _ios("pre-shared key", r"\bpre-share key" + _T + " " + _REST),
+    _ios(
+        "pre-shared key",
+        r"^\s+key" + _T + " " + _REST,
+        block=r"^crypto isakmp client configuration group ",
     ),
-    _rule("OSPF key", r"\bip ospf authentication-key" + _T + " " + _REST),
-    _rule("routing key", r"\bmessage-digest-key \d+ md5" + _T + " " + _REST),
-    _rule("key string", r"\bkey-string" + _T + " " + _REST),
-    _rule(
-        "HSRP/VRRP key", r"\b(?:standby|vrrp)(?: \d+)? authentication (?!md5 )(?:text )?" + _WORD
+    _ios("NTP key", r"^\s*ntp authentication-key \d+ \S+" + _T + " " + _WORD),
+    _ios("NHRP key", r"\bip nhrp authentication" + _T + " " + _REST),
+    _ios("IPsec key", r"\bipsec spi \d+ (?:.*? )?(?:md5|sha1)" + _T + " " + _WORD),
+    _ios("IPsec key", r"\bipsec spi \d+ esp (?:aes(?: \d+)?|3des|des|null)" + _T + " " + _WORD),
+    _ios("routing key", r"\bmessage-digest-key \d+ md5" + _T + " " + _REST),
+    _ios("routing key", r"\bauthentication-key" + _T + " " + _REST),
+    _ios("key string", r"\bkey-string" + _T + " " + _REST),
+    _ios(
+        "HSRP/VRRP/GLBP key",
+        r"\b(?:standby|vrrp|glbp)(?: \d+)? authentication (?!md5 )(?:text )?" + _WORD,
     ),
-    _rule("wireless PSK", r"\bwpa-psk (?:ascii|hex)" + _T + " " + _REST),
-    _rule("config key", r"\bconfig-key password-encrypt " + _REST),
-    _rule("RADIUS/TACACS key", r"\b(?:tacacs|radius)-server\b.*?\bkey" + _T + " " + _REST),
-    _rule("RADIUS/TACACS key", r"\bserver-private \S+.*?\bkey" + _T + " " + _REST),
-    _rule(
+    _ios("wireless key", r"\bwpa-psk (?:ascii|hex)" + _T + " " + _REST),
+    _ios("wireless key", r"\bset-key (?:ascii|hex)" + _T + " " + _REST),
+    _ios("wireless key", r"\bencryption\b.*? key \d+ size \S+" + _T + " " + _WORD),
+    _ios("config key", r"\bconfig-key password-encrypt " + _REST),
+    _ios("RADIUS/TACACS key", r"^\s*(?:tacacs|radius)-server\b.*?\bkey" + _T + " " + _REST),
+    _ios("RADIUS/TACACS key", r"^\s*server-private \S+.*?\bkey" + _T + " " + _REST),
+    _ios("RADIUS/TACACS key", r"\bserver-key" + _T + " " + _REST),
+    _ios("RADIUS/TACACS key", r"^\s*pac key" + _T + " " + _REST),
+    _ios(
         "RADIUS/TACACS key",
         r"^\s+key" + _T + " " + _REST,
         block=r"^(?:tacacs server|radius server|aaa group server) ",
     ),
-    _rule("key", r"\bkey [067] " + _REST),
-    _rule("password", r"\bpassword(?! encryption aes$)" + _T + " " + _REST),
-    _rule("secret", r"\bsecret" + _T + " " + _REST),
+    _ios("URL credentials", _URL_USERINFO),
+    _ios(
+        "secret variable",
+        r"^\s*event manager environment \S*(?:pass|secret|key|token)\S* " + _REST,
+    ),
+    _ios("key", r"(?<![-\w])key [067] " + _REST),
+    _ios("password", r"\bpassword(?! encryption aes\s*$)" + _T + " " + _REST),
+    _ios("secret", r"\bsecret" + _T + " " + _REST),
 ]
 
-_FORTI_MASKED_FIELDS = (
-    "password|passwd|password2|psksecret|psksecret-remote|ppk-secret|secret|secondary-secret|"
-    "tertiary-secret|key|auth-pwd|priv-pwd|passphrase|sae-password|api-key|md5-key|"
-    "authentication-key|key-string|enckey|authkey|private-key|server-key"
+# FortiOS fields that hold a secret: these names, and any name ending in one of them after a
+# dash (proxy-password, client-secret, secret-key...).
+_FORTI_MASKED_NAMES = (
+    r"password\d?|passwd|psksecret|secret|key|pwd|passphrase|token|seed|auth-string|"
+    r"md5-keys?|key-string|enckey|authkey"
 )
+_FORTI_FIELD = r"(?:[\w-]*-)?(?:" + _FORTI_MASKED_NAMES + r")|psksecret-remote|ppk-secret"
 
 _FORTIOS_RULES = [
     # Anything FortiOS stores encrypted is a secret, whatever the field is called.
     _rule("FortiOS ENC value", r"\bENC " + _FORTI_VALUE),
-    _rule("FortiOS secret", r"^\s*set (?:" + _FORTI_MASKED_FIELDS + r") (?!ENC )" + _FORTI_VALUE),
+    _rule("FortiOS secret", r"^\s*set (?:" + _FORTI_FIELD + r") (?!ENC )" + _FORTI_VALUE),
     # The SNMP community name is the community string itself.
-    _rule(
-        "SNMP community",
-        r"^\s*set name " + _FORTI_VALUE,
-        block=r"^system snmp community$",
-    ),
+    _rule("SNMP community", r"^\s*set name " + _FORTI_VALUE, block=r"^system snmp community$"),
+    _rule("HTTP credentials", r'^\s*set value "?(?:Bearer|Basic|Token) (?P<v>[^"\s]+)'),
+    _rule("URL credentials", _URL_USERINFO),
 ]
 
 _RULES: dict[Platform, list[_Rule]] = {
@@ -185,10 +213,17 @@ _RULES: dict[Platform, list[_Rule]] = {
     Platform.FORTIOS: _FORTIOS_RULES,
 }
 
-# PEM blocks (keys and certificates) on any platform. An unterminated block runs to the end of
-# the text, so a truncated config can't leak half a key.
+# PEM and SSH2 blocks (keys and certificates) on any platform. An unterminated block runs to
+# the end of the text, so a truncated config can't leak half a key.
 _PEM = re.compile(
-    r"-----BEGIN (?P<label>[A-Z0-9 ]+)-----.*?(?:-----END (?P=label)-----|\Z)", re.DOTALL
+    r"-{4,5} ?BEGIN (?P<label>[A-Z0-9 ]+?) ?-{4,5}.*?(?:-{4,5} ?END (?P=label) ?-{4,5}|\Z)",
+    re.DOTALL,
+)
+
+# A quoted FortiOS secret can run over several lines.
+_FORTI_QUOTED = re.compile(
+    r"^[ \t]*set[ \t]+(?:" + _FORTI_FIELD + r')[ \t]+(?:ENC[ \t]+)?"(?P<v>(?:[^"\\]|\\.)*)"',
+    re.MULTILINE,
 )
 
 
@@ -205,8 +240,20 @@ def mask_config(text: str, platform: Platform | str, key: MaskingKey) -> MaskedC
         count += 1
         return key.placeholder(value)
 
-    text = _PEM.sub(lambda m: replace(m.group(0)), text)
-    lines = text.splitlines(keepends=True)
+    def replace_group(match: re.Match[str]) -> str:
+        if _PLACEHOLDER.fullmatch(match["v"]):
+            return match[0]
+        start, end = match.span("v")
+        return (
+            match[0][: start - match.start()]
+            + replace(match["v"])
+            + match[0][end - match.start() :]
+        )
+
+    text = _PEM.sub(lambda m: replace(m[0]), text)
+    if platform is Platform.FORTIOS:
+        text = _FORTI_QUOTED.sub(replace_group, text)
+    lines = _split_lines(text)
     if platform is Platform.FORTIOS:
         lines = _mask_lines(lines, _RULES[platform], _fortios_blocks(lines), replace)
     else:
@@ -219,6 +266,12 @@ def mask_config(text: str, platform: Platform | str, key: MaskingKey) -> MaskedC
     return MaskedConfig(platform, masked, key.version, count)
 
 
+def _split_lines(text: str) -> list[str]:
+    # Only "\n" ends a line. str.splitlines also splits on characters such as "\x85", which
+    # would let a value hide past a break the device doesn't see.
+    return re.findall(r"[^\n]*\n|[^\n]+", text)
+
+
 def _mask_lines(
     lines: list[str], rules: list[_Rule], blocks: list[str], replace: Callable[[str], str]
 ) -> list[str]:
@@ -226,16 +279,17 @@ def _mask_lines(
     for line, block in zip(lines, blocks, strict=True):
         body = line.rstrip("\r\n")
         ending = line[len(body) :]
+        view = body.replace("\t", " ")  # Same length, so spans carry over to body.
         spans: list[tuple[int, int]] = []
         for rule in rules:
             if rule.block and not rule.block.search(block):
                 continue
-            for match in rule.pattern.finditer(body):
+            for match in rule.pattern.finditer(view):
                 for name, value in match.groupdict().items():
                     if not name.startswith("v") or value is None:
                         continue
                     start, end = match.span(name)
-                    if value.startswith(PLACEHOLDER_PREFIX) or _overlaps(spans, start, end):
+                    if _PLACEHOLDER.fullmatch(value) or _overlaps(spans, start, end):
                         continue
                     spans.append((start, end))
         for start, end in sorted(spans, reverse=True):
@@ -248,11 +302,15 @@ def _overlaps(spans: list[tuple[int, int]], start: int, end: int) -> bool:
     return any(start < b and a < end for a, b in spans)
 
 
+def _unindented(line: str) -> bool:
+    return line[:1] not in (" ", "\t", "\r", "\n", "")
+
+
 def _ios_blocks(lines: list[str]) -> list[str]:
     """The unindented line each line sits under (itself, for an unindented line)."""
     blocks, current = [], ""
     for line in lines:
-        if line[:1] not in (" ", "\t", "\r", "\n", ""):
+        if _unindented(line):
             current = line.strip()
         blocks.append(current)
     return blocks
@@ -262,38 +320,38 @@ def _fortios_blocks(lines: list[str]) -> list[str]:
     """The innermost `config` path each line sits in, for example `system snmp community`."""
     blocks, stack = [], []
     for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("config "):
-            stack.append(stripped[len("config ") :])
-        elif stripped == "end" and stack:
+        words = line.split()
+        if words[:1] == ["config"]:
+            stack.append(" ".join(words[1:]))
+        elif words == ["end"] and stack:
             stack.pop()
         blocks.append(stack[-1] if stack else "")
     return blocks
 
 
-_IOS_CERT_START = re.compile(r"^\s+certificate\b")
-_IOS_CERT_END = re.compile(r"^\s+quit\s*$")
+_IOS_CERT_START = re.compile(r"^\s+certificate\b", re.IGNORECASE)
+_IOS_CERT_END = re.compile(r"^\s+quit\s*$", re.IGNORECASE)
 
 
 def _mask_ios_certificates(lines: list[str], replace: Callable[[str], str]) -> list[str]:
     """Collapse the hex body of each certificate in a `crypto pki certificate chain`.
 
-    The body runs to `quit`, or failing that to the next unindented line.
+    The body runs to `quit`, or failing that to the next certificate or unindented line.
     """
     out: list[str] = []
     i = 0
     in_chain = False
     while i < len(lines):
         line = lines[i]
-        if line[:1] not in (" ", "\t", "\r", "\n", ""):
-            in_chain = line.startswith("crypto pki certificate chain ")
+        if _unindented(line):
+            in_chain = line.lower().startswith("crypto pki certificate chain ")
         out.append(line)
         i += 1
         if not (in_chain and _IOS_CERT_START.match(line)):
             continue
         body = []
         while i < len(lines) and not _IOS_CERT_END.match(lines[i]):
-            if lines[i][:1] not in (" ", "\t"):
+            if _unindented(lines[i]) or _IOS_CERT_START.match(lines[i]):
                 break
             body.append(lines[i])
             i += 1
@@ -306,28 +364,30 @@ def _mask_ios_certificates(lines: list[str], replace: Callable[[str], str]) -> l
 
 # --- Leak check ------------------------------------------------------------------------------
 #
-# Deliberately narrower than the rules above: these are shapes that are almost certainly a
-# secret, so a hit means a rule missed something. Used after masking, and by the controller to
-# scan what it receives.
+# Narrower than the rules above: these are shapes that are almost certainly a secret, so a hit
+# means a rule missed something and collection stops. Used after masking, and by the
+# controller to scan what it receives. Tabs count as spaces here too.
 
-_OK = r'(?!"?<masked:|ENC "?<masked:)'
+_PH = _PLACEHOLDER.pattern
+_OK = r'(?!"?' + _PH + r'"?(?:\s|$)|ENC "?' + _PH + r'"?(?:\s|$))'
 _TYPE = r"(?: [0-9](?= ))?+"
+_I = re.IGNORECASE
 
 _COMMON_LEAKS = {
-    "private key or certificate": re.compile(r"-----BEGIN [A-Z0-9 ]+-----"),
+    "private key or certificate": re.compile(r"-{4,5} ?BEGIN [A-Z0-9 ]+"),
+    "URL credentials": re.compile(r"://[^/\s:@]*:(?!" + _PH + r"@)[^@\s/]+@"),
 }
 _IOS_LEAKS = {
-    "password": re.compile(r"\bpassword" + _TYPE + " " + _OK + r"(?!encryption aes$)\S"),
-    "secret": re.compile(r"\bsecret" + _TYPE + " " + _OK + r"\S"),
-    "key string": re.compile(r"\bkey-string" + _TYPE + " " + _OK + r"\S"),
-    "key": re.compile(r"\bkey [067] " + _OK + r"\S"),
-    "SNMP community": re.compile(r"\bsnmp-server community(?: [08](?= ))?+ " + _OK + r"\S"),
+    "password": re.compile(r"\bpassword" + _TYPE + " " + _OK + r"(?!encryption aes\s*$)\S", _I),
+    "secret": re.compile(r"\bsecret" + _TYPE + " " + _OK + r"\S", _I),
+    "key string": re.compile(r"\bkey-string" + _TYPE + " " + _OK + r"\S", _I),
+    "key": re.compile(r"(?<![-\w])key [067] " + _OK + r"\S", _I),
+    "server key": re.compile(r"\bserver-key" + _TYPE + " " + _OK + r"\S", _I),
+    "SNMP community": re.compile(r"\bsnmp-server community(?: [08](?= ))?+ " + _OK + r"\S", _I),
 }
 _FORTIOS_LEAKS = {
     "FortiOS ENC value": re.compile(r"\bENC " + _OK + r"\S"),
-    "FortiOS secret": re.compile(
-        r"^\s*set (?:" + _FORTI_MASKED_FIELDS + r") " + _OK + r"(?!ENC )\S"
-    ),
+    "FortiOS secret": re.compile(r"^\s*set (?:" + _FORTI_FIELD + r") " + _OK + r"(?!ENC )\S"),
 }
 _LEAKS: dict[Platform | None, dict[str, re.Pattern[str]]] = {
     Platform.IOS: _COMMON_LEAKS | _IOS_LEAKS,
@@ -344,8 +404,9 @@ def find_unmasked(text: str, platform: Platform | str | None = None) -> list[Unm
     """
     patterns = _LEAKS[Platform(platform) if platform else None]
     found = []
-    for lineno, line in enumerate(text.splitlines(), start=1):
+    for lineno, line in enumerate(_split_lines(text), start=1):
+        view = line.rstrip("\r\n").replace("\t", " ")
         for kind, pattern in patterns.items():
-            if pattern.search(line):
+            if pattern.search(view):
                 found.append(UnmaskedSecret(lineno, kind))
     return found
