@@ -16,9 +16,9 @@ from cartio_core.readonly import ALLOWED, check_command
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sanitized"
 
-# The lab: access-sw1 (IOS) - core-sw1 (IOS-XE) - edge-fw1 (FortiOS).
+# The lab: floor-sw1 (IOS) - core-sw1 (IOS-XE) - edge-fw1 (FortiOS).
 LAB = {
-    "access-sw1": Platform.IOS,
+    "floor-sw1": Platform.IOS,
     "core-sw1": Platform.IOS_XE,
     "edge-fw1": Platform.FORTIOS,
 }
@@ -47,8 +47,8 @@ def test_every_fixture_is_a_command_the_parser_reads(name):
 
 
 def test_ios_switch():
-    device = parse("ios", outputs("access-sw1"))
-    assert (device.name, device.platform, device.manufacturer) == ("access-sw1", "ios", "Cisco")
+    device = parse("ios", outputs("floor-sw1"))
+    assert (device.name, device.platform, device.manufacturer) == ("floor-sw1", "ios", "Cisco")
     assert (device.model, device.serial, device.os_version) == (
         "WS-C2960X-48FPD-L",
         "FOC0000X0AA",
@@ -117,8 +117,8 @@ def test_fortios_model_comes_from_the_ttp_hardware_template():
 
 
 def test_missing_outputs_leave_fields_empty():
-    device = parse("ios", {"show version": outputs("access-sw1")["show version"]})
-    assert device.name == "access-sw1"
+    device = parse("ios", {"show version": outputs("floor-sw1")["show version"]})
+    assert device.name == "floor-sw1"
     assert device.interfaces == device.neighbors == ()
 
 

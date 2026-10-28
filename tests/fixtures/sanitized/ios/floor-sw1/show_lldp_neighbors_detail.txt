@@ -2,7 +2,7 @@
 Local Intf: Gi1/0/49
 Chassis id: 0000.5e00.5310
 Port id: Te1/1/1
-Port Description: Downlink to access-sw1
+Port Description: Downlink to floor-sw1
 System Name: core-sw1.example.net
 
 System Description: 

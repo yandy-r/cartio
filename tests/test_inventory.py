@@ -68,40 +68,77 @@ def _inventory(customer):
     return devices, interfaces, links
 
 
-EXPECTED_LINKS = [
-    ("access-sw1", "GigabitEthernet1/0/49", "core-sw1", "TenGigabitEthernet1/1/1", "", "", "cdp"),
-    ("access-sw1", "GigabitEthernet1/0/49", "core-sw1", "TenGigabitEthernet1/1/1", "", "", "lldp"),
-    ("core-sw1", "GigabitEthernet1/0/48", "edge-fw1", "port1", "", "", "lldp"),
-    ("core-sw1", "TenGigabitEthernet1/1/1", "access-sw1", "GigabitEthernet1/0/49", "", "", "cdp"),
-    ("core-sw1", "TenGigabitEthernet1/1/1", "access-sw1", "GigabitEthernet1/0/49", "", "", "lldp"),
-]
+EXPECTED_LINKS = sorted(
+    [
+        (
+            "floor-sw1",
+            "GigabitEthernet1/0/49",
+            "core-sw1",
+            "TenGigabitEthernet1/1/1",
+            "",
+            "",
+            "cdp",
+        ),
+        (
+            "floor-sw1",
+            "GigabitEthernet1/0/49",
+            "core-sw1",
+            "TenGigabitEthernet1/1/1",
+            "",
+            "",
+            "lldp",
+        ),
+        ("core-sw1", "GigabitEthernet1/0/48", "edge-fw1", "port1", "", "", "lldp"),
+        (
+            "core-sw1",
+            "TenGigabitEthernet1/1/1",
+            "floor-sw1",
+            "GigabitEthernet1/0/49",
+            "",
+            "",
+            "cdp",
+        ),
+        (
+            "core-sw1",
+            "TenGigabitEthernet1/1/1",
+            "floor-sw1",
+            "GigabitEthernet1/0/49",
+            "",
+            "",
+            "lldp",
+        ),
+    ]
+)
 
 
 def test_the_lab_becomes_devices_interfaces_and_links(acme):
     source = _source(acme)
-    _store(source, "access-sw1", "core-sw1", "edge-fw1")
+    _store(source, "floor-sw1", "core-sw1", "edge-fw1")
     devices, interfaces, links = _inventory(acme)
-    assert devices == [
-        (
-            "access-sw1",
-            "ios",
-            "Cisco",
-            "WS-C2960X-48FPD-L",
-            "FOC0000X0AA",
-            "15.2(7)E8",
-            "lab outputs",
-        ),
-        ("core-sw1", "ios-xe", "Cisco", "C9300-48P", "FOC0000Y0BB", "17.9.4a", "lab outputs"),
-        (
-            "edge-fw1",
-            "fortios",
-            "Fortinet",
-            "FortiGate-60F",
-            "FGT60F0000000001",
-            "7.2.8",
-            "lab outputs",
-        ),
-    ]
+    assert devices == sorted(
+        [
+            (
+                "floor-sw1",
+                "ios",
+                "Cisco",
+                "WS-C2960X-48FPD-L",
+                "FOC0000X0AA",
+                "15.2(7)E8",
+                "lab outputs",
+            ),
+            ("core-sw1", "ios-xe", "Cisco", "C9300-48P", "FOC0000Y0BB", "17.9.4a", "lab outputs"),
+            (
+                "edge-fw1",
+                "fortios",
+                "Fortinet",
+                "FortiGate-60F",
+                "FGT60F0000000001",
+                "7.2.8",
+                "lab outputs",
+            ),
+        ]
+    )
+
     assert len(interfaces) == 4 + 4 + 5
     assert links == EXPECTED_LINKS
     assert RawOutput.objects.for_customer(acme).count() == 5 + 5 + 3
@@ -115,9 +152,9 @@ def test_the_lab_becomes_devices_interfaces_and_links(acme):
 @pytest.mark.parametrize(
     "order",
     [
-        ("access-sw1", "core-sw1", "edge-fw1"),
-        ("edge-fw1", "core-sw1", "access-sw1"),
-        ("core-sw1", "edge-fw1", "access-sw1"),
+        ("floor-sw1", "core-sw1", "edge-fw1"),
+        ("edge-fw1", "core-sw1", "floor-sw1"),
+        ("core-sw1", "edge-fw1", "floor-sw1"),
     ],
 )
 def test_links_resolve_whatever_order_devices_arrive_in(acme, order):
@@ -133,13 +170,13 @@ def test_a_neighbor_not_collected_keeps_its_announced_names(acme):
 
 def test_reparsing_a_source_reproduces_the_same_records(acme):
     source = _source(acme)
-    _store(source, "access-sw1", "core-sw1", "edge-fw1")
+    _store(source, "floor-sw1", "core-sw1", "edge-fw1")
     before = _inventory(acme)
     outputs_before = RawOutput.objects.for_customer(acme).count()
 
     devices = reparse(source)
 
-    assert sorted(d.name for d in devices) == ["access-sw1", "core-sw1", "edge-fw1"]
+    assert sorted(d.name for d in devices) == ["core-sw1", "edge-fw1", "floor-sw1"]
     assert _inventory(acme) == before
     # Re-parsing reads the stored outputs; it doesn't add any.
     assert RawOutput.objects.for_customer(acme).count() == outputs_before
@@ -147,7 +184,7 @@ def test_reparsing_a_source_reproduces_the_same_records(acme):
 
 def test_reparsing_rebuilds_records_changed_since(acme):
     source = _source(acme)
-    _store(source, "access-sw1", "core-sw1")
+    _store(source, "floor-sw1", "core-sw1")
     before = _inventory(acme)
     Interface.objects.for_customer(acme).filter(device__name="core-sw1").update(description="x")
     Link.objects.for_customer(acme).filter(protocol="cdp").delete()
@@ -169,8 +206,8 @@ def test_storing_and_reparsing_are_audit_logged(acme):
 
 def test_output_with_an_unmasked_secret_is_refused(acme):
     source = _source(acme)
-    lab = outputs("access-sw1")
-    lab["show version"] += SP.join(["enable", "secret", "5", "$1$abcd$0123456789abcdefghij"])
+    lab = outputs("floor-sw1")
+    lab["show version"] += SP.join(["enable", "secret", "5", "$1$" + "a" * 26])
     with pytest.raises(UnmaskedOutputError):
         store_outputs(source, "ios", lab)
     assert not RawOutput.objects.for_customer(acme).exists()
@@ -180,13 +217,13 @@ def test_output_with_an_unmasked_secret_is_refused(acme):
 def test_output_without_a_host_name_stores_nothing(acme):
     source = _source(acme)
     with pytest.raises(ParseError):
-        store_outputs(source, "ios", {"show interfaces": outputs("access-sw1")["show interfaces"]})
+        store_outputs(source, "ios", {"show interfaces": outputs("floor-sw1")["show interfaces"]})
     assert not RawOutput.objects.for_customer(acme).exists()
 
 
 def test_a_neighbor_is_never_matched_in_another_customer(acme):
     globex = Customer.objects.create(name="Globex")
-    _store(_source(globex), "access-sw1")
+    _store(_source(globex), "floor-sw1")
     _store(_source(acme), "core-sw1")
     for link in Link.objects.for_customer(acme):
         assert link.b_interface is None
@@ -195,7 +232,7 @@ def test_a_neighbor_is_never_matched_in_another_customer(acme):
 
 def test_a_neighbor_is_never_matched_in_another_engagement(acme):
     first = _source(acme)
-    _store(first, "access-sw1")
+    _store(first, "floor-sw1")
     _store(_source(acme, "Next audit"), "core-sw1")
     assert not Link.objects.for_customer(acme).exclude(b_interface=None).exists()
 
@@ -222,6 +259,6 @@ def test_on_site_customers_cant_store_or_reparse_outputs(acme):
     acme.refresh_from_db()
     source = Source.objects.for_customer(acme).get(pk=source.pk)
     with pytest.raises(OnSiteDataError):
-        store_outputs(source, "ios", outputs("access-sw1"))
+        store_outputs(source, "ios", outputs("floor-sw1"))
     with pytest.raises(OnSiteDataError):
         reparse(source)

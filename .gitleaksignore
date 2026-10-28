@@ -1,0 +1,6 @@
+# False positives: host and interface names ("access-sw1", "GigabitEthernet1/0/49") in a test's
+# expected links, read as a generic API key. Fixed in the next commit by renaming the host.
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:72
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:73
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:75
+3d4c25fc7cfd2bb3d4e200d3814227fc85de9a6f:tests/test_inventory.py:generic-api-key:76

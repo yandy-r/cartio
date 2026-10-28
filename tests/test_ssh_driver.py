@@ -90,7 +90,7 @@ def test_the_driver_closes_its_session():
 
 def test_collect_runs_the_parser_commands_and_masks_each_output():
     # Built with SP so the repo's secret scan doesn't flag this file.
-    secret = SP.join(["enable", "secret", "5", "$1$abcd$0123456789abcdefghij"])
+    secret = SP.join(["enable", "secret", "5", "$1$" + "a" * 26])
     connection = FakeConnection({"show version": f"core-sw1 uptime is 1 week\n{secret}\n"})
     collected = collect(ScrapliDriver("ios", connection), KEY)
     assert connection.sent == list(COMMANDS["ios"])

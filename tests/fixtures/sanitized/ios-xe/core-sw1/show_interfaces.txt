@@ -53,7 +53,7 @@ GigabitEthernet1/0/48 is up, line protocol is up (connected)
      0 output buffer failures, 0 output buffers swapped out
 TenGigabitEthernet1/1/1 is up, line protocol is up (connected) 
   Hardware is Ten Gigabit Ethernet, address is 0000.5e00.5313 (bia 0000.5e00.5313)
-  Description: Downlink to access-sw1
+  Description: Downlink to floor-sw1
   MTU 1500 bytes, BW 10000000 Kbit/sec, DLY 10 usec, 
      reliability 255/255, txload 1/255, rxload 1/255
   Encapsulation ARPA, loopback not set
