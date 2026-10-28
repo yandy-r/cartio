@@ -159,3 +159,28 @@ def test_an_identity_from_before_key_pairs_asks_to_enroll_again(tmp_path, capsys
     path.write_text(json.dumps(old))
     assert cli.main(["--config", str(path), "checkin", "--once"]) == 1
     assert "Enroll again" in capsys.readouterr().err
+
+
+def test_a_relative_ca_file_is_saved_as_an_absolute_path(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ca.pem").write_text("")
+    seen = {}
+
+    def fake_enroll(url, token, *, proxy, ca_file):
+        seen["ca_file"] = ca_file
+        return CONFIG
+
+    monkeypatch.setattr(cli, "enroll", fake_enroll)
+    argv = ["--config", str(tmp_path / "c.json"), "enroll", "--controller", "https://c"]
+    assert cli.main([*argv, "--token", "t", "--ca-file", "ca.pem"]) == 0
+    assert seen["ca_file"] == str(tmp_path / "ca.pem")
+
+
+def test_the_pin_is_taken_before_the_body_is_read(monkeypatch):
+    # A connection the server closes loses its TLS details once the body is read.
+    monkeypatch.setattr(client, "_peer_pin", lambda response: "seen-before-close")
+    response = httpx.Response(200)
+    client._remember_pin(response)
+    monkeypatch.setattr(client, "_peer_pin", lambda response: None)
+    assert client.server_pin(response) == "seen-before-close"
+    assert client.new_http()._event_hooks["response"] == [client._remember_pin]

@@ -75,6 +75,7 @@ def new_http(proxy: str = "", ca_file: str = "", auth: httpx.Auth | None = None)
         proxy=proxy or None,
         trust_env=not proxy,
         auth=auth,
+        event_hooks={"response": [_remember_pin]},
     )
 
 
@@ -98,8 +99,23 @@ class Signer(httpx.Auth):
         yield request
 
 
+_PIN = "cartio_server_pin"
+
+
+def _remember_pin(response: httpx.Response) -> None:
+    # Runs before the body is read: once it is, a connection the server closes loses its TLS
+    # details, and the pin with them.
+    response.extensions[_PIN] = _peer_pin(response)
+
+
 def server_pin(response: httpx.Response) -> str | None:
     """The pin of the TLS key that answered, or None over plain http."""
+    if _PIN in response.extensions:
+        return response.extensions[_PIN]
+    return _peer_pin(response)
+
+
+def _peer_pin(response: httpx.Response) -> str | None:
     stream = response.extensions.get("network_stream")
     ssl_object = stream.get_extra_info("ssl_object") if stream is not None else None
     if ssl_object is None:

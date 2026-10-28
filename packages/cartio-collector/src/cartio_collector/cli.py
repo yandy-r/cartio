@@ -15,7 +15,9 @@ from .config import CollectorConfig, ConfigError, default_path
 
 
 def _cmd_enroll(args: argparse.Namespace) -> int:
-    config = enroll(args.controller, args.token, proxy=args.proxy, ca_file=args.ca_file)
+    # Saved with the identity, so make it absolute: check-ins may run from another directory.
+    ca_file = str(Path(args.ca_file).resolve()) if args.ca_file else ""
+    config = enroll(args.controller, args.token, proxy=args.proxy, ca_file=ca_file)
     config.save(args.config)
     print(f"Enrolled as collector {config.collector_id} for {config.customer}.")
     print(f"Identity and private key saved to {args.config}")
