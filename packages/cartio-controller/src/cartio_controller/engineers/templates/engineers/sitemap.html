@@ -1,0 +1,191 @@
+{% extends "engineers/base.html" %}
+{% load static %}
+{% block title %}Site map · {{ customer.name }}{% endblock %}
+{% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %}{% endblock %}
+{% block page_title %}Site map{% endblock %}
+{% block content %}
+{% if not engagement %}
+<p class="muted">{{ customer.name }} has no engagement yet, so there is no map to show.</p>
+{% else %}
+{# Everything is in the URL: site, layer, filters and the pinned device. Links swap the map in place. #}
+<div id="sitemap" class="sitemap" hx-boost="true" hx-target="#sitemap" hx-select="#sitemap" hx-swap="outerHTML" data-clear-url="{% if view.pinned %}{{ view.clear_link }}{% endif %}" data-map="{{ view.site }}-{{ view.layer }}">
+  {% if customer.is_on_site %}
+  <p class="banner live-view" role="note">Live view: {{ customer.name }}'s network data is shown through its on-site collector.</p>
+  {% endif %}
+
+  {% if view.sites %}
+  <nav class="pill-groups sitemap-sites" aria-label="Sites">
+    {% for site, url in view.site_links %}
+    <a class="pill" href="{{ url }}"{% if site.key == view.site %} aria-current="true"{% endif %}>{{ site.name }} <span class="pill-count">{{ site.count }}</span></a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  <section class="card sitemap-main" aria-label="Map">
+    <div class="sitemap-toolbar">
+      <div class="segmented" role="group" aria-label="Layer">
+        {% for key, label, url in view.layer_links %}
+        <a class="seg" href="{{ url }}" aria-pressed="{% if key == view.layer %}true{% else %}false{% endif %}" title="{% if key == 'l2' %}LLDP and CDP neighbours{% else %}OSPF neighbours and BGP peers{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <form class="sitemap-filters" method="get" action="" data-autosubmit>
+        <input type="hidden" name="site" value="{{ view.site }}">
+        {% if view.layer == "l3" %}<input type="hidden" name="layer" value="l3">{% endif %}
+        {% if view.pinned %}<input type="hidden" name="device" value="{{ view.pinned.id }}">{% endif %}
+        <label class="sr-only" for="sitemap-role">Role</label>
+        <select id="sitemap-role" name="role">
+          <option value="">All roles</option>
+          {% for key, label in view.roles %}<option value="{{ key }}"{% if key == view.role %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <label class="sr-only" for="sitemap-vendor">Vendor</label>
+        <select id="sitemap-vendor" name="vendor">
+          <option value="">All vendors</option>
+          {% for vendor in view.vendors %}<option value="{{ vendor }}"{% if vendor == view.vendor %} selected{% endif %}>{{ vendor }}</option>{% endfor %}
+        </select>
+        <label class="chip-toggle"><input type="checkbox" name="findings" value="1"{% if view.with_findings %} checked{% endif %}>Has findings</label>
+        <noscript><button class="btn" type="submit">Apply</button></noscript>
+        {% if view.filtered %}<a href="{{ view.clear_filters_link }}">Clear filters</a>{% endif %}
+      </form>
+      <div class="sitemap-zoom" role="group" aria-label="Zoom">
+        <button class="icon-btn" type="button" data-zoom="out" aria-label="Zoom out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+        <button class="icon-btn" type="button" data-zoom="in" aria-label="Zoom in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        <button class="btn" type="button" data-zoom="fit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg>Fit</button>
+      </div>
+      {% if not view.empty %}
+      <form id="sitemap-export" method="post" action="{% url 'engineers:sitemap-export' customer=customer.pk engagement=engagement.pk %}" hx-boost="false">
+        {% csrf_token %}
+        {% for key, value in view.params.items %}{% if value %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+        <details class="menu-button">
+          <summary class="btn primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"></path></svg>Export ▾</summary>
+          <div class="menu" role="menu">
+            <button role="menuitem" type="submit" name="format" value="png"><span class="mono menu-ext">PNG</span><span><strong>Image</strong><small>This view at twice the size, for the report</small></span></button>
+            <button role="menuitem" type="submit" name="format" value="svg"><span class="mono menu-ext">SVG</span><span><strong>Vector image</strong><small>This view, editable in Visio or draw.io</small></span></button>
+            <button role="menuitem" type="submit" name="format" value="csv"><span class="mono menu-ext">CSV</span><span><strong>Device list</strong><small>{{ view.site_name }}'s devices, roles and link counts</small></span></button>
+            <p class="menu-note">Exports are logged in the audit log.</p>
+          </div>
+        </details>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if view.empty %}
+    <div class="empty-state sitemap-empty">
+      <h2>Nothing to draw yet</h2>
+      <p class="muted">{% if view.sites %}{{ view.site_name }} has no devices in {{ engagement.name }}.{% else %}{{ engagement.name }} has no devices yet.{% endif %} Devices appear here once a discovery runs or outputs are imported.</p>
+    </div>
+    {% else %}
+    <div class="sitemap-canvas">{{ view.screen_svg }}</div>
+    <div class="sitemap-legend">
+      <span><span class="legend-line"></span>Seen from both ends</span>
+      <span><span class="legend-line one-end"></span>Seen from one end only</span>
+      <span><span class="legend-box critical"></span>Critical finding</span>
+      <span><span class="legend-box high"></span>High finding</span>
+      <span><span class="legend-box unconfirmed"></span>Not collected</span>
+      <span><span class="legend-box offsite"></span>On another site</span>
+      {% if view.layer == "l3" %}<span class="muted">L3 links show protocol and subnet</span>{% else %}<span class="muted">Hover a link for its interfaces</span>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="card side-card sitemap-side" aria-label="{% if view.pinned %}{{ view.pinned.name }}{% else %}Site summary{% endif %}">
+    {% with node=view.pinned %}
+    {% if node %}
+    <div class="sitemap-pinned-head">
+      <span class="sitemap-role-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ node.icon }}"></path></svg></span>
+      <div class="grow">
+        <h2 class="mono">{{ node.name }}</h2>
+        <span class="muted">{{ node.role_label }}{% if node.device.model %} · {{ node.device.manufacturer }} {{ node.device.model }}{% endif %}</span>
+      </div>
+      <a class="icon-btn" href="{{ view.clear_link }}" aria-label="Clear selection and show the site summary" title="Back to site summary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+    </div>
+    {% if node.device %}
+    <dl class="sitemap-facts">
+      <dt>IP</dt><dd class="mono">{{ node.device.management_ip|default:"–" }}</dd>
+      <dt>Serial</dt><dd class="mono">{{ node.device.serial|default:"–" }}</dd>
+      <dt>OS</dt><dd>{{ node.device.os_version|default:"–" }}</dd>
+      <dt>Site</dt><dd>{{ node.device.site.name|default:"No site yet" }}</dd>
+      <dt>Last seen</dt><dd>{{ node.device.last_seen|date:"Y-m-d H:i"|default:"–" }}</dd>
+    </dl>
+    {% else %}
+    <p class="banner" role="note">Not collected: seen as a neighbour, never polled.</p>
+    <ul class="sitemap-list">{% for seen in node.seen_as %}<li>{{ seen }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <h3>{{ view.layer|upper }} links</h3>
+    <ul class="sitemap-list">
+      {% for far, far_port, my_port, edge in view.pinned_links %}
+      <li><span class="mono">{% if my_port %}{{ my_port }} → {% endif %}{{ far.name }}{% if far_port %} {{ far_port }}{% endif %}</span>
+        <span class="muted">{% if edge.layer == "l3" %}{{ edge.label }}{% else %}{{ edge.protocol_label }}{% endif %}{% if not edge.both_ends %} · <span class="one-end">one end only</span>{% endif %}</span></li>
+      {% empty %}
+      <li class="muted">No {{ view.layer|upper }} links.</li>
+      {% endfor %}
+    </ul>
+
+    {% if node.device %}
+    <h3>Findings</h3>
+    <ul class="sitemap-list">
+      {% for item in node.findings %}
+      <li><a href="{% url 'engineers:findings' customer=customer.pk engagement=engagement.pk %}?finding={{ item.key|urlencode }}"><span class="severity {{ item.severity }}">{{ item.severity_label }}</span> {{ item.title }}</a></li>
+      {% empty %}
+      <li class="muted">No open findings.</li>
+      {% endfor %}
+    </ul>
+    {# YAN-1739 builds Connect; the button is here so the panel doesn't change when it lands. #}
+    <button class="btn primary" type="button" disabled title="Connecting to a device isn't built yet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"></path></svg>Connect to…</button>
+    {% endif %}
+    {% elif not view.empty %}
+    {% with s=view.summary %}
+    <h2>{{ view.site_name }}</h2>
+    <p class="muted">{{ s.devices }} device{{ s.devices|pluralize }}{% for label, count in s.roles %} · {{ count }} {{ label|lower }}{% endfor %}</p>
+    <h3>Findings</h3>
+    {% if s.findings %}
+    <ul class="sitemap-severity">
+      {% for key, label, count in s.severity %}{% if count %}<li><span class="severity {{ key }}">{{ label }}</span> {{ count }}</li>{% endif %}{% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No open findings on this site.</p>
+    {% endif %}
+    <h3>Needs attention</h3>
+    <ul class="sitemap-list">
+      {% for node, url in s.attention %}
+      <li><a href="{{ url }}"><span class="mono">{{ node.name }}</span></a> <span class="severity {{ node.worst }}">{{ node.findings|length }} finding{{ node.findings|length|pluralize }}</span></li>
+      {% endfor %}
+      {% if s.one_sided %}<li>{{ s.one_sided }} {{ view.layer|upper }} link{{ s.one_sided|pluralize }} seen from one end only</li>{% endif %}
+      {% if s.unconfirmed %}<li>{{ s.unconfirmed }} neighbour{{ s.unconfirmed|pluralize }} not collected</li>{% endif %}
+      {% if not s.attention and not s.one_sided and not s.unconfirmed %}<li class="muted">Nothing needs attention.</li>{% endif %}
+    </ul>
+    <p class="muted small">Click a device to pin its details.</p>
+    {% endwith %}
+    {% endif %}
+    {% endwith %}
+  </aside>
+
+  {# Hover cards, from data already on the page: no request on hover (DESIGN.md). #}
+  <div class="sitemap-cards">
+    {% for node in view.shown.values %}
+    <div class="hover-card" role="tooltip" id="card-{{ node.dom_id }}">
+      <div class="card-head"><span class="mono">{{ node.name }}</span><span class="state">{{ node.role_label }}</span></div>
+      {% if node.device %}
+      <div class="card-sub">{{ node.device.manufacturer|default:"Unknown vendor" }} {{ node.device.model }}</div>
+      <dl>
+        <dt>IP</dt><dd class="mono">{{ node.device.management_ip|default:"–" }}</dd>
+        <dt>Model</dt><dd>{{ node.device.model|default:"–" }}</dd>
+        <dt>Serial</dt><dd class="mono">{{ node.device.serial|default:"–" }}</dd>
+        <dt>OS</dt><dd>{{ node.device.os_version|default:"–" }}</dd>
+        <dt>Role</dt><dd>{{ node.role_label }}</dd>
+        <dt>Site</dt><dd>{{ node.device.site.name|default:"No site yet" }}</dd>
+        <dt>Findings</dt><dd>{% for item in node.findings %}{{ item.severity_label }}: {{ item.title }}{% if not forloop.last %}<br>{% endif %}{% empty %}None{% endfor %}</dd>
+        <dt>Last seen</dt><dd>{{ node.device.last_seen|date:"Y-m-d H:i"|default:"–" }}</dd>
+      </dl>
+      {% else %}
+      <div class="card-sub">Not collected: seen as a neighbour, never polled</div>
+      <dl>{% for seen in node.seen_as %}<dt>Seen</dt><dd>{{ seen }}</dd>{% endfor %}</dl>
+      {% endif %}
+      <div class="card-foot">Click to pin details</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script src="{% static 'engineers/js/sitemap.js' %}" defer></script>
+{% endif %}
+{% endblock %}

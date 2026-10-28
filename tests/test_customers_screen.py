@@ -66,9 +66,9 @@ def test_one_row_per_customer_with_its_engagement_sites_collectors_and_devices(c
         "Live view is off for this customer.",
     ):
         assert text in page
-    # Two devices in the current engagement, and the row opens that customer and engagement.
+    # Two devices in the current engagement, and the row opens its Site map.
     assert '<td class="mono">2</td>' in page
-    assert f'href="/customers/{acme.pk}/engagements/{engagement.pk}"' in page
+    assert f'href="/customers/{acme.pk}/engagements/{engagement.pk}/site-map"' in page
 
 
 def test_a_row_shows_only_its_own_customers_data(client, engineer):

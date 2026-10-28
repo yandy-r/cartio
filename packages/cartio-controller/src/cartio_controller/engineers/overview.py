@@ -46,7 +46,7 @@ def _row(customer, now):
         customer.device_count = (
             Device.objects.for_customer(customer).filter(engagement=customer.engagement).count()
         )
-    customer.open_url = shell.screen_url("customer", customer, customer.engagement)
+    customer.open_url = shell.screen_url("sitemap", customer, customer.engagement)
     return customer
 
 

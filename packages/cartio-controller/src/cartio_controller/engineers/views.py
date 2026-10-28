@@ -37,6 +37,7 @@ from . import inventory as inventory_screen
 from . import onboarding, operations, overview, shell, totp
 from . import report as report_screen
 from . import search as global_search
+from . import sitemap as sitemap_screen
 from .health import ONLINE_WITHIN, collector_health
 from .health import collectors as _collectors
 from .models import EngineerMFA
@@ -443,6 +444,49 @@ def customer_detail(request, customer, engagement=None):
         engagements,
         engagement,
     )
+
+
+@never_cache
+@engineer_required
+def sitemap(request, customer, engagement=None):
+    """The Site map (DESIGN.md section 5): one site's L2 or L3 map. Its state is in the URL."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    extra = {}
+    if engagement is not None and not customer.inside_access_only:
+        extra["view"] = sitemap_screen.SiteMap(customer, engagement, request.GET)
+    return render_screen(
+        request,
+        "sitemap",
+        "engineers/sitemap.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+        network_data=True,
+    )
+
+
+@require_POST
+@csrf_protect
+@never_cache
+@engineer_required
+def sitemap_export(request, customer, engagement):
+    """The map as SVG (a PNG is drawn from it in the browser) or its devices as CSV, logged."""
+    customer, _, engagement = shell.resolve(customer, engagement)
+    # Inside access only: the controller holds no network data to export (ADR-0005).
+    if customer.inside_access_only:
+        raise Http404
+    fmt = request.POST.get("format", "")
+    if fmt not in sitemap_screen.EXPORT_FORMATS:
+        return HttpResponseBadRequest("Export as png, svg or csv.")
+    view = sitemap_screen.SiteMap(customer, engagement, request.POST)
+    if view.empty:
+        return HttpResponseBadRequest("This site has no devices to export.")
+    with transaction.atomic():
+        content, name, content_type = sitemap_screen.export(view, request.user.get_username(), fmt)
+    response = HttpResponse(content, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{name}"'
+    return response
 
 
 @require_http_methods(["GET", "POST"])

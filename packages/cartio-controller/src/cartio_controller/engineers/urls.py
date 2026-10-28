@@ -14,6 +14,17 @@ urlpatterns = [
         views.customer_detail,
         name="customer",
     ),
+    path("customers/<int:customer>/site-map", views.sitemap, name="sitemap"),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/site-map",
+        views.sitemap,
+        name="sitemap",
+    ),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/site-map/export",
+        views.sitemap_export,
+        name="sitemap-export",
+    ),
     path("customers/<int:customer>/inventory", views.inventory, name="inventory"),
     path(
         "customers/<int:customer>/engagements/<int:engagement>/inventory",
