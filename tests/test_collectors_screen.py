@@ -5,6 +5,7 @@ import re
 from datetime import timedelta
 
 import pytest
+from cartio_controller.collectors.credentials import CredentialNotAvailable, deliver_credentials
 from cartio_controller.collectors.models import (
     AuditEvent,
     CollectionRun,
@@ -160,6 +161,7 @@ def test_revoke_asks_first_then_stops_the_collector(client, engineer, acme):
     assert _post_json(client, CHECKIN_PATH, checkin, HTTP_AUTHORIZATION=auth).status_code == 200
 
     url = f"/customers/{acme.pk}/collectors"
+    stale = Collector.objects.for_customer(acme).get(pk=collector.pk)
     page = client.get(f"{url}?revoke={collector.pk}").content.decode()
     assert "Revoke vm01? Its secret stops working at once" in page
     assert not AuditEvent.objects.for_customer(acme).filter(action="collector.revoked").exists()
@@ -176,8 +178,11 @@ def test_revoke_asks_first_then_stops_the_collector(client, engineer, acme):
     assert event.collector == collector and event.detail == {"was_enrolled": True}
     # A revoked collector can't check in or start a run any more.
     assert _post_json(client, CHECKIN_PATH, checkin, HTTP_AUTHORIZATION=auth).status_code == 401
+    # Even through a collector object loaded before the revoke.
     with pytest.raises(RunNotAllowed):
-        start_run(collector, "discovery")
+        start_run(stale, "discovery")
+    with pytest.raises(CredentialNotAvailable):
+        deliver_credentials(stale, [])
     # Revoking twice is a no-op, and logs nothing more.
     client.post(url, {"action": "revoke", "collector": str(collector.pk)})
     assert AuditEvent.objects.for_customer(acme).filter(action="collector.revoked").count() == 1
