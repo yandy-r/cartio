@@ -16,8 +16,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from . import audit
+from .models import AuditEvent, Collector
 from .models import CheckIn as CheckInRecord
-from .models import Collector
 
 
 def _error(status: int, message: str) -> JsonResponse:
@@ -55,6 +56,15 @@ def enroll(request: HttpRequest) -> JsonResponse:
         collector.enrolled_at = timezone.now()
         collector.hostname = message.hostname
         collector.save()
+        audit.record(
+            collector.customer_id,
+            AuditEvent.Action.COLLECTOR_ENROLLED,
+            collector=collector,
+            object_type="collector",
+            object_id=collector.pk,
+            object_name=collector.name,
+            hostname=message.hostname,
+        )
 
     response = EnrollResponse(
         collector_id=str(collector.id), secret=secret, customer=collector.customer.name

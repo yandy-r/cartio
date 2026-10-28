@@ -5,18 +5,26 @@ and every lookup is filtered by that customer, so a record can't be reached thro
 customer's path.
 """
 
+import uuid
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, transaction
+from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
+from . import audit
 from .credentials import create_credential, delete_credential, update_credential
-from .models import Credential, Customer, Engagement, Site
+from .models import AuditEvent, CollectionRun, Credential, Customer, Engagement, Site
+from .permissions import ViewModelPermissions
 from .serializers import (
+    AuditEventSerializer,
+    CollectionRunSerializer,
     CredentialSerializer,
     CustomerSerializer,
     EngagementSerializer,
@@ -47,19 +55,37 @@ class ArchivableViewSet(
         return queryset
 
     def perform_create(self, serializer):
-        self._save(serializer)
+        self._save(serializer, AuditEvent.Action.RECORD_CREATED)
 
     def perform_update(self, serializer):
         self.check_parent()
         if serializer.instance.is_archived:
             raise serializers.ValidationError("Restore this record before changing it.")
-        self._save(serializer)
+        self._save(
+            serializer, AuditEvent.Action.RECORD_UPDATED, fields=sorted(serializer.validated_data)
+        )
 
-    def _save(self, serializer, **extra):
+    def _audit(self, record, action, **detail) -> None:
+        """Log a change to `record` in its customer's audit log, in the change's transaction."""
+        audit.record(
+            record if isinstance(record, Customer) else record.customer_id,
+            action,
+            actor=self.request.user.get_username(),
+            object_type=record._meta.model_name,
+            object_id=record.pk,
+            object_name=str(getattr(record, "name", "")),
+            **detail,
+        )
+
+    def _save(self, serializer, action, fields=None, **extra):
         # The serializers check names and dates first; this catches a concurrent conflict.
         try:
             with transaction.atomic():
-                serializer.save(**extra)
+                record = serializer.save(**extra)
+                detail = {"fields": fields} if fields is not None else {}
+                if isinstance(record, Customer):
+                    detail["data_mode"] = record.data_mode
+                self._audit(record, action, **detail)
         except IntegrityError as exc:
             if _is_unique_violation(exc):
                 raise serializers.ValidationError({"name": "This name is already taken."}) from exc
@@ -73,8 +99,10 @@ class ArchivableViewSet(
         self.check_parent()
         record = self.get_object()
         if not record.is_archived:
-            record.archived_at = timezone.now()
-            record.save(update_fields=["archived_at"])
+            with transaction.atomic():
+                record.archived_at = timezone.now()
+                record.save(update_fields=["archived_at"])
+                self._audit(record, AuditEvent.Action.RECORD_ARCHIVED)
         return Response(self.get_serializer(record).data)
 
     @action(detail=True, methods=["post"])
@@ -82,8 +110,10 @@ class ArchivableViewSet(
         self.check_parent()
         record = self.get_object()
         if record.is_archived:
-            record.archived_at = None
-            record.save(update_fields=["archived_at"])
+            with transaction.atomic():
+                record.archived_at = None
+                record.save(update_fields=["archived_at"])
+                self._audit(record, AuditEvent.Action.RECORD_RESTORED)
         return Response(self.get_serializer(record).data)
 
 
@@ -126,7 +156,7 @@ class CustomerScopedViewSet(CustomerScopeMixin, ArchivableViewSet):
 
     def perform_create(self, serializer):
         self.check_parent()
-        self._save(serializer, customer=self.get_customer())
+        self._save(serializer, AuditEvent.Action.RECORD_CREATED, customer=self.get_customer())
 
 
 class EngagementViewSet(CustomerScopedViewSet):
@@ -192,6 +222,67 @@ class CredentialViewSet(
 
     def perform_destroy(self, instance):
         self._write(lambda: delete_credential(instance, self.request.user.get_username()))
+
+
+class CollectionRunViewSet(
+    CustomerScopeMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    """A customer's collection runs, newest first. Filter with `?engagement=` and `?collector=`.
+
+    Read-only: runs are recorded by the job channel, never written through the API.
+    """
+
+    model = CollectionRun
+    serializer_class = CollectionRunSerializer
+    permission_classes = [IsAdminUser, ViewModelPermissions]
+
+    def get_queryset(self):
+        runs = self.scoped_queryset().select_related("result")
+        params = self.request.query_params
+        engagement = params.get("engagement")
+        if engagement:
+            engagement_id = serializers.IntegerField(min_value=1, max_value=2**63 - 1)
+            try:
+                runs = runs.filter(engagement_id=engagement_id.run_validation(engagement))
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({"engagement": "Give an engagement id."}) from exc
+        collector = params.get("collector")
+        if collector:
+            try:
+                runs = runs.filter(collector_id=uuid.UUID(collector))
+            except ValueError as exc:
+                raise serializers.ValidationError({"collector": "Give a collector id."}) from exc
+        return runs
+
+
+class AuditEventViewSet(
+    CustomerScopeMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    """A customer's audit log, newest first, and its export for compliance requests.
+
+    Reading it needs the audit event view permission, not just a staff account.
+    """
+
+    model = AuditEvent
+    serializer_class = AuditEventSerializer
+    permission_classes = [IsAdminUser, ViewModelPermissions]
+
+    def get_queryset(self):
+        return self.scoped_queryset()
+
+    @action(detail=False, methods=["get"])
+    def export(self, request, *args, **kwargs):
+        """The whole log, oldest first, as a file: `?type=csv` or `?type=json` (the default)."""
+        fmt = request.query_params.get("type", "json")
+        if fmt not in ("csv", "json"):
+            raise serializers.ValidationError({"type": "Export as csv or json."})
+        customer = self.get_customer()
+        chunks = audit.export_events(customer, request.user.get_username(), fmt)
+        content_type = "text/csv" if fmt == "csv" else "application/json"
+        response = StreamingHttpResponse(chunks, content_type=f"{content_type}; charset=utf-8")
+        filename = f"cartio-audit-customer-{customer.pk}.{fmt}"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
 
 def _is_unique_violation(exc: IntegrityError) -> bool:

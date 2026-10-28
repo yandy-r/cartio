@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import Credential, Customer, Engagement, Site
+from .models import AuditEvent, CollectionRun, Credential, Customer, Engagement, Site
 from .validators import MAX_SEED_HINTS, normalize_seed_hint
 
 
@@ -174,3 +174,70 @@ class CredentialSerializer(CustomerScopedSerializer):
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
+
+
+class CollectionRunSerializer(serializers.ModelSerializer):
+    """A run with its result. `outcome` is "running" until the run has a result."""
+
+    customer = serializers.PrimaryKeyRelatedField(read_only=True)
+    finished_at = serializers.SerializerMethodField()
+    outcome = serializers.SerializerMethodField()
+    device_count = serializers.SerializerMethodField()
+    error_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CollectionRun
+        fields = [
+            "id",
+            "customer",
+            "engagement",
+            "collector",
+            "job_type",
+            "started_by",
+            "started_at",
+            "finished_at",
+            "outcome",
+            "device_count",
+            "error_summary",
+        ]
+        read_only_fields = fields
+
+    @staticmethod
+    def _result(run):
+        return getattr(run, "result", None)
+
+    def get_finished_at(self, run):
+        result = self._result(run)
+        return serializers.DateTimeField().to_representation(result.finished_at) if result else None
+
+    def get_outcome(self, run):
+        result = self._result(run)
+        return result.outcome if result else "running"
+
+    def get_device_count(self, run):
+        result = self._result(run)
+        return result.device_count if result else None
+
+    def get_error_summary(self, run):
+        result = self._result(run)
+        return result.error_summary if result else ""
+
+
+class AuditEventSerializer(serializers.ModelSerializer):
+    customer = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = AuditEvent
+        fields = [
+            "id",
+            "customer",
+            "at",
+            "action",
+            "actor",
+            "collector",
+            "object_type",
+            "object_id",
+            "object_name",
+            "detail",
+        ]
+        read_only_fields = fields

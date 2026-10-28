@@ -1,7 +1,20 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from cartio_controller.collectors.models import Collector, Customer
+from cartio_controller.collectors import audit
+from cartio_controller.collectors.models import AuditEvent, Collector, Customer
+
+
+def _audit_customer_created(customer: Customer) -> None:
+    audit.record(
+        customer,
+        AuditEvent.Action.RECORD_CREATED,
+        object_type="customer",
+        object_id=customer.pk,
+        object_name=customer.name,
+        data_mode=customer.data_mode,
+        via="create_collector",
+    )
 
 
 class Command(BaseCommand):
@@ -15,13 +28,24 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Customer names are unique ignoring case, so look them up the same way.
             customer = Customer.objects.filter(name__iexact=options["customer"]).first()
-            if customer is None:
+            created = customer is None
+            if created:
                 customer = Customer.objects.create(name=options["customer"])
             if customer.is_archived:
                 raise CommandError(f"Customer {customer.name} is archived. Restore it first.")
             collector = Collector(customer=customer, name=options["name"])
             token = collector.issue_enrollment_token()
             collector.save()
+            if created:
+                _audit_customer_created(customer)
+            audit.record(
+                customer,
+                AuditEvent.Action.COLLECTOR_CREATED,
+                object_type="collector",
+                object_id=collector.pk,
+                object_name=collector.name,
+                via="create_collector",
+            )
 
         self.stdout.write(f"Collector {collector.id} created for {customer.name}.")
         self.stdout.write("Enrollment token (shown once, valid for one enrollment):")

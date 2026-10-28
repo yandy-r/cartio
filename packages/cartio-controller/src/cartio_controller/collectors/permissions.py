@@ -11,3 +11,21 @@ class ArchivableModelPermissions(DjangoModelPermissions):
             perms = self.get_required_permissions("PATCH", self._queryset(view).model)
             return request.user.has_perms(perms)
         return super().has_permission(request, view)
+
+
+class ViewModelPermissions(DjangoModelPermissions):
+    """Model permissions where reading needs the model's view permission too.
+
+    For records such as the audit log, which staff without that permission shouldn't read.
+    """
+
+    perms_map = {
+        **DjangoModelPermissions.perms_map,
+        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "HEAD": ["%(app_label)s.view_%(model_name)s"],
+    }
+
+    def _queryset(self, view):
+        # Only the model matters here. The view's own queryset looks up the customer in the URL,
+        # which would tell a user without the permission which customers exist.
+        return view.model.all_customers.none()
