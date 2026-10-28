@@ -183,7 +183,7 @@ class Customer(Archivable):
 class CustomerOwned(models.Model):
     """Base for every record that belongs to one customer (all models except Customer).
 
-    Isolation is enforced here, below the API:
+    Isolation is enforced here, below the API, and again by PostgreSQL itself (`db_guards`):
 
     - `objects` only answers queries scoped to one customer with `for_customer()`.
     - A record's customer never changes once saved.
@@ -284,6 +284,8 @@ class Engagement(Archivable, CustomerOwned):
         ordering = ["customer__name", "-start_date", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_engagement_name"),
+            # The target of the database-level customer ties (db_guards).
+            models.UniqueConstraint(fields=["id", "customer"], name="engagement_id_customer"),
             models.CheckConstraint(
                 condition=models.Q(status__in=["planned", "active", "completed"]),
                 name="engagement_status_valid",
@@ -344,6 +346,7 @@ class Collector(CustomerOwned):
         ordering = ["customer__name", "name"]
         constraints = [
             models.UniqueConstraint(fields=["customer", "name"], name="unique_collector_name"),
+            models.UniqueConstraint(fields=["id", "customer"], name="collector_id_customer"),
         ]
 
     def __str__(self) -> str:
@@ -595,6 +598,9 @@ class CollectionRun(CustomerOwned):
 
     class Meta(CustomerOwned.Meta):
         ordering = ["-started_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["id", "customer"], name="collection_run_id_customer"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.started_at:%Y-%m-%d %H:%M} {self.job_type} on {self.collector}"
