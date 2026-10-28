@@ -9,6 +9,10 @@ into [docs/adr](docs/adr/README.md). Branches, target releases and backports fol
 [RELEASING.md](RELEASING.md). The stack is Python for both the collector and the
 controller (ADR-0006).
 
+`.claude/settings.json` enables the `ycc` Claude Code plugin from
+[yandy-r/ystack](https://github.com/yandy-r/ystack), so skills such as `/ycc:release-model` and
+`/ycc:backport` work in cloud sessions too.
+
 ## Layout
 
 | Path | What it is |
