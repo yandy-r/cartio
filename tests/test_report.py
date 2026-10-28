@@ -162,7 +162,7 @@ def test_exports_are_audit_logged_and_carry_the_report(client, engineer, assesse
     assert "Telnet is still used by the backup job." in xml
     assert 'w:styleId="Heading1"' in xml
 
-    found_csv = _export(client, engagement, "csv").content.decode()
+    found_csv = _export(client, engagement, "csv").content.decode("utf-8-sig")
     assert found_csv.splitlines()[0].startswith("severity,title,check")
     assert "Critical,Spanning tree root on an access switch" in found_csv
 

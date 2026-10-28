@@ -2,7 +2,8 @@
 
 The DOCX is written by hand, like `xlsx.py`, with real Word styles (Title, Heading 1–3, Code)
 so engineers can edit it before sending. The PDF uses ReportLab's standard Helvetica, so no
-font file has to ship with it.
+font file has to ship with it; it covers Latin text only, so other scripts in names or notes
+print correctly only in the DOCX.
 """
 
 import io
@@ -96,8 +97,10 @@ _DOCUMENT_RELS = (
 
 def _style(style_id, name, run, paragraph="", based="Normal") -> str:
     base = f'<w:basedOn w:val="{based}"/>' if based else ""
+    default = ' w:default="1"' if style_id == "Normal" else ""
     return (
-        f'<w:style w:type="paragraph" w:styleId="{style_id}"><w:name w:val="{name}"/>{base}'
+        f'<w:style w:type="paragraph"{default} w:styleId="{style_id}">'
+        f'<w:name w:val="{name}"/>{base}'
         f"<w:qFormat/><w:pPr>{paragraph}</w:pPr><w:rPr>{run}</w:rPr></w:style>"
     )
 
@@ -180,11 +183,14 @@ def _table(header, rows) -> str:
             f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>{_run(text, props)}</w:p></w:tc>'
         )
 
+    # Text width (12240 less the margins) split evenly; Word widens columns to fit.
+    grid = f'<w:gridCol w:w="{9640 // len(header)}"/>' * len(header)
     head = "<w:tr><w:trPr><w:tblHeader/></w:trPr>" + "".join(cell(h, True) for h in header)
     body = "".join("<w:tr>" + "".join(cell(v) for v in row) + "</w:tr>" for row in rows)
     return (
         '<w:tbl><w:tblPr><w:tblStyle w:val="ReportTable"/><w:tblW w:w="5000" w:type="pct"/>'
-        f"</w:tblPr>{head}</w:tr>{body}</w:tbl>" + _para(props='<w:spacing w:after="0"/>')
+        f"</w:tblPr><w:tblGrid>{grid}</w:tblGrid>{head}</w:tr>{body}</w:tbl>"
+        + _para(props='<w:spacing w:after="0"/>')
     )
 
 
@@ -192,7 +198,8 @@ def _docx_body(blocks) -> str:
     out = []
     for block in blocks:
         if block.kind == "cover":
-            out.append(_para(BRAND, props=f'<w:spacing w:after="0"/><w:color w:val="{ACCENT}"/>'))
+            brand = _run(BRAND, f'<w:color w:val="{ACCENT}"/>')
+            out.append(_para(runs=brand, props='<w:spacing w:after="0"/>'))
             out.append(_para(block.text, "Title"))
             out += [_para(line, "Subtitle") for line in block.items]
         elif block.kind == "break":
@@ -209,7 +216,10 @@ def _docx_body(blocks) -> str:
         elif block.kind == "p":
             out.append(_para(block.text))
         elif block.kind == "bullets":
-            out += [_para(f"•\t{item}", "ListBullet") for item in block.items]
+            out += [
+                _para(style="ListBullet", runs=f"{_run('•')}<w:r><w:tab/></w:r>{_run(item)}")
+                for item in block.items
+            ]
         elif block.kind == "code":
             out.append(_para(block.text, "Code"))
         elif block.kind == "table":
@@ -222,10 +232,11 @@ def docx(report) -> bytes:
     document = (
         _XML + f"<w:document {_W} {_R}><w:body>{_docx_body(report.blocks())}"
         '<w:sectPr><w:headerReference w:type="default" r:id="rId2"/>'
-        '<w:footerReference w:type="default" r:id="rId3"/><w:titlePg/>'
+        '<w:footerReference w:type="default" r:id="rId3"/>'
         '<w:pgSz w:w="12240" w:h="15840"/>'
         '<w:pgMar w:top="1300" w:right="1300" w:bottom="1300" w:left="1300" '
-        'w:header="600" w:footer="600" w:gutter="0"/></w:sectPr></w:body></w:document>'
+        'w:header="600" w:footer="600" w:gutter="0"/><w:titlePg/></w:sectPr>'
+        "</w:body></w:document>"
     )
     small = f'<w:color w:val="{TEXT_2}"/><w:sz w:val="16"/>'
     header = (

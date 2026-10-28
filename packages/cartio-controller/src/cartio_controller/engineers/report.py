@@ -13,7 +13,6 @@ import csv
 import io
 from collections import Counter
 from dataclasses import dataclass
-from urllib.parse import urlencode
 
 from django.utils import timezone
 
@@ -132,12 +131,6 @@ class Report:
     def edited_count(self) -> int:
         return sum(1 for i in self.findings if i.edited or i.note)
 
-    def query(self, **values) -> str:
-        """The screen's query string for these choices, so export prints what was previewed."""
-        params = [("set", "1"), *(("sections", s) for s in self.sections)]
-        params.append(("min", values.get("min", self.min_severity)))
-        return urlencode(params)
-
     @property
     def severity_counts(self) -> list:
         counts = Counter(i.severity for i in self.findings)
@@ -193,7 +186,7 @@ class Report:
             "only, then parse the output into an inventory, neighbours and configurations."
         )
         if self.run is not None:
-            ran = _date(self.run.started_at)
+            ran = _date(timezone.localtime(self.run.started_at))
             lines.append(f"The checks below ran on {ran} against the collected data:")
         return lines
 
@@ -374,7 +367,8 @@ def findings_csv(report) -> bytes:
             item.note,
         ]
         writer.writerow([audit.spreadsheet_safe(value) for value in row])
-    return out.getvalue().encode()
+    # With a BOM, so Excel reads non-ASCII names as UTF-8.
+    return out.getvalue().encode("utf-8-sig")
 
 
 def export(report, actor: str, fmt: str) -> tuple[bytes, str]:
