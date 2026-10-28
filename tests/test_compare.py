@@ -26,12 +26,10 @@ pytestmark = pytest.mark.django_db
 OLD_PW = "<masked:k1:1111111111111111>"
 NEW_PW = "<masked:k1:2222222222222222>"
 ROTATED_PW = "<masked:k2:3333333333333333>"
-COMMUNITY_K1 = "<masked:k1:4444444444444444>"
-COMMUNITY_K2 = "<masked:k2:5555555555555555>"
 
 BASE_CONFIG = f"""hostname core-sw-01
 username netops privilege 15 password {OLD_PW}
-snmp-server community {COMMUNITY_K1} RO
+snmp-server community <masked:k1:4444444444444444> RO
 ip http server
 line vty 0 4
  transport input telnet ssh
@@ -39,7 +37,7 @@ line vty 0 4
 
 CURRENT_CONFIG = f"""hostname core-sw-01
 username netops privilege 15 password {NEW_PW}
-snmp-server community {COMMUNITY_K2} RO
+snmp-server community <masked:k2:5555555555555555> RO
 line vty 0 4
  transport input ssh
 ntp server 192.0.2.123
@@ -185,7 +183,7 @@ def test_secrets_compare_by_digest():
     assert by_text[("+", f"username netops privilege 15 password {NEW_PW}")] == "secret"
     assert ("-", f"username netops privilege 15 password {OLD_PW}") in by_text
     # Only the key version moved: can't compare, so not counted as a change.
-    assert by_text[("", f"snmp-server community {COMMUNITY_K2} RO")] == "rotated"
+    assert by_text[("", "snmp-server community <masked:k2:5555555555555555> RO")] == "rotated"
     assert ("-", "ip http server") in by_text
     assert ("+", "ntp server 192.0.2.123") in by_text
     assert (added, removed) == (3, 3)
@@ -209,8 +207,8 @@ def test_a_key_rotation_alone_is_not_a_changed_config(acme):
     q4 = _engagement(acme, "Q4", (2026, 10, 1))
     old, old_source = _devices(q2, [("rtr-1", "17.9")])
     new, new_source = _devices(q4, [("rtr-1", "17.9")])
-    _config(old["rtr-1"], old_source, f"snmp-server community {COMMUNITY_K1} RO\n")
-    _config(new["rtr-1"], new_source, f"snmp-server community {COMMUNITY_K2} RO\n")
+    _config(old["rtr-1"], old_source, "snmp-server community <masked:k1:4444444444444444> RO\n")
+    _config(new["rtr-1"], new_source, "snmp-server community <masked:k2:5555555555555555> RO\n")
     assert Comparison(acme, q2, q4).diffs == []
 
 
