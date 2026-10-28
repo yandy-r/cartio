@@ -1,0 +1,14 @@
+{# Export the selected visible rows. Disabled until a visible row is selected. #}
+<details id="inventory-export-menu" class="menu-button"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <summary class="btn primary{% if not view.selected_visible %} disabled{% endif %}"{% if not view.selected_visible %} aria-disabled="true"{% endif %}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"></path></svg>Export{% if view.selected_visible %} {{ view.selected_visible|length }}{% endif %} ▾</summary>
+  <div class="menu" role="menu">
+    {% if view.selected_visible %}
+    <button role="menuitem" type="submit" form="inventory-export" name="format" value="csv"><span class="mono menu-ext">CSV</span><span><strong>CSV file</strong><small>The selected rows, for spreadsheets and scripts</small></span></button>
+    <button role="menuitem" type="submit" form="inventory-export" name="format" value="xlsx"><span class="mono menu-ext">XLSX</span><span><strong>Excel workbook</strong><small>The selected rows, one sheet</small></span></button>
+    <p class="menu-note">Exports are logged in the audit log.</p>
+    {% else %}
+    <p class="menu-note">Select the devices to export first.</p>
+    {% endif %}
+  </div>
+</details>

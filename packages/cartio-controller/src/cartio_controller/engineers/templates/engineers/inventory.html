@@ -1,0 +1,37 @@
+{% extends "engineers/base.html" %}
+{% load static %}
+{% block title %}Inventory · {{ customer.name }}{% endblock %}
+{% block page_title %}Inventory {% include "engineers/_inventory_count.html" %}{% endblock %}
+{% block page_actions %}
+  {% if engagement and engagement.status != "completed" %}
+  {# The import flow is YAN-1662; the button is here so the header doesn't change when it lands. #}
+  <button type="button" class="btn" disabled title="Importing files isn't built yet">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path></svg>Import files</button>
+  {% endif %}
+  {% if engagement %}{% include "engineers/_inventory_export.html" %}{% endif %}
+{% endblock %}
+{% block content %}
+{% if not engagement %}
+<p class="muted">{{ customer.name }} has no engagement yet, so there are no devices to show.</p>
+{% else %}
+<form id="inventory-export" method="post" action="{% url 'engineers:inventory-export' customer=customer.pk engagement=engagement.pk %}">{% csrf_token %}</form>
+{# Links and controls below swap the results in place; each also works as a plain link. #}
+<div class="inventory" hx-target="#inventory-results" hx-include="[form=inventory-export][name=selected]" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <section class="card inventory-main">
+    <div class="inventory-toolbar">
+      <form id="inventory-filters" role="search" method="get" action="" hx-post="{{ request.path }}" hx-trigger="input changed delay:300ms from:#inventory-q, search from:#inventory-q, submit">
+        <label class="search-field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <span class="sr-only">Filter devices</span>
+          <input id="inventory-q" type="search" name="q" value="{{ view.q }}" placeholder="Hostname, IP, serial, model" autocomplete="off">
+        </label>
+      </form>
+      {% include "engineers/_inventory_pills.html" %}
+    </div>
+    <div id="inventory-results">{% include "engineers/_inventory_table.html" %}</div>
+  </section>
+  {% include "engineers/_inventory_summary.html" %}
+</div>
+<script src="{% static 'engineers/js/hover-cards.js' %}" defer></script>
+{% endif %}
+{% endblock %}

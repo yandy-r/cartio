@@ -1,0 +1,16 @@
+{# The full device record from data already on the page: no request on hover (DESIGN.md). #}
+<div class="hover-card" role="tooltip" id="card-{{ device.pk }}">
+  <div class="card-head"><span class="mono">{{ device.name }}</span><span class="state {{ device.os_state }}">{{ device.os_state_label }}</span></div>
+  <div class="card-sub">{{ device.manufacturer|default:"Unknown vendor" }} {{ device.model }}{% if device.platform %} · {{ device.platform }}{% endif %}</div>
+  <dl>
+    <dt>IP</dt><dd class="mono">{{ device.management_ip|default:"–" }}</dd>
+    <dt>Serial</dt><dd class="mono">{{ device.serial|default:"–" }}</dd>
+    <dt>OS</dt><dd>{{ device.os_version|default:"–" }}</dd>
+    <dt>Site</dt><dd>{{ device.site.name|default:"–" }}</dd>
+    <dt>Interfaces</dt><dd>{{ device.interface_count }}</dd>
+    <dt>Neighbors</dt><dd>{{ device.neighbor_count }}</dd>
+    <dt>Config</dt><dd>{% if device.config_at %}{{ device.config_count }} snapshot{{ device.config_count|pluralize }}, latest {{ device.config_at|date:"Y-m-d H:i" }}{% else %}Not captured{% endif %}</dd>
+    <dt>Seen by</dt><dd>{{ device.source_label }}{% if device.source.name %} · {{ device.source.name }}{% endif %}</dd>
+    <dt>Last seen</dt><dd>{{ device.last_seen|date:"Y-m-d H:i"|default:"–" }}</dd>
+  </dl>
+</div>

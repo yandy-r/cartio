@@ -169,3 +169,106 @@ th { font-weight: 600; color: var(--text-2); font-size: 12px; }
 .sign-in button { margin-top: 16px; }
 .error { color: var(--critical); }
 code.key { display: block; padding: 8px; margin: 8px 0; font-size: 16px; background: var(--page); word-break: break-all; }
+
+/* Inventory (DESIGN.md section 6). */
+.title-count { font-size: 16px; font-weight: 400; color: var(--text-2); }
+.inventory { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.inventory-main { flex: 999 1 980px; min-width: 0; }
+.inventory-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px;
+                     border-bottom: 1px solid var(--border); }
+.inventory-toolbar form { margin: 0; }
+.search-field { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px;
+                background: var(--page); border-radius: 8px; color: var(--text-2); }
+.search-field input { width: 200px; border: 0; background: transparent; font: inherit; font-size: 13px; color: var(--text); }
+.search-field input:focus { outline: none; }
+.search-field:focus-within { outline: 2px solid var(--accent); }
+.pill-groups { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill-label { margin-left: 6px; font-size: 13px; color: var(--text-2); }
+.pill { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 6px 12px; font-size: 13px;
+        color: #344054; background: var(--surface); border: 1px solid var(--control-border); border-radius: 999px;
+        text-decoration: none; }
+.pill:hover { color: #344054; border-color: var(--low); }
+.pill[aria-pressed="true"] { color: #FFFFFF; background: var(--sidebar); border-color: var(--sidebar); }
+.table-scroll { overflow-x: auto; }
+.inventory-table { border: 0; border-radius: 0; }
+.inventory-table th { padding: 0; background: #F8FAFB; font-weight: 500; text-transform: uppercase; letter-spacing: .05em;
+                      white-space: nowrap; }
+.inventory-table th .sort, .inventory-table th .th-text { display: inline-flex; gap: 4px; align-items: center;
+                      min-height: 44px; padding: 12px; color: inherit; text-decoration: none; }
+.inventory-table th .sort:hover { color: var(--text); }
+.inventory-table th .sort span { color: var(--accent); }
+.inventory-table td { padding: 11px 12px; border-bottom: 1px solid #EEF2F6; vertical-align: middle; white-space: nowrap; }
+.inventory-table tbody tr:hover td { background: #F8FAFB; }
+.inventory-table .select-cell { width: 44px; padding-left: 14px; }
+.inventory-table input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.inventory-table .small, .small { font-size: 12px; }
+.inventory-table .sub { font-size: 12px; color: var(--text-2); }
+.host-cell { position: relative; }
+.host { padding: 6px 0; font: 500 13px var(--mono); color: var(--accent); background: transparent; border: 0;
+        cursor: pointer; text-decoration: underline; text-decoration-color: #A5E3EE; text-underline-offset: 3px; }
+.state { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+         background: #EEF2F6; color: #344054; }
+.state.supported { background: #DCFCE7; color: #166534; }
+.state.eos-soon { background: #FFEDD5; color: #9A3412; }
+.state.eos { background: #FEE4E2; color: #912018; }
+.state.pending { background: var(--hosted-bg); color: var(--hosted-fg); }
+.source { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.source-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--low); }
+.source-dot.live_run { background: var(--accent); }
+.source-dot.upload { background: #7C3AED; }
+.source-dot.tool_export { background: #B54708; }
+.connect { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 10px; font: inherit;
+           font-size: 12px; font-weight: 600; color: #155E75; background: #ECFEFF; border: 1px solid #A5E3EE;
+           border-radius: 8px; cursor: pointer; }
+.connect:hover { background: #CFFAFE; border-color: var(--accent); }
+.connect[disabled], .btn[disabled] { cursor: not-allowed; opacity: .6; }
+.inventory-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 12px 16px;
+                    font-size: 13px; color: var(--text-2); }
+
+/* Hover cards: open on hover and keyboard focus, never need a click (DESIGN.md). */
+/* Fixed, so the table's scroll box doesn't clip it; hover-cards.js places it by its anchor. */
+.hover-card { display: none; position: fixed; z-index: 30; width: 320px; padding: 14px 16px;
+              color: #E6EDF3; background: var(--sidebar); border-radius: 12px; box-shadow: 0 16px 40px rgba(14, 26, 36, .32);
+              font-size: 12px; line-height: 1.45; white-space: normal; }
+.host-cell:hover .hover-card, .host-cell:focus-within .hover-card { display: block; }
+.host-cell.card-dismissed .hover-card { display: none; }
+.hover-card .card-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: #FFFFFF; }
+.hover-card .card-sub { color: var(--sidebar-text); }
+.hover-card .state { padding: 2px 8px; border-radius: 999px; color: var(--sidebar); background: #CBD5E1; }
+.hover-card .state.supported { background: #86EFAC; }
+.hover-card .state.eos-soon { background: #FDBA74; }
+.hover-card .state.eos { background: #FDA29B; }
+.hover-card .state.pending { background: #7DD3FC; }
+.hover-card dl { display: grid; grid-template-columns: 96px 1fr; gap: 3px 10px; margin: 10px 0 0; }
+.hover-card dt { color: var(--sidebar-muted); }
+.hover-card dd { margin: 0; }
+
+/* Summary column: breakdowns that apply a filter. */
+/* Beside the table on wide screens; under it, the groups sit side by side. */
+.inventory-summary { flex: 1 1 300px; min-width: 0; display: flex; flex-wrap: wrap; gap: 14px; }
+.summary-group { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.inventory-summary > p { flex: 1 1 100%; margin: 0; }
+.summary-group h2 { margin: 0 0 2px; font-size: 14px; }
+.breakdown { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
+             min-height: 44px; padding: 8px 10px; font-size: 13px; color: var(--text); text-decoration: none;
+             border: 1px solid var(--border); border-radius: 8px; }
+a.breakdown:hover { color: var(--text); border-color: var(--low); }
+.breakdown[aria-pressed="true"] { background: #ECFEFF; border-color: var(--accent); }
+.breakdown .bar { grid-column: 1 / -1; height: 6px; overflow: hidden; background: #EEF2F6; border-radius: 3px; }
+.breakdown .bar span { display: block; height: 100%; background: var(--accent); }
+
+/* A button that opens a menu. */
+.menu-button { position: relative; }
+.menu-button > summary { list-style: none; }
+.menu-button > summary::-webkit-details-marker { display: none; }
+.menu-button .btn.disabled { opacity: .6; }
+.menu { position: absolute; z-index: 40; right: 0; top: 52px; width: 290px; padding: 6px; background: var(--surface);
+        border: 1px solid #DDE2E8; border-radius: 12px; box-shadow: 0 16px 40px rgba(16, 24, 40, .16); }
+.menu button { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 44px; padding: 10px 12px;
+               font: inherit; font-size: 14px; color: var(--text); text-align: left; background: transparent; border: 0;
+               border-radius: 8px; cursor: pointer; }
+.menu button:hover { background: var(--page); }
+.menu button small { display: block; font-size: 12px; color: var(--text-2); }
+.menu .menu-ext { width: 44px; font-size: 11px; font-weight: 500; color: var(--accent); }
+.menu-note { margin: 6px 12px; font-size: 12px; color: var(--text-2); }
+@media (max-width: 640px) { .menu { right: auto; left: 0; } }

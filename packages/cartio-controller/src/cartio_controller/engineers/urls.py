@@ -13,6 +13,17 @@ urlpatterns = [
         views.customer_detail,
         name="customer",
     ),
+    path("customers/<int:customer>/inventory", views.inventory, name="inventory"),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/inventory",
+        views.inventory,
+        name="inventory",
+    ),
+    path(
+        "customers/<int:customer>/engagements/<int:engagement>/inventory/export",
+        views.inventory_export,
+        name="inventory-export",
+    ),
     path("customers/<int:customer>/jobs", views.jobs, name="jobs"),
     path("customers/<int:customer>/engagements/<int:engagement>/jobs", views.jobs, name="jobs"),
     path("switcher", views.switcher, name="switcher"),

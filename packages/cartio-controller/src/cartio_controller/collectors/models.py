@@ -588,6 +588,7 @@ class AuditEvent(CustomerOwned):
         MASTER_KEY_ROTATED = "master_key.rotated", "Data key rewrapped by a new master key"
         OUTPUTS_STORED = "outputs.stored", "Device outputs stored and parsed"
         SOURCE_REPARSED = "source.reparsed", "Source outputs parsed again"
+        INVENTORY_EXPORTED = "inventory.exported", "Inventory exported"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
