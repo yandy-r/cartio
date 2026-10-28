@@ -3,7 +3,7 @@
 * **Status:** Accepted by Yandy on 2026-10-28
 * **Date:** 2026-10-28
 * **Deciders:** Yandy
-* **Source:** [Linear](https://linear.app/yandy-r/issue/YAN-1642/spike-build-on-open-source-netbox-and-similar-or-write-in-house) (spike YAN-1642)
+* **Source:** [Linear](https://linear.app/yandy-r/document/adr-0008-in-house-device-model-reusing-open-source-collection-and-f9f145c4555b) (spike [YAN-1642](https://linear.app/yandy-r/issue/YAN-1642/spike-build-on-open-source-netbox-and-similar-or-write-in-house))
 
 ## Context
 
