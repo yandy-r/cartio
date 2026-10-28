@@ -1,0 +1,29 @@
+{# Global search results, swapped into the search dialog. The count goes out of band. #}
+<span id="search-count" hx-swap-oob="innerHTML">{% if search.terms %}{{ search.count }} result{{ search.count|pluralize }}{% else %}Type to search{% endif %}</span>
+{% for group in search.groups %}
+<div role="group" aria-labelledby="search-group-{{ group.key }}">
+  <div class="search-group"><span id="search-group-{{ group.key }}">{{ group.name }}</span><span>{{ group.more }}</span></div>
+  {% for result in group.results %}
+  <a id="search-option-{{ result.index }}" class="search-row" role="option" tabindex="-1" href="{{ result.url }}"
+     aria-selected="{% if result.index == 0 %}true{% else %}false{% endif %}">
+    <span class="search-icon {{ result.icon }}" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      {% if result.icon == "customer" %}<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path>
+      {% elif result.icon == "device" %}<path d="M3 8h18v8H3z M7 12h.01 M11 12h.01 M15 12h.01"></path>
+      {% elif result.icon == "collector" %}<path d="M4 4h16v12H4z M8 20h8 M12 16v4"></path>
+      {% elif result.icon == "engagement" %}<path d="M4 6h16 M4 12h16 M4 18h10"></path>
+      {% else %}<path d="M4 5h16v14H4z M4 9h16"></path>{% endif %}
+    </svg></span>
+    <span class="grow">
+      <span class="search-title{% if result.mono %} mono{% endif %}">{{ result.title }}</span>
+      <span class="search-sub">{{ result.sub }}{% if result.detail %} · {{ result.detail }}{% endif %}</span>
+    </span>
+    {% if result.tag %}<span class="search-tag {{ result.tag_class }}">{{ result.tag }}</span>{% endif %}
+    <span class="search-target">{{ result.target }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endfor %}
+{% if search.terms and not search.count %}
+<p class="search-empty">No matches for “{{ search.query }}”. Try a hostname, an IP address, a serial or a customer name.</p>
+{% endif %}
+{% for note in search.notes %}<p class="search-note">{{ note }}</p>{% endfor %}

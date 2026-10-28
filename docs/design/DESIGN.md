@@ -402,6 +402,11 @@ One search for everything an engineer can open, from the sidebar button or **⌘
   resolved within its own customer's scope. Customers that are inside access only have no
   device or finding data on the controller to search; search says so. Live view customers are
   searched through the relay and nothing is indexed on the controller.
+* **Until those features land:** findings and integrations join the search with their screens
+  (YAN-1738, YAN-1742), and live view search waits for the relay through the collector. Until
+  then search leaves those out and its note says why for each On site customer. Devices open
+  Inventory filtered by host name, and engagements open the customer's overview, since Report
+  isn't built yet.
 
 ### 12. Customer and engagement switcher
 

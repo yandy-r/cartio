@@ -7,6 +7,7 @@
   {# Fonts, styles and htmx come from the controller's static files: no third-party requests. #}
   <link rel="stylesheet" href="{% static 'engineers/css/cartio.css' %}">
   <script src="{% static 'engineers/js/htmx-2.0.4.min.js' %}" defer></script>
+  <script src="{% static 'engineers/js/search.js' %}" defer></script>
 </head>
 <body>
 {% if user.is_authenticated and user.is_staff %}
@@ -17,10 +18,9 @@
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
       <span><span class="brand-name">Cartio</span><br><span class="brand-org">IT Cloud Network</span></span>
     </a>
-    {# Global search is YAN-1740; the button is here so the shell doesn't change when it lands. #}
-    <button type="button" class="search-button" disabled title="Global search isn't built yet">
+    <button type="button" class="search-button" data-search-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-      Search…<kbd>⌘K</kbd>
+      Search…<kbd data-search-kbd>⌘K</kbd>
     </button>
     {% if customer %}{% include "engineers/_switcher.html" %}{% endif %}
 
@@ -89,6 +89,7 @@
     {% block content %}{% endblock %}
   </main>
 </div>
+{% include "engineers/_search_dialog.html" %}
 {% endwith %}
 {% else %}
 <main>
