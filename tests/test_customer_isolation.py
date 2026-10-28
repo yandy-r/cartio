@@ -24,6 +24,7 @@ from cartio_controller.collectors.models import (
     Link,
     LoginEvent,
     RawOutput,
+    RoutingNeighbor,
     Site,
     Source,
     UnscopedQueryError,
@@ -97,6 +98,9 @@ def _records(customer):
         Link: Link.objects.for_customer(customer).create(
             a_interface=interface, b_device_name="edge-fw1", b_interface_name="port1"
         ),
+        RoutingNeighbor: RoutingNeighbor.objects.for_customer(customer).create(
+            device=device, interface=interface, protocol="ospf", address="192.0.2.1"
+        ),
         RawOutput: RawOutput.objects.for_customer(customer).create(
             source=source, device=device, command="show version", output="Cisco IOS XE"
         ),
@@ -132,6 +136,7 @@ def test_every_table_carries_a_customer():
         "Device",
         "Interface",
         "Link",
+        "RoutingNeighbor",
         "RawOutput",
         "ConfigSnapshot",
         "AssessmentRun",

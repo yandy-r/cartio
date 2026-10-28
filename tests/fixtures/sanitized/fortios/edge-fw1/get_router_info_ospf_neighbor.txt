@@ -1,0 +1,3 @@
+OSPF process 0, VRF 0:
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+192.0.2.10        1   Full/Backup     00:00:33    192.0.2.10      port1

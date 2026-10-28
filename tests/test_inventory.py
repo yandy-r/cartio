@@ -11,6 +11,7 @@ from cartio_controller.collectors.models import (
     Link,
     OnSiteDataError,
     RawOutput,
+    RoutingNeighbor,
     Source,
 )
 from cartio_core.parsers import ParseError
@@ -48,7 +49,15 @@ def _inventory(customer):
     )
     interfaces = sorted(
         Interface.objects.for_customer(customer).values_list(
-            "device__name", "name", "description", "enabled", "mac_address", "mtu", "speed"
+            "device__name",
+            "name",
+            "description",
+            "enabled",
+            "mac_address",
+            "mtu",
+            "speed",
+            "ip_address",
+            "prefix_length",
         )
     )
     links = sorted(
@@ -65,7 +74,26 @@ def _inventory(customer):
             "a_interface__device", "b_interface__device"
         )
     )
-    return devices, interfaces, links
+    return devices, interfaces, links, _routing(customer)
+
+
+def _routing(customer):
+    return sorted(
+        (
+            neighbor.device.name,
+            neighbor.interface.name if neighbor.interface else "",
+            neighbor.protocol,
+            neighbor.address,
+            neighbor.router_id,
+            neighbor.remote_as,
+            neighbor.state,
+            neighbor.peer.name if neighbor.peer else "",
+            neighbor.subnet,
+        )
+        for neighbor in RoutingNeighbor.objects.for_customer(customer).select_related(
+            "device", "interface", "peer"
+        )
+    )
 
 
 EXPECTED_LINKS = sorted(
@@ -111,10 +139,40 @@ EXPECTED_LINKS = sorted(
 )
 
 
+EXPECTED_ROUTING = sorted(
+    [
+        (
+            "core-sw1",
+            "Vlan10",
+            "ospf",
+            "192.0.2.1",
+            "192.0.2.1",
+            None,
+            "FULL/DR",
+            "edge-fw1",
+            "192.0.2.0/24",
+        ),
+        (
+            "edge-fw1",
+            "port1",
+            "ospf",
+            "192.0.2.10",
+            "192.0.2.10",
+            None,
+            "Full/Backup",
+            "core-sw1",
+            "192.0.2.0/24",
+        ),
+        # The ISP's router isn't in the inventory: it keeps its address only.
+        ("edge-fw1", "wan1", "bgp", "203.0.113.1", "", 64500, "Established", "", "203.0.113.0/24"),
+    ]
+)
+
+
 def test_the_lab_becomes_devices_interfaces_and_links(acme):
     source = _source(acme)
     _store(source, "floor-sw1", "core-sw1", "edge-fw1")
-    devices, interfaces, links = _inventory(acme)
+    devices, interfaces, links, routing = _inventory(acme)
     assert devices == sorted(
         [
             (
@@ -141,7 +199,11 @@ def test_the_lab_becomes_devices_interfaces_and_links(acme):
 
     assert len(interfaces) == 4 + 4 + 5
     assert links == EXPECTED_LINKS
-    assert RawOutput.objects.for_customer(acme).count() == 5 + 5 + 3
+    assert routing == EXPECTED_ROUTING
+    assert ("core-sw1", "Vlan10", "192.0.2.10", 24) in [
+        (i[0], i[1], i[7], i[8]) for i in interfaces
+    ]
+    assert RawOutput.objects.for_customer(acme).count() == 7 + 7 + 5
     assert set(
         RawOutput.objects.for_customer(acme)
         .filter(device__name="edge-fw1")
@@ -160,6 +222,7 @@ def test_the_lab_becomes_devices_interfaces_and_links(acme):
 def test_links_resolve_whatever_order_devices_arrive_in(acme, order):
     _store(_source(acme), *order)
     assert _inventory(acme)[2] == EXPECTED_LINKS
+    assert _inventory(acme)[3] == EXPECTED_ROUTING
 
 
 def test_a_neighbor_not_collected_keeps_its_announced_names(acme):
@@ -188,6 +251,7 @@ def test_reparsing_rebuilds_records_changed_since(acme):
     before = _inventory(acme)
     Interface.objects.for_customer(acme).filter(device__name="core-sw1").update(description="x")
     Link.objects.for_customer(acme).filter(protocol="cdp").delete()
+    RoutingNeighbor.objects.for_customer(acme).filter(protocol="ospf").delete()
     reparse(source)
     assert _inventory(acme) == before
 
@@ -235,6 +299,60 @@ def test_a_neighbor_is_never_matched_in_another_engagement(acme):
     _store(first, "floor-sw1")
     _store(_source(acme, "Next audit"), "core-sw1")
     assert not Link.objects.for_customer(acme).exclude(b_interface=None).exists()
+
+
+def test_a_routing_neighbor_is_never_matched_in_another_customer_or_engagement(acme):
+    globex = Customer.objects.create(name="Globex")
+    _store(_source(globex), "edge-fw1")
+    _store(_source(acme, "Next audit"), "edge-fw1")
+    _store(_source(acme), "core-sw1")
+    # Both edge-fw1s own 192.0.2.1, but neither is in core-sw1's customer and engagement.
+    assert not RoutingNeighbor.objects.for_customer(acme).exclude(peer=None).exists()
+    assert not RoutingNeighbor.objects.for_customer(globex).exclude(peer=None).exists()
+
+
+def test_a_routing_peer_follows_its_address(acme):
+    source = _source(acme)
+    _store(source, "core-sw1", "edge-fw1")
+    # edge-fw1 is re-addressed: core-sw1's OSPF neighbor at 192.0.2.1 is no longer edge-fw1.
+    lab = outputs("edge-fw1")
+    lab["get system interface"] = lab["get system interface"].replace(
+        "ip: 192.0.2.1 255.255.255.0", "ip: 192.0.2.2 255.255.255.0"
+    )
+    store_outputs(source, "fortios", lab)
+    ospf = RoutingNeighbor.objects.for_customer(acme).get(device__name="core-sw1")
+    assert ospf.peer is None
+
+
+def test_an_address_on_two_devices_resolves_to_neither(acme):
+    source = _source(acme)
+    _store(source, "edge-fw1")
+    # floor-sw1 claims edge-fw1's 192.0.2.1 too (a shared VIP, or overlapping VRFs).
+    lab = outputs("floor-sw1")
+    lab["show interfaces"] = lab["show interfaces"].replace(
+        "Internet address is 192.0.2.21/24", "Internet address is 192.0.2.1/24"
+    )
+    store_outputs(source, "ios", lab)
+    _store(source, "core-sw1")
+    ospf = RoutingNeighbor.objects.for_customer(acme).get(device__name="core-sw1")
+    assert ospf.peer is None
+
+
+def test_a_routing_neighbor_not_collected_keeps_its_address(acme):
+    _store(_source(acme), "core-sw1")
+    assert _inventory(acme)[3] == [
+        (
+            "core-sw1",
+            "Vlan10",
+            "ospf",
+            "192.0.2.1",
+            "192.0.2.1",
+            None,
+            "FULL/DR",
+            "",
+            "192.0.2.0/24",
+        )
+    ]
 
 
 def test_on_site_customers_keep_device_data_on_site():

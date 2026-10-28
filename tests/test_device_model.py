@@ -19,7 +19,9 @@ from cartio_controller.collectors.models import (
     Engagement,
     Interface,
     Link,
+    OnSiteDataError,
     RawOutput,
+    RoutingNeighbor,
     Source,
 )
 from django.db import IntegrityError, transaction
@@ -118,3 +120,31 @@ def test_a_live_run_source_names_its_run_and_its_engagement(acme):
     run = CollectionRun.objects.for_customer(acme).create(job_type="discovery", collector=collector)
     with pytest.raises(CrossEngagementError):
         Source.objects.for_customer(acme).create(engagement=engagement, kind="live_run", run=run)
+
+
+def test_a_routing_neighbor_stays_in_its_customer_and_engagement(acme):
+    globex = Customer.objects.create(name="Globex")
+    engagement = _engagement(acme)
+    mine, source = _device(engagement)
+    later, _ = _device(_engagement(acme, "2027 audit"), "edge-fw1")
+    theirs, _ = _device(_engagement(globex), "edge-fw1")
+    neighbors = RoutingNeighbor.objects.for_customer(acme)
+    with pytest.raises(CrossCustomerError):
+        neighbors.create(device=mine, protocol="ospf", address="192.0.2.1", peer=theirs)
+    with pytest.raises(CrossEngagementError):
+        neighbors.create(device=mine, protocol="ospf", address="192.0.2.1", peer=later)
+    other_port = Interface.objects.for_customer(acme).create(device=later, name="port1")
+    with pytest.raises(ValueError, match="belong to the device"):
+        neighbors.create(device=mine, interface=other_port, protocol="ospf", address="192.0.2.1")
+    with transaction.atomic(), pytest.raises(IntegrityError):
+        neighbors.create(device=mine, protocol="ospf", address="192.0.2.1", peer=mine)
+    neighbors.create(device=mine, protocol="bgp", address="203.0.113.1", source=source)
+
+
+def test_on_site_customers_refuse_routing_neighbors(acme):
+    device, _ = _device(_engagement(acme))
+    Customer.objects.filter(pk=acme.pk).update(data_mode=Customer.DataMode.ON_SITE)
+    with pytest.raises(OnSiteDataError):
+        RoutingNeighbor.objects.for_customer(acme).create(
+            device=device, protocol="ospf", address="192.0.2.1"
+        )

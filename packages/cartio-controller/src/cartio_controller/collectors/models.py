@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import ipaddress
 import json
 import secrets
 import uuid
@@ -853,6 +854,9 @@ class Interface(CustomerOwned):
     mtu = models.PositiveIntegerField(null=True, blank=True)
     # In kbit/s, as NetBox stores it.
     speed = models.PositiveBigIntegerField(null=True, blank=True)
+    # The primary IPv4 address; empty when unnumbered or unset.
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    prefix_length = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta(CustomerOwned.Meta):
         ordering = ["device__name", "name"]
@@ -912,6 +916,79 @@ class Link(CustomerOwned):
             _check_same_engagement(
                 self.a_interface.device.engagement_id,
                 self.b_interface.device.engagement_id if self.b_interface_id else None,
+                self.source.engagement_id if self.source_id else None,
+            )
+
+
+class RoutingNeighbor(CustomerOwned):
+    """An L3 relation for the map: a device's OSPF neighbor or BGP peer.
+
+    The far end is the engagement's device that owns the neighbor's address, once that device is
+    in the inventory; until then `peer` is empty and the address is all that's known.
+    """
+
+    network_data = True
+
+    class Protocol(models.TextChoices):
+        OSPF = "ospf", "OSPF"
+        BGP = "bgp", "BGP"
+
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="routing_neighbors")
+    # The device's interface toward the neighbor; empty for a peer that isn't directly connected.
+    interface = models.ForeignKey(
+        Interface,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="routing_neighbors",
+    )
+    protocol = models.CharField(max_length=8, choices=Protocol)
+    address = models.GenericIPAddressField()
+    router_id = models.CharField(max_length=45, blank=True)
+    remote_as = models.PositiveBigIntegerField(null=True, blank=True)
+    state = models.CharField(max_length=32, blank=True)
+    peer = models.ForeignKey(
+        Device, null=True, blank=True, on_delete=models.CASCADE, related_name="routing_peers"
+    )
+    source = models.ForeignKey(
+        Source, null=True, blank=True, on_delete=models.PROTECT, related_name="routing_neighbors"
+    )
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["device__name", "protocol", "address"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(device=models.F("peer")),
+                name="routing_neighbor_not_to_itself",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(protocol__in=["ospf", "bgp"]),
+                name="routing_neighbor_protocol_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.device} {self.get_protocol_display()} {self.peer or self.address}"
+
+    @property
+    def subnet(self) -> str:
+        """The shared subnet, from the local interface's address, or "" when not on one."""
+        interface = self.interface
+        if interface is None or not interface.ip_address or interface.prefix_length is None:
+            return ""
+        network = ipaddress.ip_interface(
+            f"{interface.ip_address}/{interface.prefix_length}"
+        ).network
+        return str(network) if ipaddress.ip_address(self.address) in network else ""
+
+    def check_customer_links(self) -> None:
+        super().check_customer_links()
+        if self.device_id is not None:
+            if self.interface_id is not None and self.interface.device_id != self.device_id:
+                raise ValueError("The local interface must belong to the device.")
+            _check_same_engagement(
+                self.device.engagement_id,
+                self.peer.engagement_id if self.peer_id else None,
                 self.source.engagement_id if self.source_id else None,
             )
 
