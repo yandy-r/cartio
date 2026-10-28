@@ -179,7 +179,7 @@ its function and add a `Check` to `CHECKS`; never reuse or rename a check id.
 ## Not done yet
 
 - Collector authentication is a placeholder: a one-time enrollment token is exchanged for a
-  bearer secret. Per-collector mTLS certificates replace it (ADR-0001, YAN-1640).
+  bearer secret. Requests signed with a per-collector key pair replace it (ADR-0009, YAN-1650).
 - Check-in returns no jobs yet. Discovery and import arrive in M2.
 - Masking is not wired into collection yet: the collector has no drivers or masking key until
   discovery (YAN-1656) and credential delivery (YAN-1653) land.

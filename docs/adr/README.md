@@ -14,6 +14,7 @@ request as the code it affects.
 | [0006](0006-tech-stack.md) | Tech stack | Accepted |
 | [0007](0007-ui-design-reference.md) | The B1 design is the reference for the engineer UI | Accepted |
 | [0008](0008-in-house-device-model.md) | In-house device model, reusing open-source collection and parsing | Accepted |
+| [0009](0009-collector-transport.md) | Collector transport: HTTPS long-poll and signed requests | Accepted |
 
 Statuses are Proposed, Accepted, Superseded by ADR-NNNN, or Rejected. Each ADR marks which
 parts Yandy decided and which are proposals.

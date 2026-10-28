@@ -4,8 +4,8 @@ Both sides import these, so the shape of a message is defined once. All traffic 
 started by the collector (ADR-0001): it enrolls once, then checks in.
 
 Authentication here is a placeholder. A one-time enrollment token is exchanged for a
-collector secret, sent as a bearer token. It will be replaced by per-collector mTLS
-certificates (ADR-0001, YAN-1640).
+collector secret, sent as a bearer token. It will be replaced by requests signed with a
+per-collector key pair (ADR-0009, YAN-1650).
 """
 
 from __future__ import annotations
