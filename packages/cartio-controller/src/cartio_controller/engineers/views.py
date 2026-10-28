@@ -33,6 +33,7 @@ from cartio_controller.collectors.models import CollectionRun, Customer, Site
 
 from . import inventory as inventory_screen
 from . import onboarding, operations, overview, shell, totp
+from . import search as global_search
 from .health import ONLINE_WITHIN, collector_health
 from .health import collectors as _collectors
 from .models import EngineerMFA
@@ -699,3 +700,37 @@ def switcher(request):
         "engineers/_switcher_customers.html",
         {"switcher_customers": shell.switcher_customers(screen, query), "query": query},
     )
+
+
+def _small_pk(text: str) -> int | None:
+    return int(text) if text.isdecimal() and len(text) <= 18 else None
+
+
+@never_cache
+@engineer_required
+def search(request):
+    """Global search results (DESIGN.md section 11), an htmx partial for the search dialog.
+
+    The page's customer and engagement come along, for the "only this customer" scope and so
+    links to screens keep the engineer's context. An unknown or archived one is ignored.
+    """
+    current = engagement = None
+    customer_pk = _small_pk(request.GET.get("customer", ""))
+    if customer_pk is not None:
+        try:
+            current, engagements, engagement = shell.resolve(customer_pk)
+        except Http404:
+            current = None
+        if current is not None and current.is_archived:
+            current = engagement = None
+        wanted = _small_pk(request.GET.get("engagement", ""))
+        if current is not None and wanted is not None:
+            engagement = next((e for e in engagements if e.pk == wanted), engagement)
+    results = global_search.Search(
+        request.user,
+        request.GET.get("q", ""),
+        current,
+        engagement,
+        only_current=request.GET.get("scope") == "current",
+    )
+    return render(request, "engineers/_search_results.html", {"search": results})

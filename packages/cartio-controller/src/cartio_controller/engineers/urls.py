@@ -46,6 +46,7 @@ urlpatterns = [
     ),
     path("customers/<int:customer>/audit/export", views.audit_export, name="audit-export"),
     path("switcher", views.switcher, name="switcher"),
+    path("search", views.search, name="search"),
     path("sign-in", views.sign_in, name="sign-in"),
     path("sign-in/code", views.verify, name="verify"),
     path("sign-in/authenticator", views.mfa_setup, name="mfa-setup"),
