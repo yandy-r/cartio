@@ -43,7 +43,13 @@
       {% endif %}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg>Findings
       {% if customer %}</a>{% else %}</span>{% endif %}
-      <span class="nav-item" aria-disabled="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare<small>Soon</small></span>
+      {% if customer %}
+        <a class="nav-item" href="{% if engagement %}{% url 'engineers:compare' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:compare' customer=customer.pk %}{% endif %}"{% if url_name == "compare" %} aria-current="page"{% endif %}>
+      {% else %}
+        <span class="nav-item" aria-disabled="true" title="Pick a customer first">
+      {% endif %}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"></path></svg>Compare
+      {% if customer %}</a>{% else %}</span>{% endif %}
       {% if customer %}
         <a class="nav-item" href="{% if engagement %}{% url 'engineers:report' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:report' customer=customer.pk %}{% endif %}"{% if url_name == "report" %} aria-current="page"{% endif %}>
       {% else %}

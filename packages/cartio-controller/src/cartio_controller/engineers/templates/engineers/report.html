@@ -23,7 +23,7 @@
         <label class="report-section"><input type="checkbox" name="sections" value="{{ key }}"{% if key in report.sections %} checked{% endif %}>
           <span><strong>{{ section.0 }}</strong><br><span class="muted">{{ section.1 }}</span></span></label>
         {% endfor %}
-        <p class="report-fixed muted">Topology maps come with the Site map, and Changes since the last assessment with Compare.</p>
+        <p class="report-fixed muted">Topology maps and Changes since the last assessment aren't in the report yet.</p>
       </fieldset>
       <label class="field"><span class="label">Lowest severity to include</span>
         <select name="min">
