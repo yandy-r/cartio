@@ -141,9 +141,10 @@ def cancel_job(job: Job, actor: str) -> Job:
 
 
 def _locked(job: Job) -> Job:
+    # Lock only the job: the run joined in is append-only, and the app role can't lock it.
     return (
         Job.objects.for_customer(job.customer_id)
-        .select_for_update()
+        .select_for_update(of=("self",))
         .select_related("collector", "run")
         .get(pk=job.pk)
     )
@@ -162,7 +163,7 @@ def next_job(collector: Collector, tls_inspected: bool = False) -> dict | None:
         with transaction.atomic():
             job = (
                 collector.scoped(Job)
-                .select_for_update(skip_locked=True)
+                .select_for_update(skip_locked=True, of=("self",))
                 .filter(collector=collector, status__in=Job.OPEN)
                 .select_related("run")
                 .order_by("created_at")
