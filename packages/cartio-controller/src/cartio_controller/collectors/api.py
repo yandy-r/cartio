@@ -5,17 +5,31 @@ and every lookup is filtered by that customer, so a record can't be reached thro
 customer's path.
 """
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 
-from .models import Customer, Engagement, Site
-from .serializers import CustomerSerializer, EngagementSerializer, SiteSerializer
+from .credentials import create_credential, delete_credential, update_credential
+from .models import Credential, Customer, Engagement, Site
+from .serializers import (
+    CredentialSerializer,
+    CustomerSerializer,
+    EngagementSerializer,
+    SiteSerializer,
+)
+from .vault import VaultError
 
 _TRUE = {"1", "true", "yes"}
+
+
+class ServiceUnavailable(APIException):
+    status_code = 503
+    default_detail = "The controller isn't set up for this yet."
 
 
 class ArchivableViewSet(
@@ -80,8 +94,8 @@ class CustomerViewSet(ArchivableViewSet):
         return self.filter_archived(Customer.objects.all())
 
 
-class CustomerScopedViewSet(ArchivableViewSet):
-    """Engagements and sites: always reached through, and filtered by, one customer."""
+class CustomerScopeMixin:
+    """Records always reached through, and filtered by, the customer in the URL."""
 
     model = None
 
@@ -90,15 +104,21 @@ class CustomerScopedViewSet(ArchivableViewSet):
             self._customer = get_object_or_404(Customer, pk=self.kwargs["customer_pk"])
         return self._customer
 
-    def get_queryset(self):
-        queryset = self.model.objects.for_customer(self.get_customer())
-        return self.filter_archived(queryset.select_related("customer"))
+    def scoped_queryset(self):
+        return self.model.objects.for_customer(self.get_customer()).select_related("customer")
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         if "customer_pk" in self.kwargs:
             context["customer"] = self.get_customer()
         return context
+
+
+class CustomerScopedViewSet(CustomerScopeMixin, ArchivableViewSet):
+    """Engagements and sites: archived, never deleted."""
+
+    def get_queryset(self):
+        return self.filter_archived(self.scoped_queryset())
 
     def check_parent(self) -> None:
         if self.get_customer().is_archived:
@@ -117,6 +137,61 @@ class EngagementViewSet(CustomerScopedViewSet):
 class SiteViewSet(CustomerScopedViewSet):
     model = Site
     serializer_class = SiteSerializer
+
+
+class CredentialViewSet(
+    CustomerScopeMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Create, list, replace and delete credentials. Secrets go in and never come back out."""
+
+    model = Credential
+    serializer_class = CredentialSerializer
+
+    def get_queryset(self):
+        return self.scoped_queryset()
+
+    def _write(self, action):
+        try:
+            with transaction.atomic():
+                return action()
+        except ImproperlyConfigured as exc:
+            raise ServiceUnavailable(str(exc)) from exc
+        except VaultError as exc:
+            raise ServiceUnavailable(
+                "Stored credentials can't be decrypted with the configured master key."
+            ) from exc
+        except IntegrityError as exc:
+            if _is_unique_violation(exc):
+                raise serializers.ValidationError({"name": "This name is already taken."}) from exc
+            raise
+
+    def perform_create(self, serializer):
+        customer = self.get_customer()
+        if customer.is_archived:
+            raise serializers.ValidationError("This customer is archived. Restore it first.")
+        data = dict(serializer.validated_data)
+        secret = data.pop("secret")
+        serializer.instance = self._write(
+            lambda: create_credential(customer, self.request.user.get_username(), secret, **data)
+        )
+
+    def perform_update(self, serializer):
+        data = dict(serializer.validated_data)
+        secret = data.pop("secret", None)
+        serializer.instance = self._write(
+            lambda: update_credential(
+                serializer.instance, self.request.user.get_username(), secret, **data
+            )
+        )
+
+    def perform_destroy(self, instance):
+        self._write(lambda: delete_credential(instance, self.request.user.get_username()))
 
 
 def _is_unique_violation(exc: IntegrityError) -> bool:

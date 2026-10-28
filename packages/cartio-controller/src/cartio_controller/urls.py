@@ -10,6 +10,9 @@ router.register(
     r"customers/(?P<customer_pk>[0-9]+)/engagements", api.EngagementViewSet, basename="engagement"
 )
 router.register(r"customers/(?P<customer_pk>[0-9]+)/sites", api.SiteViewSet, basename="site")
+router.register(
+    r"customers/(?P<customer_pk>[0-9]+)/credentials", api.CredentialViewSet, basename="credential"
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

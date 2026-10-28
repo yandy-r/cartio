@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CheckIn, Collector, Customer, Engagement, Site
+from .models import AuditEvent, CheckIn, Collector, Credential, Customer, Engagement, Site
 
 
 class CollectorInline(admin.TabularInline):
@@ -76,3 +76,31 @@ class CheckInAdmin(admin.ModelAdmin):
     list_display = ["collector", "at", "hostname", "version", "platform"]
     list_filter = ["collector__customer"]
     readonly_fields = ["customer", "collector", "at", "hostname", "version", "platform"]
+
+
+class ReadOnlyAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Credential)
+class CredentialAdmin(ReadOnlyAdmin):
+    """Credentials are managed through the API, which encrypts and audits. Secrets never show."""
+
+    list_display = ["name", "customer", "kind", "username", "updated_at"]
+    list_filter = ["customer", "kind"]
+    search_fields = ["name", "username"]
+    exclude = ["ciphertext"]
+
+
+@admin.register(AuditEvent)
+class AuditEventAdmin(ReadOnlyAdmin):
+    list_display = ["at", "customer", "action", "object_name", "actor", "collector"]
+    list_filter = ["customer", "action"]
+    search_fields = ["object_name", "actor"]

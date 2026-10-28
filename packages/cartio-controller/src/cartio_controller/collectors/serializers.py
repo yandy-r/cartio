@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import Customer, Engagement, Site
+from .models import Credential, Customer, Engagement, Site
 from .validators import MAX_SEED_HINTS, normalize_seed_hint
 
 
@@ -92,3 +92,85 @@ class SiteSerializer(CustomerScopedSerializer):
             raise serializers.ValidationError(exc.messages) from exc
         # Keep the order, drop duplicates.
         return list(dict.fromkeys(hints))
+
+
+SNMP_AUTH_PROTOCOLS = {"md5", "sha", "sha224", "sha256", "sha384", "sha512"}
+SNMP_PRIV_PROTOCOLS = {"des", "aes", "aes192", "aes256"}
+
+
+class CredentialSerializer(CustomerScopedSerializer):
+    """Credentials are written with a `secret` and never read back (ADR-0003)."""
+
+    secret = serializers.DictField(
+        child=serializers.CharField(max_length=16384, trim_whitespace=False, allow_blank=True),
+        write_only=True,
+        required=False,
+    )
+
+    class Meta:
+        model = Credential
+        fields = [
+            "id",
+            "customer",
+            "name",
+            "kind",
+            "username",
+            "auth_protocol",
+            "priv_protocol",
+            "secret",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+    def validate_kind(self, value):
+        if self.instance is not None and value != self.instance.kind:
+            raise serializers.ValidationError(
+                "A credential's kind can't change. Delete it and create a new one."
+            )
+        return value
+
+    def validate(self, attrs):
+        if self._customer().data_mode != Customer.DataMode.HOSTED:
+            # ADR-0003: on-site customers keep credentials on their own collector or store.
+            raise serializers.ValidationError(
+                "This customer keeps its data on site, so its credentials stay there too."
+            )
+        kind = attrs.get("kind", getattr(self.instance, "kind", None))
+        if kind is None:
+            raise serializers.ValidationError({"kind": "This field is required."})
+
+        def value(name):
+            return attrs.get(name, getattr(self.instance, name, ""))
+
+        errors = {}
+        if kind in Credential.USERNAME_KINDS and not value("username"):
+            errors["username"] = "This kind of credential needs a username."
+        if kind not in Credential.USERNAME_KINDS and value("username"):
+            errors["username"] = "This kind of credential has no username."
+        for name, allowed in (
+            ("auth_protocol", SNMP_AUTH_PROTOCOLS),
+            ("priv_protocol", SNMP_PRIV_PROTOCOLS),
+        ):
+            protocol = value(name)
+            if kind == Credential.Kind.SNMP_V3 and protocol not in allowed:
+                errors[name] = f"Choose one of {', '.join(sorted(allowed))}."
+            elif kind != Credential.Kind.SNMP_V3 and protocol:
+                errors[name] = "Only SNMPv3 credentials have protocols."
+
+        secret = attrs.get("secret")
+        if secret is None and self.instance is None:
+            errors["secret"] = "This field is required."  # noqa: S105 (a message, not a secret)
+        elif secret is not None:
+            required, optional = Credential.SECRET_FIELDS[kind]
+            missing = [name for name in required if not secret.get(name)]
+            unknown = sorted(set(secret) - set(required) - set(optional))
+            if missing or unknown:
+                errors["secret"] = (
+                    f"Give {', '.join(required)}"
+                    + (f" (optional: {', '.join(optional)})" if optional else "")
+                    + "."
+                )
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
