@@ -379,6 +379,11 @@ class Collector(CustomerOwned):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    # Where it runs, for engineers reading the collectors list. Optional: a lab or a laptop
+    # collector may serve several sites.
+    site = models.ForeignKey(
+        "Site", null=True, blank=True, on_delete=models.PROTECT, related_name="collectors"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Set when the collector is created, cleared when it enrolls.
@@ -390,6 +395,8 @@ class Collector(CustomerOwned):
     version = models.CharField(max_length=50, blank=True)
     platform = models.CharField(max_length=200, blank=True)
     last_check_in = models.DateTimeField(null=True, blank=True)
+    # Set once, by `revoke()`. A revoked collector can't enroll, check in or fetch anything.
+    revoked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta(CustomerOwned.Meta):
         ordering = ["customer__name", "name"]
@@ -415,7 +422,20 @@ class Collector(CustomerOwned):
         return secret
 
     def check_secret(self, secret: str) -> bool:
-        return bool(self.secret_hash) and hmac.compare_digest(self.secret_hash, _hash(secret))
+        return (
+            self.revoked_at is None
+            and bool(self.secret_hash)
+            and hmac.compare_digest(self.secret_hash, _hash(secret))
+        )
+
+    def revoke(self, when) -> None:
+        """Stop the collector for good: its secret and any unused enrollment token stop working.
+
+        The caller saves the collector and writes the audit event in one transaction.
+        """
+        self.revoked_at = when
+        self.secret_hash = ""
+        self.enrollment_token_hash = ""
 
     def scoped(self, model: type[CustomerOwned]) -> CustomerScopedQuerySet:
         """The rows of `model` this collector may see: its own customer's, and no others."""
@@ -590,6 +610,7 @@ class AuditEvent(CustomerOwned):
         RECORD_RESTORED = "record.restored", "Restored"
         COLLECTOR_CREATED = "collector.created", "Collector created"
         COLLECTOR_ENROLLED = "collector.enrolled", "Collector enrolled"
+        COLLECTOR_REVOKED = "collector.revoked", "Collector revoked"
         CREDENTIAL_CREATED = "credential.created", "Credential created"
         CREDENTIAL_UPDATED = "credential.updated", "Credential updated"
         CREDENTIAL_DELETED = "credential.deleted", "Credential deleted"

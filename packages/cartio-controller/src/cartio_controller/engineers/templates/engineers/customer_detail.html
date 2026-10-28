@@ -3,29 +3,13 @@
 {% block page_context %}{{ customer.get_data_mode_display }} customer{% if customer.is_archived %} · archived{% endif %}{% if engagement %} · {{ engagement.name }}{% endif %}{% endblock %}
 {% block page_title %}{{ customer.name }}{% endblock %}
 {% block page_actions %}
-  {% if can_see_jobs %}<a class="btn" href="{% if engagement %}{% url 'engineers:jobs' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:jobs' customer=customer.pk %}{% endif %}">Jobs</a>{% endif %}
+  <a class="btn" href="{% if engagement %}{% url 'engineers:collectors' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:collectors' customer=customer.pk %}{% endif %}">Collectors &amp; jobs</a>
 {% endblock %}
 {% block content %}
 <section>
 <h2 id="collectors">Collectors</h2>
-<table>
-  <thead><tr><th>Name</th><th>Health</th><th>Last check-in</th><th>Version</th><th>Host</th></tr></thead>
-  <tbody>
-  {% for collector in collectors %}
-    <tr>
-      <td>{{ collector.name }}</td>
-      <td><span class="tag {{ collector.health|slugify }}">{{ collector.health }}</span></td>
-      <td>{% if collector.last_check_in %}<time datetime="{{ collector.last_check_in|date:'c' }}">{{ collector.last_check_in|date:"Y-m-d H:i" }} UTC</time>
-            <span class="muted">({{ collector.last_check_in|timesince }} ago)</span>{% else %}<span class="muted">never</span>{% endif %}</td>
-      <td>{{ collector.version|default:"–" }}</td>
-      <td>{{ collector.hostname|default:"–" }}</td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="5" class="muted">No collectors yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-<p class="muted">A collector shows as online when it checked in within the last {{ online_within_minutes }} minutes.</p>
+<p>{% for collector in collectors %}<span class="mono">{{ collector.name }}</span> <span class="tag {{ collector.health|slugify }}">{{ collector.health }}</span>{% if not forloop.last %} · {% endif %}{% empty %}<span class="muted">No collectors yet.</span>{% endfor %}</p>
+<p class="muted">Details, enrollment and revoking are on <a href="{% if engagement %}{% url 'engineers:collectors' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:collectors' customer=customer.pk %}{% endif %}">Collectors &amp; jobs</a>.</p>
 </section>
 
 <section>

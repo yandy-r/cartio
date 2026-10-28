@@ -414,3 +414,66 @@ legend { padding: 0; }
 .token-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
 code.command { display: block; margin-top: 10px; padding: 10px 12px; font-size: 12px; color: #E6EDF3;
                background: var(--sidebar); border-radius: 8px; overflow-wrap: anywhere; }
+
+/* Collectors, jobs and audit (DESIGN.md section 4). */
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); }
+.tab { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; margin-bottom: -1px;
+       font-weight: 500; color: var(--text-2); text-decoration: none; border-bottom: 2px solid transparent; }
+.tab:hover { color: var(--text); }
+.tab[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
+.toast { align-self: flex-start; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: #FFFFFF;
+         background: var(--sidebar); animation: toast-out 6s forwards; }
+@keyframes toast-out { 0%, 85% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.banner.warning { background: #FFFBEB; border-color: #FCD34D; color: #713F12; }
+.add-collector { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.add-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.add-head h2 { margin: 0; }
+.add-steps { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; margin: 0; padding: 0; font-size: 13px;
+             color: var(--text-2); }
+.add-steps li { display: flex; align-items: center; gap: 8px; }
+.add-steps li[aria-current="step"] { color: var(--text); font-weight: 600; }
+.add-form { display: flex; flex-direction: column; gap: 14px; }
+.add-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.add-buttons, .confirm-buttons, .collector-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.waiting { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
+           border-radius: 10px; font-size: 13px; }
+.spinner { flex: none; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent);
+           border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.collector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.collector-card { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.collector-card.is-revoked { opacity: .75; }
+.collector-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 13px; }
+.collector-name { font-size: 15px; font-weight: 500; }
+.collector-head .state { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #EEF2F6;
+                         color: #344054; }
+.collector-head .state.online { background: #DCFCE7; color: #166534; }
+.collector-head .state.not-enrolled { background: var(--hosted-bg); color: var(--hosted-fg); }
+.collector-head .state.revoked { background: #FEE4E2; color: #912018; }
+.health-dot.revoked { background: var(--critical); }
+.collector-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
+.collector-facts dt { color: var(--text-2); }
+.collector-facts dd { margin: 0; }
+.confirm { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 12px; border-radius: 10px;
+           background: #FEF3F2; border: 1px solid #FECDCA; font-size: 13px; color: #7A271A; }
+.confirm p { margin: 0; }
+.btn.danger { color: var(--critical); border-color: #FECDCA; }
+.btn.danger:hover { background: #FEF3F2; }
+.btn.danger-fill { color: #FFFFFF; background: var(--critical); border-color: var(--critical); }
+.btn.danger-fill:hover { background: #912018; }
+.jobs-table, .audit-table { min-width: 760px; }
+.small { font-size: 12px; }
+.job-state { font-weight: 600; color: var(--text-2); }
+.job-state.succeeded { color: var(--success); }
+.job-state.running { color: var(--accent); }
+.job-state.partial { color: #B54708; }
+.job-state.failed { color: var(--critical); }
+.audit-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.audit-toolbar h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
+.kind { display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 4px; font-size: 11px;
+        font-weight: 600; background: #EEF2F6; color: #344054; }
+.kind.jobs { background: var(--hosted-bg); color: var(--hosted-fg); }
+.kind.collectors, .kind.admin { background: var(--onsite-bg); color: var(--onsite-fg); }
+.kind.credentials { background: #FEF3C7; color: #854D0E; }

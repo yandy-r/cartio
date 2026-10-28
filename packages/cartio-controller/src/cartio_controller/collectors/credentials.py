@@ -83,6 +83,8 @@ def deliver_credentials(collector: Collector, credential_ids, job: str = "") -> 
     """
     if collector.enrolled_at is None:
         raise CredentialNotAvailable("The collector hasn't enrolled.")
+    if collector.revoked_at is not None:
+        raise CredentialNotAvailable("The collector was revoked.")
     try:
         ids = [str(uuid.UUID(str(credential_id))) for credential_id in credential_ids]
     except ValueError as exc:

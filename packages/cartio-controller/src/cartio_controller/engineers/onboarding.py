@@ -323,6 +323,7 @@ def create(state: dict, actor: str) -> tuple[Customer, list[dict]]:
             data_mode=customer.data_mode,
             live_view_allowed=customer.live_view_allowed,
         )
+        site_records = []
         for site in state["sites"]:
             hints, errors = seed_hints(site["seeds"])
             if errors:
@@ -331,6 +332,7 @@ def create(state: dict, actor: str) -> tuple[Customer, list[dict]]:
                 name=site["name"], location=site["location"], seed_hints=hints
             )
             log(record, AuditEvent.Action.RECORD_CREATED)
+            site_records.append(record)
         if not state["skip_engagement"]:
             engagement = state["engagement"]
             record = Engagement.objects.for_customer(customer).create(
@@ -342,10 +344,10 @@ def create(state: dict, actor: str) -> tuple[Customer, list[dict]]:
             )
             log(record, AuditEvent.Action.RECORD_CREATED)
         tokens = []
-        for site in state["sites"]:
+        for site, site_record in zip(state["sites"], site_records, strict=True):
             if not site["collector"]:
                 continue
-            collector = Collector(customer=customer, name=site["collector_name"])
+            collector = Collector(customer=customer, name=site["collector_name"], site=site_record)
             token = collector.issue_enrollment_token()
             collector.save()
             log(collector, AuditEvent.Action.COLLECTOR_CREATED, site=site["name"])

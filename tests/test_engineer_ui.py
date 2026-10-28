@@ -227,7 +227,10 @@ def test_customer_page_shows_collector_health(client):
 
     assert "1 / 3" in client.get("/").content.decode()
     page = client.get(f"/customers/{acme.pk}").content.decode()
-    for text in ("vm01", "online", "0.1.0", "vm02", "offline", "0.0.9", "not enrolled"):
+    for text in ("vm01", "online", "vm02", "offline", "not enrolled"):
+        assert text in page
+    page = client.get(f"/customers/{acme.pk}/collectors").content.decode()
+    for text in ("vm01", "Online", "0.1.0", "vm02", "Offline", "0.0.9", "Not enrolled"):
         assert text in page
 
 

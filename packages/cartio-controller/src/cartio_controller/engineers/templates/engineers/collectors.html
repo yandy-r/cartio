@@ -1,0 +1,95 @@
+{% extends "engineers/base.html" %}
+{% load static %}
+{% block title %}Collectors · {{ customer.name }}{% endblock %}
+{% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %} · collectors dial out on 443 and never listen{% endblock %}
+{% block page_title %}Collectors &amp; jobs{% endblock %}
+{% block page_actions %}
+  {% if can_add and not adding and not added %}<a class="btn primary" href="{{ here }}?add=1">Add collector</a>{% endif %}
+{% endblock %}
+{% block content %}
+{% include "engineers/_operations_tabs.html" %}
+
+{% for message in messages %}<div class="toast" role="status">{{ message }}</div>{% endfor %}
+
+{% for collector in offline %}
+<div class="banner warning" role="note"><strong>{{ collector.name }} is offline.</strong>
+  Last check-in {{ collector.last_check_in|date:"Y-m-d H:i" }} UTC ({{ collector.last_check_in|timesince }} ago). Screens show the data it collected before then.</div>
+{% endfor %}
+
+{% if adding or added %}
+<section class="card add-collector" aria-labelledby="add-title">
+  <div class="add-head">
+    <h2 id="add-title">Add a collector for {{ customer.name }}</h2>
+    <ol class="add-steps">
+      <li{% if adding %} aria-current="step"{% endif %}><span class="step-mark {% if adding %}current{% else %}done{% endif %}">{% if adding %}1{% else %}✓{% endif %}</span>Name and site</li>
+      <li{% if added %} aria-current="step"{% endif %}><span class="step-mark{% if added %} current{% endif %}">2</span>Run the enroll command</li>
+      <li><span class="step-mark">3</span>First check-in</li>
+    </ol>
+  </div>
+  {% if adding %}
+  <form method="post" action="{{ here }}" class="add-form" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <div class="field-row">
+      <label class="field">Name
+        <input type="text" name="name" class="mono" value="{{ form.name }}" maxlength="200" required autofocus{% if errors.name %} aria-invalid="true" aria-describedby="name-error"{% endif %}>
+        {% if errors.name %}<span class="field-error" id="name-error">{{ errors.name }}</span>{% endif %}
+      </label>
+      <label class="field">Site
+        <select name="site"{% if errors.site %} aria-invalid="true" aria-describedby="site-error"{% endif %}>
+          <option value="">No particular site</option>
+          {% for site in sites %}<option value="{{ site.pk }}"{% if form.site == site.pk|stringformat:"d" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+        </select>
+        {% if errors.site %}<span class="field-error" id="site-error">{{ errors.site }}</span>{% endif %}
+      </label>
+    </div>
+    <div class="add-footer">
+      <span class="hint">Collector for a customer that isn't set up yet? <a href="{% url 'engineers:onboard' %}">Onboard the customer first</a>.</span>
+      <span class="add-buttons"><a class="btn" href="{{ here }}">Cancel</a><button class="btn primary" type="submit">Create and show token</button></span>
+    </div>
+  </form>
+  {% else %}
+  <p class="banner inside-access" role="note">This token is shown once, on this page only, and works once. Only its hash is stored. If it's lost, revoke the collector and add it again.</p>
+  <div class="token-head"><span><strong class="mono">{{ added.name }}</strong>{% if added.site %} <span class="muted">· {{ added.site.name }}</span>{% endif %}</span>
+    <button class="btn" type="button" data-copy="enroll-command">Copy command</button></div>
+  <code class="command" id="enroll-command">{{ command }}</code>
+  {% include "engineers/_collector_waiting.html" with collector=added %}
+  <div class="add-footer"><span></span><a class="btn" href="{{ here }}">Done; keep waiting in the list</a></div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="collector-grid" aria-label="Collectors">
+{% for collector in collectors %}
+  <article class="card collector-card{% if collector.health == 'revoked' %} is-revoked{% endif %}">
+    <div class="collector-head">
+      <div><div class="mono collector-name">{{ collector.name }}</div>
+        <div class="muted">{{ collector.site.name|default:"No site" }} · {{ collector.hostname|default:"host not known yet" }}{% if collector.platform %} · {{ collector.platform }}{% endif %}</div></div>
+      <span class="state health {{ collector.health|slugify }}"><span class="health-dot {{ collector.health|slugify }}" aria-hidden="true"></span>{{ collector.health|capfirst }}</span>
+    </div>
+    <dl class="collector-facts">
+      <dt>Last check-in</dt><dd>{% if collector.revoked_at %}Revoked {{ collector.revoked_at|date:"Y-m-d H:i" }} UTC{% elif collector.last_check_in %}<time datetime="{{ collector.last_check_in|date:'c' }}">{{ collector.last_check_in|timesince }} ago</time>{% else %}Never{% endif %}</dd>
+      <dt>Version</dt><dd class="mono">{{ collector.version|default:"–" }}</dd>
+      {# Client certificates (YAN-1650) and the job queue (YAN-1651) aren't built yet. #}
+      <dt>Certificate</dt><dd>{% if collector.revoked_at %}Revoked{% else %}Not tracked yet{% endif %}</dd>
+      <dt>Queue</dt><dd>Not tracked yet</dd>
+    </dl>
+    {% if confirm and confirm.pk == collector.pk and not collector.revoked_at %}
+    <form method="post" action="{{ here }}" class="confirm" role="alertdialog" aria-labelledby="confirm-{{ collector.pk }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="revoke"><input type="hidden" name="collector" value="{{ collector.pk }}">
+      <p id="confirm-{{ collector.pk }}">{% if collector.enrolled_at %}Revoke {{ collector.name }}? Its secret stops working at once, so it can't check in, fetch jobs or receive credentials again. Results it hasn't sent yet are lost.{% else %}Cancel {{ collector.name }}'s enrollment? Its one-time token stops working.{% endif %} This can't be undone.</p>
+      <div class="confirm-buttons"><a class="btn" href="{{ here }}" autofocus>Keep</a><button class="btn danger-fill" type="submit">{% if collector.enrolled_at %}Revoke{% else %}Cancel enrollment{% endif %}</button></div>
+    </form>
+    {% elif can_revoke and not collector.revoked_at %}
+    <div class="collector-actions"><a class="btn danger" href="{{ here }}?revoke={{ collector.pk }}">{% if collector.enrolled_at %}Revoke{% else %}Cancel enrollment{% endif %}</a></div>
+    {% endif %}
+  </article>
+{% empty %}
+  <div class="card empty-state"><p><strong>No collectors yet.</strong></p>
+    <p class="muted">A collector runs in or near the customer's network and dials out to the controller.{% if can_add %} Add one to get an enrollment token.{% endif %}</p></div>
+{% endfor %}
+</section>
+<p class="muted">A collector shows as online when it checked in within the last {{ online_within_minutes }} minutes.</p>
+<script src="{% static 'engineers/js/copy.js' %}" defer></script>
+{% endblock %}

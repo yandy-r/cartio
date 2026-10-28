@@ -87,7 +87,7 @@ def test_customer_url_carries_the_engagement(client, engineer):
     # Without an engagement in the URL, the current (active) one shows.
     page = client.get(f"/customers/{acme.pk}").content.decode()
     assert "Q4 review · Active" in page
-    assert f"/customers/{acme.pk}/engagements/{active.pk}/jobs" in page
+    assert f"/customers/{acme.pk}/engagements/{active.pk}/collectors" in page
 
     page = client.get(f"/customers/{acme.pk}/engagements/{done.pk}").content.decode()
     assert "Q2 review · Completed" in page

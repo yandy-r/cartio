@@ -7,16 +7,17 @@ issued (`cartio-controller enroll_engineer`), before the first sign-in completes
 """
 
 import time
+import uuid
 from functools import wraps
 
 from django.conf import settings
-from django.contrib import auth
+from django.contrib import auth, messages
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -31,8 +32,8 @@ from cartio_controller.collectors import audit
 from cartio_controller.collectors.models import CollectionRun, Customer, Site
 
 from . import inventory as inventory_screen
-from . import onboarding, overview, shell, totp
-from .health import ONLINE_WITHIN
+from . import onboarding, operations, overview, shell, totp
+from .health import ONLINE_WITHIN, collector_health
 from .health import collectors as _collectors
 from .models import EngineerMFA
 
@@ -382,11 +383,8 @@ def _create_customer(request, state):
         return _onboarding_page(request, state, errors, status=409)
     # The wizard is done: the next visit, or "Onboard another customer", starts a fresh one.
     request.session.pop(onboarding.SESSION_KEY, None)
-    controller = request.build_absolute_uri("/").rstrip("/")
     for token in tokens:
-        token["command"] = (
-            f"uv run cartio-collector enroll --controller {controller} --token {token['token']}"
-        )
+        token["command"] = _enroll_command(request, token["token"])
     engagements = shell.engagements_of(customer)
     return render(
         request,
@@ -396,7 +394,7 @@ def _create_customer(request, state):
             "summary": onboarding.summary(state),
             "tokens": tokens,
             "overview_url": shell.screen_url(
-                "customer", customer, engagements[0] if engagements else None
+                "collectors", customer, engagements[0] if engagements else None
             ),
         },
     )
@@ -417,6 +415,7 @@ def render_screen(
     """
     context = shell.context(screen, customer, engagements, engagement)
     context["can_see_jobs"] = _can_see_jobs(request.user)
+    context["can_see_audit"] = _can_see_audit(request.user)
     if network_data and customer.inside_access_only:
         context.update({"screen_title": shell.SCREENS[screen], "collectors": _collectors(customer)})
         return render(request, "engineers/inside_access.html", context)
@@ -435,7 +434,6 @@ def customer_detail(request, customer, engagement=None):
         {
             "sites": Site.objects.for_customer(customer).filter(archived_at__isnull=True),
             "collectors": _collectors(customer),
-            "online_within_minutes": int(ONLINE_WITHIN.total_seconds() // 60),
         },
         customer,
         engagements,
@@ -511,6 +509,113 @@ def inventory_export(request, customer, engagement):
 JOBS_SHOWN = 100
 
 
+def _can_see_audit(user) -> bool:
+    # The same permission the audit log API asks for.
+    return user.has_perm("collectors.view_auditevent")
+
+
+def _uuid(text: str):
+    try:
+        return uuid.UUID(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def _enroll_command(request, token: str) -> str:
+    controller = request.build_absolute_uri("/").rstrip("/")
+    return f"uv run cartio-collector enroll --controller {controller} --token {token}"
+
+
+@require_http_methods(["GET", "POST"])
+@csrf_protect
+@never_cache
+@engineer_required
+def collectors(request, customer, engagement=None):
+    """Collectors, jobs and audit (DESIGN.md section 4): the Collectors tab, add and revoke."""
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    here = shell.screen_url("collectors", customer, engagement)
+    can_add = request.user.has_perm("collectors.add_collector") and not customer.is_archived
+    can_revoke = request.user.has_perm("collectors.change_collector")
+    extra = {"can_add": can_add, "can_revoke": can_revoke, "here": here, "status": 200}
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "revoke":
+            if not can_revoke:
+                raise PermissionDenied
+            collector_id = _uuid(request.POST.get("collector", ""))
+            revoked = collector_id and operations.revoke(
+                customer, collector_id, request.user.get_username()
+            )
+            if revoked:
+                messages.success(request, f"{revoked.name} revoked · logged in the audit log")
+            return redirect(here)
+        if action != "add":
+            return HttpResponseBadRequest("Add or revoke a collector.")
+        if not can_add:
+            raise PermissionDenied
+        name = request.POST.get("name", "").strip()[: operations.MAX_NAME + 1]
+        site_id = request.POST.get("site", "").strip()
+        errors = operations.add_errors(customer, name, site_id)
+        if not errors:
+            site = operations.site_from(customer, site_id) if site_id else None
+            try:
+                collector, token = operations.add(customer, name, site, request.user.get_username())
+            except IntegrityError:
+                # Most likely another engineer added a collector with this name meanwhile.
+                errors = {"name": "This customer already has a collector with this name."}
+            else:
+                collector.health = collector_health(collector)
+                # The token is only ever in this response: only its hash is stored.
+                extra.update(
+                    {"added": collector, "command": _enroll_command(request, token), "status": 201}
+                )
+        if errors:
+            extra.update(
+                {"adding": True, "errors": errors, "form": {"name": name, "site": site_id}}
+            )
+            extra["status"] = 400
+    else:
+        extra["adding"] = can_add and "add" in request.GET
+        extra["form"] = {"name": "", "site": ""}
+        if can_revoke:
+            confirm = _uuid(request.GET.get("revoke", ""))
+            extra["confirm"] = confirm and operations.find_collector(customer, confirm)
+
+    rows = _collectors(customer, revoked=True)
+    extra.update(
+        {
+            "collectors": rows,
+            "offline": [c for c in rows if c.health == "offline"],
+            "sites": operations.sites(customer),
+            "online_within_minutes": int(ONLINE_WITHIN.total_seconds() // 60),
+        }
+    )
+    response = render_screen(
+        request,
+        "collectors",
+        "engineers/collectors.html",
+        extra,
+        customer,
+        engagements,
+        engagement,
+    )
+    response.status_code = extra["status"]
+    return response
+
+
+@never_cache
+@engineer_required
+def collector_status(request, customer, collector):
+    """A new collector's state while the engineer waits for it to enroll (an htmx poll)."""
+    customer, _, _ = shell.resolve(customer)
+    found = operations.find_collector(customer, collector)
+    if found is None:
+        raise Http404
+    found.health = collector_health(found)
+    return render(request, "engineers/_collector_waiting.html", {"collector": found})
+
+
 @never_cache
 @engineer_required
 def jobs(request, customer, engagement=None):
@@ -532,6 +637,53 @@ def jobs(request, customer, engagement=None):
         engagements,
         engagement,
     )
+
+
+@never_cache
+@engineer_required
+def audit_log(request, customer, engagement=None):
+    if not _can_see_audit(request.user):
+        raise PermissionDenied
+    customer, engagements, engagement = shell.resolve(customer, engagement)
+    kind = request.GET.get("kind", "")
+    if kind not in operations.AUDIT_KINDS:
+        kind = ""
+    here = shell.screen_url("audit", customer, engagement)
+    filters = [{"key": "", "label": "All", "url": here}] + [
+        {"key": key, "label": label, "url": f"{here}?kind={key}"}
+        for key, (label, _) in operations.AUDIT_KINDS.items()
+    ]
+    return render_screen(
+        request,
+        "audit",
+        "engineers/audit.html",
+        {
+            "events": operations.audit_events(customer, kind),
+            "kind": kind,
+            "filters": filters,
+            "limit": operations.AUDIT_SHOWN,
+        },
+        customer,
+        engagements,
+        engagement,
+    )
+
+
+@require_POST
+@csrf_protect
+@never_cache
+@engineer_required
+def audit_export(request, customer):
+    """The customer's whole audit log as CSV. The export is itself logged first."""
+    if not _can_see_audit(request.user):
+        raise PermissionDenied
+    customer, _, _ = shell.resolve(customer)
+    chunks = audit.export_events(customer, request.user.get_username(), "csv")
+    response = StreamingHttpResponse(chunks, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="cartio-audit-customer-{customer.pk}.csv"'
+    )
+    return response
 
 
 @never_cache

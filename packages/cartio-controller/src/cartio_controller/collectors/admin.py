@@ -65,12 +65,22 @@ class SiteAdmin(ArchiveNotDeleteAdmin):
 
 @admin.register(Collector)
 class CollectorAdmin(admin.ModelAdmin):
-    list_display = ["name", "customer", "hostname", "version", "last_check_in", "enrolled_at"]
+    list_display = [
+        "name",
+        "customer",
+        "hostname",
+        "version",
+        "last_check_in",
+        "enrolled_at",
+        "revoked_at",
+    ]
     list_filter = ["customer"]
     search_fields = ["name", "hostname"]
     readonly_fields = [
         "id",
         "enrolled_at",
+        # Revoking is the engineer UI's audited action (YAN-1736), not a field edit.
+        "revoked_at",
         "hostname",
         "version",
         "platform",

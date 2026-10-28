@@ -83,8 +83,7 @@ def _attention(customers, now) -> list[dict]:
                     "title": title,
                     "customer": customer,
                     "detail": detail,
-                    "url": shell.screen_url("customer", customer, customer.engagement)
-                    + "#collectors",
+                    "url": shell.screen_url("collectors", customer, customer.engagement),
                 }
             )
     items.sort(key=lambda item: (item["rank"], item["customer"].name, item["title"]))

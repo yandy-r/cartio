@@ -44,14 +44,21 @@
     <div class="nav-section">
       <div class="nav-label">Operations</div>
       {% if customer %}
-        <a class="nav-item" href="{% if can_see_jobs %}{% if engagement %}{% url 'engineers:jobs' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:jobs' customer=customer.pk %}{% endif %}{% elif engagement %}{% url 'engineers:customer' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:customer' customer=customer.pk %}{% endif %}"{% if url_name == "jobs" %} aria-current="page"{% endif %}>
+        <a class="nav-item" href="{% if engagement %}{% url 'engineers:collectors' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:collectors' customer=customer.pk %}{% endif %}"{% if url_name == "collectors" or url_name == "jobs" %} aria-current="page"{% endif %}>
       {% else %}
         <span class="nav-item" aria-disabled="true" title="Pick a customer first">
       {% endif %}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Collectors &amp; jobs
       {% if customer %}</a>{% else %}</span>{% endif %}
       <span class="nav-item" aria-disabled="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 01-10 0V7zM12 16v5"></path></svg>Integrations<small>After v1</small></span>
-      <span class="nav-item" aria-disabled="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v4l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>Audit log<small>Soon</small></span>
+      {# The Audit log tab of Collectors, jobs and audit. #}
+      {% if customer and can_see_audit %}
+        <a class="nav-item" href="{% if engagement %}{% url 'engineers:audit' customer=customer.pk engagement=engagement.pk %}{% else %}{% url 'engineers:audit' customer=customer.pk %}{% endif %}"{% if url_name == "audit" %} aria-current="page"{% endif %}>
+      {% else %}
+        <span class="nav-item" aria-disabled="true" title="{% if customer %}Needs permission to view the audit log{% else %}Pick a customer first{% endif %}">
+      {% endif %}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v4l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>Audit log
+      {% if customer and can_see_audit %}</a>{% else %}</span>{% endif %}
       {% if user.is_superuser %}
       <a class="nav-item" href="{% url 'admin:index' %}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>Admin</a>
       {% endif %}
