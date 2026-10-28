@@ -538,7 +538,11 @@ class AuditEvent(CustomerOwned):
     append_only = True
 
     class Action(models.TextChoices):
-        CUSTOMER_CREATED = "customer.created", "Customer created"
+        # Customers, engagements and sites. `object_type` says which.
+        RECORD_CREATED = "record.created", "Created"
+        RECORD_UPDATED = "record.updated", "Updated"
+        RECORD_ARCHIVED = "record.archived", "Archived"
+        RECORD_RESTORED = "record.restored", "Restored"
         COLLECTOR_CREATED = "collector.created", "Collector created"
         COLLECTOR_ENROLLED = "collector.enrolled", "Collector enrolled"
         CREDENTIAL_CREATED = "credential.created", "Credential created"
@@ -615,6 +619,7 @@ class CollectionRunResult(CustomerOwned):
     )
     finished_at = models.DateTimeField(auto_now_add=True)
     outcome = models.CharField(max_length=16, choices=Outcome)
+    MAX_DEVICE_COUNT = 2**31 - 1
     device_count = models.PositiveIntegerField(default=0)
     # A short reason for people reading the log. Never device output or a secret.
     error_summary = models.CharField(max_length=MAX_ERROR_SUMMARY, blank=True)

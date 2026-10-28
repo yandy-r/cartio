@@ -24,3 +24,8 @@ class ViewModelPermissions(DjangoModelPermissions):
         "GET": ["%(app_label)s.view_%(model_name)s"],
         "HEAD": ["%(app_label)s.view_%(model_name)s"],
     }
+
+    def _queryset(self, view):
+        # Only the model matters here. The view's own queryset looks up the customer in the URL,
+        # which would tell a user without the permission which customers exist.
+        return view.model.all_customers.none()

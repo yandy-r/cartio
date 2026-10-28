@@ -5,9 +5,9 @@ without a record of it.
 """
 
 import csv
-import io
 import json
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.core.serializers.json import DjangoJSONEncoder
 from django.dispatch import receiver
@@ -51,7 +51,7 @@ def record(
 
 def _rows(customer):
     events = AuditEvent.objects.for_customer(customer).order_by("at", "pk")
-    for event in events.iterator():
+    for event in events.iterator(chunk_size=2000):
         yield {
             "at": event.at.isoformat(),
             "action": event.action,
@@ -69,8 +69,34 @@ def _spreadsheet_safe(value: str) -> str:
     return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
 
 
-def export_events(customer, actor: str, fmt: str) -> str:
-    """`customer`'s whole audit log as CSV or JSON, oldest first. The export is logged too."""
+class _Line:
+    """A file-like target for csv.writer that hands back each line instead of storing it."""
+
+    def write(self, value: str) -> str:
+        return value
+
+
+def _csv_lines(customer):
+    writer = csv.writer(_Line())
+    yield writer.writerow(EXPORT_FIELDS)
+    for row in _rows(customer):
+        row["detail"] = json.dumps(row["detail"], sort_keys=True)
+        yield writer.writerow([_spreadsheet_safe(row[name]) for name in EXPORT_FIELDS])
+
+
+def _json_items(customer):
+    encoder = DjangoJSONEncoder()
+    yield "["
+    for index, row in enumerate(_rows(customer)):
+        yield ("," if index else "") + "\n  " + encoder.encode(row)
+    yield "\n]\n"
+
+
+def export_events(customer, actor: str, fmt: str):
+    """`customer`'s whole audit log as CSV or JSON, oldest first, streamed in chunks.
+
+    The export itself is logged first, so it appears in its own file.
+    """
     if fmt not in ("csv", "json"):
         raise ValueError("Export as csv or json.")
     record(
@@ -82,15 +108,7 @@ def export_events(customer, actor: str, fmt: str) -> str:
         object_name=customer.name,
         format=fmt,
     )
-    if fmt == "json":
-        return json.dumps(list(_rows(customer)), cls=DjangoJSONEncoder, indent=2)
-    out = io.StringIO()
-    writer = csv.DictWriter(out, fieldnames=EXPORT_FIELDS)
-    writer.writeheader()
-    for row in _rows(customer):
-        row["detail"] = json.dumps(row["detail"], sort_keys=True)
-        writer.writerow({name: _spreadsheet_safe(value) for name, value in row.items()})
-    return out.getvalue()
+    return _csv_lines(customer) if fmt == "csv" else _json_items(customer)
 
 
 def _ip(request) -> str | None:
@@ -116,6 +134,14 @@ def _logged_out(sender, request, user, **kwargs):
 
 @receiver(user_login_failed, dispatch_uid="cartio_audit_login_failed")
 def _login_failed(sender, credentials, request=None, **kwargs):
-    # Only the username. Django masks the password already, but there's no reason to keep it.
-    username = credentials.get("username", "")
-    _login_event(LoginEvent.Kind.FAILED, request, username if isinstance(username, str) else "")
+    # The username only when it names a real account. People sometimes type their password
+    # into the username box, and this record can never be deleted.
+    username = credentials.get(get_user_model().USERNAME_FIELD, "")
+    if (
+        not isinstance(username, str)
+        or not (
+            get_user_model()._default_manager.filter(**{get_user_model().USERNAME_FIELD: username})
+        ).exists()
+    ):
+        username = ""
+    _login_event(LoginEvent.Kind.FAILED, request, username)

@@ -9,7 +9,7 @@ import uuid
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse
+from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers, viewsets
@@ -55,19 +55,37 @@ class ArchivableViewSet(
         return queryset
 
     def perform_create(self, serializer):
-        self._save(serializer)
+        self._save(serializer, AuditEvent.Action.RECORD_CREATED)
 
     def perform_update(self, serializer):
         self.check_parent()
         if serializer.instance.is_archived:
             raise serializers.ValidationError("Restore this record before changing it.")
-        self._save(serializer)
+        self._save(
+            serializer, AuditEvent.Action.RECORD_UPDATED, fields=sorted(serializer.validated_data)
+        )
 
-    def _save(self, serializer, **extra):
+    def _audit(self, record, action, **detail) -> None:
+        """Log a change to `record` in its customer's audit log, in the change's transaction."""
+        audit.record(
+            record if isinstance(record, Customer) else record.customer_id,
+            action,
+            actor=self.request.user.get_username(),
+            object_type=record._meta.model_name,
+            object_id=record.pk,
+            object_name=str(getattr(record, "name", "")),
+            **detail,
+        )
+
+    def _save(self, serializer, action, fields=None, **extra):
         # The serializers check names and dates first; this catches a concurrent conflict.
         try:
             with transaction.atomic():
-                serializer.save(**extra)
+                record = serializer.save(**extra)
+                detail = {"fields": fields} if fields is not None else {}
+                if isinstance(record, Customer):
+                    detail["data_mode"] = record.data_mode
+                self._audit(record, action, **detail)
         except IntegrityError as exc:
             if _is_unique_violation(exc):
                 raise serializers.ValidationError({"name": "This name is already taken."}) from exc
@@ -81,8 +99,10 @@ class ArchivableViewSet(
         self.check_parent()
         record = self.get_object()
         if not record.is_archived:
-            record.archived_at = timezone.now()
-            record.save(update_fields=["archived_at"])
+            with transaction.atomic():
+                record.archived_at = timezone.now()
+                record.save(update_fields=["archived_at"])
+                self._audit(record, AuditEvent.Action.RECORD_ARCHIVED)
         return Response(self.get_serializer(record).data)
 
     @action(detail=True, methods=["post"])
@@ -90,8 +110,10 @@ class ArchivableViewSet(
         self.check_parent()
         record = self.get_object()
         if record.is_archived:
-            record.archived_at = None
-            record.save(update_fields=["archived_at"])
+            with transaction.atomic():
+                record.archived_at = None
+                record.save(update_fields=["archived_at"])
+                self._audit(record, AuditEvent.Action.RECORD_RESTORED)
         return Response(self.get_serializer(record).data)
 
 
@@ -100,20 +122,6 @@ class CustomerViewSet(ArchivableViewSet):
 
     def get_queryset(self):
         return self.filter_archived(Customer.objects.all())
-
-    def perform_create(self, serializer):
-        with transaction.atomic():
-            self._save(serializer)
-            customer = serializer.instance
-            audit.record(
-                customer,
-                AuditEvent.Action.CUSTOMER_CREATED,
-                actor=self.request.user.get_username(),
-                object_type="customer",
-                object_id=customer.pk,
-                object_name=customer.name,
-                data_mode=customer.data_mode,
-            )
 
 
 class CustomerScopeMixin:
@@ -148,7 +156,7 @@ class CustomerScopedViewSet(CustomerScopeMixin, ArchivableViewSet):
 
     def perform_create(self, serializer):
         self.check_parent()
-        self._save(serializer, customer=self.get_customer())
+        self._save(serializer, AuditEvent.Action.RECORD_CREATED, customer=self.get_customer())
 
 
 class EngagementViewSet(CustomerScopedViewSet):
@@ -226,15 +234,18 @@ class CollectionRunViewSet(
 
     model = CollectionRun
     serializer_class = CollectionRunSerializer
+    permission_classes = [IsAdminUser, ViewModelPermissions]
 
     def get_queryset(self):
         runs = self.scoped_queryset().select_related("result")
         params = self.request.query_params
         engagement = params.get("engagement")
         if engagement:
-            if not engagement.isdigit():
-                raise serializers.ValidationError({"engagement": "Give an engagement id."})
-            runs = runs.filter(engagement_id=int(engagement))
+            engagement_id = serializers.IntegerField(min_value=1, max_value=2**63 - 1)
+            try:
+                runs = runs.filter(engagement_id=engagement_id.run_validation(engagement))
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({"engagement": "Give an engagement id."}) from exc
         collector = params.get("collector")
         if collector:
             try:
@@ -266,10 +277,9 @@ class AuditEventViewSet(
         if fmt not in ("csv", "json"):
             raise serializers.ValidationError({"type": "Export as csv or json."})
         customer = self.get_customer()
-        with transaction.atomic():
-            body = audit.export_events(customer, request.user.get_username(), fmt)
+        chunks = audit.export_events(customer, request.user.get_username(), fmt)
         content_type = "text/csv" if fmt == "csv" else "application/json"
-        response = HttpResponse(body, content_type=f"{content_type}; charset=utf-8")
+        response = StreamingHttpResponse(chunks, content_type=f"{content_type}; charset=utf-8")
         filename = f"cartio-audit-customer-{customer.pk}.{fmt}"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response

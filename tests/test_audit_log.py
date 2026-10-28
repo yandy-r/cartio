@@ -149,23 +149,28 @@ def test_admin_events_are_logged(client):
     )
     assert response.status_code == 201
 
-    assert _actions(acme) == ["customer.created", "collector.created", "collector.enrolled"]
-    created = AuditEvent.objects.for_customer(acme).get(action="customer.created")
+    assert _actions(acme) == ["record.created", "collector.created", "collector.enrolled"]
+    created = AuditEvent.objects.for_customer(acme).get(action="record.created")
     assert created.actor == "engineer" and created.detail == {"data_mode": "hosted"}
+    assert client.post(f"{CUSTOMERS}/{acme.pk}/archive").status_code == 200
+    assert _actions(acme)[-1] == "record.archived"
     initech = Customer.objects.get(name="Initech")
-    assert _actions(initech) == ["customer.created", "collector.created"]
+    assert _actions(initech) == ["record.created", "collector.created"]
 
 
 def test_sign_ins_are_logged_without_the_password(client):
     get_user_model().objects.create_user("engineer", password="right-one", is_staff=True)
     wrong = "wrong-" + "guess"
     assert not client.login(username="engineer", password=wrong)
+    # A username that names no account may be a mistyped password, so it isn't kept.
+    assert not client.login(username=wrong, password=wrong)
     assert client.login(username="engineer", password="right-one")
     client.logout()
 
     events = list(LoginEvent.objects.order_by("at", "pk").values_list("kind", "username"))
     assert events == [
         ("failed", "engineer"),
+        ("failed", ""),
         ("logged_in", "engineer"),
         ("logged_out", "engineer"),
     ]
@@ -195,14 +200,14 @@ def test_audit_export_is_per_customer_and_needs_permission(client, acme, globex)
     response = client.get(url)
     assert response.status_code == 200
     assert "attachment" in response["Content-Disposition"]
-    exported = json.loads(response.content)
+    exported = json.loads(b"".join(response.streaming_content))
     assert [e["action"] for e in exported] == ["run.started", "run.finished", "audit.exported"]
     assert exported[-1]["actor"] == "auditor"
 
     response = client.get(f"{url}?type=csv")
     assert response.status_code == 200
     assert response["Content-Type"].startswith("text/csv")
-    rows = list(csv.DictReader(io.StringIO(response.content.decode())))
+    rows = list(csv.DictReader(io.StringIO(b"".join(response.streaming_content).decode())))
     assert {row["action"] for row in rows} == {"run.started", "run.finished", "audit.exported"}
     # A value that would run as a spreadsheet formula is defused.
     started = next(row for row in rows if row["action"] == "run.started")

@@ -8,7 +8,14 @@ transaction.
 from django.db import transaction
 
 from . import audit
-from .models import AuditEvent, CollectionRun, CollectionRunResult, Collector, Engagement
+from .models import (
+    AuditEvent,
+    CollectionRun,
+    CollectionRunResult,
+    Collector,
+    Customer,
+    Engagement,
+)
 
 
 class RunNotAllowed(ValueError):
@@ -18,13 +25,16 @@ class RunNotAllowed(ValueError):
 def start_run(
     collector: Collector, job_type: str, started_by: str = "", engagement: Engagement | None = None
 ) -> CollectionRun:
-    if collector.enrolled_at is None:
-        raise RunNotAllowed("The collector hasn't enrolled.")
-    if collector.customer.is_archived:
-        raise RunNotAllowed("This customer is archived.")
-    if engagement is not None and engagement.is_archived:
-        raise RunNotAllowed("This engagement is archived.")
     with transaction.atomic():
+        # Lock the customer and engagement, so neither is archived while the run starts.
+        if collector.enrolled_at is None:
+            raise RunNotAllowed("The collector hasn't enrolled.")
+        if Customer.objects.select_for_update().get(pk=collector.customer_id).is_archived:
+            raise RunNotAllowed("This customer is archived.")
+        if engagement is not None:
+            locked = Engagement.all_customers.select_for_update().filter(pk=engagement.pk).first()
+            if locked is None or locked.is_archived:
+                raise RunNotAllowed("This engagement is archived.")
         # Scoped to the collector's customer, so another customer's engagement is refused.
         run = collector.scoped(CollectionRun).create(
             job_type=job_type, collector=collector, engagement=engagement, started_by=started_by
@@ -48,8 +58,10 @@ def finish_run(
     """Record how `run` ended. A run finishes once; a second call raises `IntegrityError`."""
     if outcome not in CollectionRunResult.Outcome.values:
         raise ValueError(f"Unknown outcome {outcome!r}.")
-    if device_count < 0:
-        raise ValueError("The device count can't be negative.")
+    if not 0 <= device_count <= CollectionRunResult.MAX_DEVICE_COUNT:
+        raise ValueError("The device count is out of range.")
+    # PostgreSQL text can't hold NUL characters.
+    error_summary = error_summary.replace("\x00", "")
     with transaction.atomic():
         result = CollectionRunResult.objects.for_customer(run.customer_id).create(
             run=run,

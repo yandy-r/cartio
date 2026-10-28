@@ -121,7 +121,16 @@ class CollectionRunResultInline(admin.StackedInline):
     model = CollectionRunResult
     fields = ["outcome", "finished_at", "device_count", "error_summary"]
     readonly_fields = fields
+    extra = 0
+    max_num = 0
     can_delete = False
+
+    # Results are written only by runs.finish_run, which also logs them.
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(CollectionRun)

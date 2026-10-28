@@ -8,7 +8,7 @@ from cartio_controller.collectors.models import AuditEvent, Collector, Customer
 def _audit_customer_created(customer: Customer) -> None:
     audit.record(
         customer,
-        AuditEvent.Action.CUSTOMER_CREATED,
+        AuditEvent.Action.RECORD_CREATED,
         object_type="customer",
         object_id=customer.pk,
         object_name=customer.name,
