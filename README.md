@@ -6,7 +6,8 @@ engineer connects once and sees every customer. Version 1 is read-only.
 
 Planning, ADRs and issues live in the Linear project "Cartio v1". The ADRs are also copied
 into [docs/adr](docs/adr/README.md). Branches, target releases and backports follow
-[RELEASING.md](RELEASING.md). The stack is Python for both the collector and the
+[RELEASING.md](RELEASING.md). What we send a customer before an assessment is the
+[customer onboarding checklist](docs/onboarding/customer-checklist.md). The stack is Python for both the collector and the
 controller (ADR-0006).
 
 `.claude/settings.json` enables the `ycc` Claude Code plugin from
