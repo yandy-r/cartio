@@ -16,7 +16,8 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY packages packages
-COPY docker/entrypoint.sh docker/seed.sh docker/collector.sh docker/serve.sh /usr/local/bin/
+COPY docker/entrypoint.sh docker/seed.sh docker/collector.sh docker/serve.sh docker/migrate-watch.sh \
+    /usr/local/bin/
 RUN useradd --create-home --uid 1000 cartio \
     && mkdir /keys /collector /app/static && chown cartio /keys /collector /app/static
 ENTRYPOINT ["entrypoint.sh"]

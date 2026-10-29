@@ -50,6 +50,18 @@ services:
       db:
         condition: service_healthy
 
+  # Development only: applies new migrations as the owner while the controller reloads, so a
+  # pulled or newly written migration needs no restart (docker/migrate-watch.sh).
+  migrate-watch:
+    <<: *cartio
+    command: ["migrate-watch.sh"]
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://cartio_owner:${CARTIO_OWNER_PASSWORD:-cartio-owner-local}@db/cartio
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   # The engineer account and the sanitized lab, with check results. Safe to run again.
   seed:
     <<: *cartio
