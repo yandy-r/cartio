@@ -208,6 +208,8 @@ def test_templates_extend_the_shell():
 
 
 def test_branding_comes_from_settings(client, engineer, settings):
+    settings.BRAND_NAME = "Cartio"  # the defaults, whatever the test process has set
+    settings.BRAND_ORG = ""
     page = client.get("/").content.decode()
     assert '<span class="brand-name">Cartio</span>' in page
     assert "brand-org" not in page
