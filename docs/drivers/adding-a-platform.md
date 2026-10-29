@@ -97,7 +97,13 @@ network:
 | `Link` | An L2 neighbor relation (CDP/LLDP), to another interface or to a named device not in scope |
 | `RoutingNeighbor` | An L3 relation (OSPF neighbor or BGP peer), with its subnet, and the far device once collected |
 | `RawOutput` | One command's masked output, kept for re-parsing |
-| `ConfigSnapshot` | A device's masked config, with its SHA-256 |
+| `ConfigSnapshot` | A device's masked config, with its SHA-256, platform and masking key version |
 
 `Source`, `RawOutput` and `ConfigSnapshot` are append-only. A record can't point at another
 customer's or another engagement's records.
+
+The collector takes a config with `capture_config()`, which runs the platform's entry in
+`CONFIG_COMMANDS` (`cartio_collector/ssh.py`) and masks it, so a new platform needs one there.
+On the controller, `store_outputs()` and `store_config()` scan everything again with
+`find_unmasked()`. A hit refuses the upload and is audit-logged with line numbers and kinds only.
+The first snapshot of a device after a masking key rotation is marked `key_rotated`.

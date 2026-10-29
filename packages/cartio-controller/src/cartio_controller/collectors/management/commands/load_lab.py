@@ -24,10 +24,9 @@ from django.utils import timezone
 
 from cartio_controller.collectors import audit
 from cartio_controller.collectors.assessments import run_assessment
-from cartio_controller.collectors.inventory import store_outputs
+from cartio_controller.collectors.inventory import store_config, store_outputs
 from cartio_controller.collectors.models import (
     AuditEvent,
-    ConfigSnapshot,
     Customer,
     Engagement,
     Site,
@@ -35,6 +34,8 @@ from cartio_controller.collectors.models import (
 )
 
 DEFAULT_FIXTURES = Path("tests") / "fixtures" / "sanitized"
+# The masking key version the sanitized fixtures were masked with.
+LAB_KEY_VERSION = "k1"
 
 # Device name: (platform, site).
 DEVICES = {
@@ -136,9 +137,7 @@ class Command(BaseCommand):
             config = (folder / config_file).read_text(encoding="utf-8").replace("\r\n", "\n")
             if find_unmasked(config, platform):
                 raise CommandError(f"{folder / config_file} has an unmasked secret.")
-            ConfigSnapshot.objects.for_customer(customer).create(
-                device=device, source=source, content=config
-            )
+            store_config(source, device, platform, config, key_version=LAB_KEY_VERSION, actor=user)
         return engagement
 
     def _created(self, customer, object_type, record, user):

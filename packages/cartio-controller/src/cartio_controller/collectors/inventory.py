@@ -1,11 +1,15 @@
-"""Store a device's raw outputs and build its inventory records from them (ADR-0008).
+"""Store a device's raw outputs and config, and build its inventory records from them (ADR-0008).
 
 The records are the Device, its Interfaces, its Links (L2) and its RoutingNeighbors (L3).
 
 Outputs arrive masked from the collector (or an upload) and are kept as `RawOutput`s, so the
 parsers in `cartio_core.parsers` can be re-run on them later. Parsing is idempotent: storing
 then re-parsing a `Source` gives the same records, matched by name, whatever order the devices
-came in.
+came in. Configs are kept as `ConfigSnapshot`s.
+
+Everything is scanned with `find_unmasked` on the way in. A hit refuses the whole upload and is
+audit-logged with line numbers and kinds only, never the line itself. Call these outside a
+transaction that the error would roll back, or the refusal isn't logged.
 
 Hosted customers only. An On site customer's network data stays in their own store, and the
 models refuse it too (`OnSiteDataError`).
@@ -16,13 +20,14 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 
-from cartio_core.masking import find_unmasked
+from cartio_core.masking import find_unmasked, placeholder_versions
 from cartio_core.parsers import ParsedDevice, expand_interface, parse
 from django.db import models, transaction
 
 from . import audit
 from .models import (
     AuditEvent,
+    ConfigSnapshot,
     Customer,
     Device,
     Interface,
@@ -34,7 +39,15 @@ from .models import (
 
 
 class UnmaskedOutputError(ValueError):
-    """Output that still holds a secret. The collector should have masked it."""
+    """Output or a config that still holds a secret. The collector should have masked it."""
+
+
+class UnmaskedConfigError(UnmaskedOutputError):
+    """A config that still holds a secret."""
+
+
+class KeyVersionError(ValueError):
+    """A config whose placeholders weren't all made with the key version it names."""
 
 
 def store_outputs(
@@ -48,7 +61,17 @@ def store_outputs(
     """Keep one device's masked outputs, by command, and parse them into the inventory."""
     _refuse_on_site(source.customer)
     for command, text in outputs.items():
-        if find_unmasked(text, platform):
+        if found := find_unmasked(text, platform):
+            _log_refusal(
+                source,
+                AuditEvent.Action.OUTPUTS_REJECTED,
+                found,
+                actor=actor,
+                object_type="source",
+                object_id=source.pk,
+                object_name=source.name,
+                command=command,
+            )
             raise UnmaskedOutputError(f"The output of {command!r} has an unmasked secret.")
     parsed = parse(platform, outputs)
     with transaction.atomic():
@@ -68,6 +91,83 @@ def store_outputs(
             commands=sorted(outputs),
         )
     return device
+
+
+def store_config(
+    source,
+    device: Device,
+    platform: str,
+    text: str,
+    *,
+    key_version: str,
+    actor: str = "",
+) -> ConfigSnapshot:
+    """Keep a device's masked config, made with masking key `key_version`, as a new snapshot.
+
+    The first snapshot of a device after a key rotation is marked `key_rotated`, so its new
+    placeholders aren't read as changed secrets. The device is matched by name across the
+    customer's engagements, as the engagement-to-engagement diff matches it.
+    """
+    customer = source.customer
+    _refuse_on_site(customer)
+    if found := find_unmasked(text, platform):
+        _log_refusal(
+            source,
+            AuditEvent.Action.CONFIG_REJECTED,
+            found,
+            actor=actor,
+            object_type="device",
+            object_id=device.pk,
+            object_name=device.name,
+        )
+        raise UnmaskedConfigError(f"The config of {device.name} has an unmasked secret.")
+    if placeholder_versions(text) - {key_version}:
+        raise KeyVersionError(
+            f"The config of {device.name} has placeholders from another masking key version."
+        )
+    snapshots = ConfigSnapshot.objects.for_customer(customer)
+    previous = (
+        snapshots.filter(device__name__iexact=device.name)
+        .order_by("-collected_at", "-pk")
+        .values_list("key_version", flat=True)
+        .first()
+    )
+    with transaction.atomic():
+        snapshot = snapshots.create(
+            device=device,
+            source=source,
+            platform=platform,
+            content=text,
+            key_version=key_version,
+            # A snapshot from before key versions were kept has none, so it can't tell.
+            key_rotated=bool(previous) and previous != key_version,
+        )
+        audit.record(
+            customer,
+            AuditEvent.Action.CONFIG_STORED,
+            object_type="device",
+            object_id=device.pk,
+            object_name=device.name,
+            actor=actor,
+            source=str(source.pk),
+            sha256=snapshot.sha256,
+            key_version=key_version,
+            key_rotated=snapshot.key_rotated,
+        )
+    return snapshot
+
+
+def _log_refusal(source, action: str, found, **event) -> None:
+    # Line numbers and kinds only: the line itself would put the secret in the log.
+    with transaction.atomic():
+        audit.record(
+            source.customer,
+            action,
+            source=str(source.pk),
+            lines=[f.line for f in found],
+            kinds=sorted({f.kind for f in found}),
+            **event,
+        )
 
 
 def reparse(source, *, actor: str = "") -> list[Device]:

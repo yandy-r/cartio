@@ -452,6 +452,14 @@ _LEAKS: dict[Platform | None, dict[str, re.Pattern[str]]] = {
 }
 
 
+_PLACEHOLDER_VERSION = re.compile(r"<masked:([A-Za-z0-9_.-]{1,16}):[0-9a-f]{16}(?::weak)?>")
+
+
+def placeholder_versions(text: str) -> set[str]:
+    """The masking key versions of the placeholders in `text`."""
+    return set(_PLACEHOLDER_VERSION.findall(text))
+
+
 def find_unmasked(text: str, platform: Platform | str | None = None) -> list[UnmaskedSecret]:
     """Lines that still look like they hold a secret. Empty when the text is clean.
 
