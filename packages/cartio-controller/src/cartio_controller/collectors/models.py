@@ -251,8 +251,22 @@ class Customer(Archivable):
                 )
             if saved is not None and saved != self.data_mode:
                 raise DataModeLocked
+        if not self._state.adding:
+            # Only `_set_data_mode` writes it: a copy loaded before a change must not undo it.
+            if update_fields is None:
+                deferred = self.get_deferred_fields()
+                update_fields = [
+                    f.name
+                    for f in self._meta.concrete_fields
+                    if not f.primary_key and f.attname not in deferred
+                ]
+            kwargs["update_fields"] = [name for name in update_fields if name != "data_mode"]
         super().save(*args, **kwargs)
         self._saved_data_mode = self.data_mode
+
+    def refresh_from_db(self, *args, **kwargs):
+        super().refresh_from_db(*args, **kwargs)
+        self._saved_data_mode = self.__dict__.get("data_mode")
 
     def _set_data_mode(self, data_mode: str, **fields) -> None:
         """Change the data mode. Only `data_mode.py` calls this, in the change's transaction."""

@@ -97,6 +97,36 @@ END;
 $$;
 """
 
+# An On site customer's network data is refused by the model layer too, but that check reads the
+# mode without a lock: a write that read Hosted could commit after the switch and its purge. The
+# trigger reads the mode under the customer row's key-share lock, which waits for a switch in
+# progress (it holds the row FOR UPDATE) and then sees its result.
+ON_SITE_TRIGGER = "cartio_on_site_refused"
+
+_REFUSE_ON_SITE = """
+CREATE OR REPLACE FUNCTION cartio_on_site_refused() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    mode text;
+BEGIN
+    -- Nested: PL/pgSQL resolves NEW.job_id even when the table check is false.
+    IF TG_TABLE_NAME = 'collectors_jobchunk' THEN
+        IF EXISTS (
+            SELECT 1 FROM collectors_job WHERE id = NEW.job_id AND type IN ('health', 'export')
+        ) THEN
+            RETURN NEW;
+        END IF;
+    END IF;
+    SELECT data_mode INTO mode FROM collectors_customer WHERE id = NEW.customer_id FOR KEY SHARE;
+    IF mode = 'on_site' THEN
+        RAISE EXCEPTION 'This customer is On site: % rows stay in its own store.', TG_TABLE_NAME
+            USING ERRCODE = 'restrict_violation';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+"""
+
 IMMUTABLE_TRIGGER = "cartio_customer_id_immutable"
 APPEND_ONLY_TRIGGER = "cartio_append_only"
 
@@ -169,6 +199,24 @@ def make_append_only(schema_editor, table: str) -> None:
 def unmake_append_only(schema_editor, table: str) -> None:
     if _postgres(schema_editor):
         schema_editor.execute(f"DROP TRIGGER IF EXISTS {APPEND_ONLY_TRIGGER} ON {table}")
+
+
+def refuse_on_site(schema_editor, tables) -> None:
+    """Refuse new rows in `tables` for an On site customer, waiting out a switch in progress."""
+    if _postgres(schema_editor):
+        schema_editor.execute(_REFUSE_ON_SITE, params=None)
+        for table in tables:
+            schema_editor.execute(
+                f"CREATE TRIGGER {ON_SITE_TRIGGER} BEFORE INSERT ON {table} "
+                "FOR EACH ROW EXECUTE FUNCTION cartio_on_site_refused()"
+            )
+
+
+def allow_on_site(schema_editor, tables) -> None:
+    if _postgres(schema_editor):
+        for table in tables:
+            schema_editor.execute(f"DROP TRIGGER IF EXISTS {ON_SITE_TRIGGER} ON {table}")
+        schema_editor.execute("DROP FUNCTION IF EXISTS cartio_on_site_refused()")
 
 
 def create_purge_function(schema_editor) -> None:

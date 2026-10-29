@@ -31,7 +31,7 @@ from cartio_controller.collectors.models import (
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.db import DatabaseError, IntegrityError, connection, transaction
+from django.db import DatabaseError, IntegrityError, connection, models, transaction
 
 from tests.test_collect_job import HOST
 from tests.test_job_channel import Enrolled
@@ -412,3 +412,46 @@ def test_the_postgres_store_writes_an_export_once(postgres_dsn):  # noqa: F811
     assert store.write_export(job, doc) == digest
     with pytest.raises(StoreError, match="another export"):
         store.write_export(job, {"tables": {}})
+
+
+def test_a_copy_loaded_before_the_switch_doesnt_undo_it(acme):
+    stale = Customer.objects.get(pk=acme.pk)
+    Customer.objects.get(pk=acme.pk)._set_data_mode(Customer.DataMode.ON_SITE)
+    stale.notes = "edited meanwhile"
+    stale.save()
+    stored = Customer.objects.get(pk=acme.pk)
+    assert stored.data_mode == "on_site" and stored.notes == "edited meanwhile"
+    stale.refresh_from_db()
+    stale.notes = "again"
+    stale.save()
+
+
+def _on_site_triggers():
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT tgrelid::regclass::text FROM pg_trigger WHERE tgname = %s AND NOT tgisinternal",
+            [db_guards.ON_SITE_TRIGGER],
+        )
+        return {row[0] for row in cursor.fetchall()}
+
+
+def test_the_database_refuses_network_data_for_an_on_site_customer(postgres, acme):
+    tables = {m._meta.db_table for m in data_mode.NETWORK_MODELS + data_mode.SECRET_MODELS}
+    assert _on_site_triggers() == tables | {JobChunk._meta.db_table}
+    engagement = Engagement.objects.for_customer(acme).create(name="Audit")
+    vm = Enrolled(acme)
+    health = jobs.queue_job(vm.collector, "health", "engineer")
+    discover = jobs.queue_job(vm.collector, "discover", "engineer")
+    Customer.objects.get(pk=acme.pk)._set_data_mode(Customer.DataMode.ON_SITE)
+    # Past the model layer's own check, as a write that read Hosted just before the switch.
+    with pytest.raises(IntegrityError), transaction.atomic():
+        models.QuerySet(Finding).bulk_create(
+            [Finding(customer=acme, engagement=engagement, kind="manual")]
+        )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        models.QuerySet(JobChunk).bulk_create(
+            [JobChunk(customer=acme, job=discover, index=0, sha256="0", data=b"")]
+        )
+    models.QuerySet(JobChunk).bulk_create(
+        [JobChunk(customer=acme, job=health, index=0, sha256="0", data=b"")]
+    )

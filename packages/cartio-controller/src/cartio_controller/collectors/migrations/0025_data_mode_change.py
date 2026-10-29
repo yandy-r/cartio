@@ -5,11 +5,31 @@ from django.db import migrations, models
 from cartio_controller.collectors import db_guards
 
 
+# Every table holding an On site customer's network data, credentials or data key.
+NETWORK_TABLES = [
+    "collectors_source",
+    "collectors_device",
+    "collectors_interface",
+    "collectors_link",
+    "collectors_routingneighbor",
+    "collectors_rawoutput",
+    "collectors_configsnapshot",
+    "collectors_assessmentrun",
+    "collectors_checkresult",
+    "collectors_finding",
+    "collectors_credential",
+    "collectors_customerdatakey",
+    "collectors_jobchunk",
+]
+
+
 def allow_purge(apps, schema_editor):
     db_guards.create_purge_function(schema_editor)
+    db_guards.refuse_on_site(schema_editor, NETWORK_TABLES)
 
 
 def disallow_purge(apps, schema_editor):
+    db_guards.allow_on_site(schema_editor, NETWORK_TABLES)
     db_guards.drop_purge_function(schema_editor)
 
 
