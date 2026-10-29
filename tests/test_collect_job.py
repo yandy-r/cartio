@@ -346,12 +346,13 @@ def test_queueing_a_collect_job_refuses_what_it_cant_run(acme, audit_engagement)
     assert not Job.all_customers.exists()
 
 
-def test_an_on_site_customer_cant_get_a_collect_job_on_the_controller():
+def test_an_on_site_customer_cant_name_targets_on_the_controller():
     clinic = Customer.objects.create(name="Clinic", data_mode="on_site")
     engagement = Engagement.objects.for_customer(clinic).create(name="Audit")
     vm = Enrolled(clinic)
+    made_up = SimpleNamespace(pk="00000000-0000-4000-8000-000000000001")
     with pytest.raises(jobs.JobError, match="On site"):
-        _queue(vm, engagement, _ssh(clinic), HOST)
+        _queue(vm, engagement, made_up, HOST)
 
 
 def test_queue_collect_command(acme, audit_engagement, tmp_path):

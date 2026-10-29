@@ -9,6 +9,10 @@ that wasn't masked, or a placeholder from another key version, refuses the whole
 refusal is audit-logged with line numbers and kinds only, and the job fails. Otherwise the
 devices, outputs and configs are stored under one live-run `Source`, in the transaction that
 ends the job, so a result is stored whole or not at all.
+
+An On site customer's collect job (YAN-1670) names no targets and carries no credentials or
+masking key: the collector keeps those itself, writes what it collects to the customer's own
+store, and reports only how the job went.
 """
 
 from __future__ import annotations
@@ -51,11 +55,16 @@ def collect_params(customer: Customer, engagement, params: dict) -> dict:
     """Check a collect job's settings and return them cleaned. Raises ValueError."""
     if engagement is None:
         raise ValueError("A collect job needs an engagement.")
+    verify = params.get("verify_host_keys", True)
+    if not isinstance(verify, bool):
+        raise ValueError("verify_host_keys is true or false.")
     if customer.data_mode == Customer.DataMode.ON_SITE:
-        raise ValueError(
-            "This customer is On site: its collector stores device data in the customer's own "
-            "store, not on the controller."
-        )
+        if set(params) - {"verify_host_keys"}:
+            raise ValueError(
+                "This customer is On site: its targets and credentials are kept on its collector, "
+                "not on the controller."
+            )
+        return {"on_site": True, "verify_host_keys": verify}
     targets = params.get("targets")
     if not isinstance(targets, list) or not 1 <= len(targets) <= MAX_COLLECT_TARGETS:
         raise ValueError(f"A collect job needs 1 to {MAX_COLLECT_TARGETS} targets.")
@@ -80,14 +89,13 @@ def collect_params(customer: Customer, engagement, params: dict) -> dict:
         except ValueError as exc:
             raise ValueError("Each target needs a credential.") from exc
         cleaned.append({"host": host, "platform": platform, "port": port, "credential": credential})
-    verify = params.get("verify_host_keys", True)
-    if not isinstance(verify, bool):
-        raise ValueError("verify_host_keys is true or false.")
     return {"targets": cleaned, "verify_host_keys": verify}
 
 
 def target_credentials(customer: Customer, params: dict) -> list[str]:
     """The credential ids a collect job's targets use. All must be the customer's SSH ones."""
+    if params.get("on_site"):
+        return []
     ids = list(dict.fromkeys(t["credential"] for t in params["targets"]))
     found = Credential.objects.for_customer(customer).filter(pk__in=ids, kind__in=SSH_KINDS)
     if found.count() != len(ids):

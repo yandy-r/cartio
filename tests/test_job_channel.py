@@ -336,7 +336,7 @@ def test_a_failed_job_says_why(client, api, acme):
 def test_an_on_site_customers_results_stay_on_site(client, api):
     on_site = Customer.objects.create(name="Clinic", data_mode="on_site")
     vm = Enrolled(on_site)
-    job = _queue(api, on_site, vm.collector).json()
+    job = _queue(api, on_site, vm.collector, type="discover").json()
     vm.poll(client)
     assert vm.chunk(client, job["id"], 0, b"device data").status_code == 409
     # The outcome still comes back, without the data.

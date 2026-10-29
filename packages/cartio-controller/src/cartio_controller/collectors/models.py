@@ -510,6 +510,10 @@ class RequestNonce(CustomerOwned):
 class CustomerDataKey(CustomerOwned):
     """A customer's data key, stored only wrapped by the master key (ADR-0003)."""
 
+    # Not network data, but it guards credentials and masking, which an On site customer keeps
+    # on its own collector with a key that never leaves its network (ADR-0003, YAN-1670).
+    network_data = True
+
     wrapped_key = models.BinaryField()
     master_key_id = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -568,6 +572,9 @@ class CustomerDataKey(CustomerOwned):
 
 class Credential(CustomerOwned):
     """A device credential of one customer. Its secret is encrypted and never shown back."""
+
+    # An On site customer's credentials stay on its collector, like its network data (ADR-0003).
+    network_data = True
 
     class Kind(models.TextChoices):
         SSH_PASSWORD = "ssh_password", "SSH user and password"
@@ -852,9 +859,6 @@ class JobChunk(CustomerOwned):
     """One acknowledged piece of a job's result upload. A dropped upload resumes after the last
     one stored, and an index is stored once."""
 
-    # Results hold device data, so an On site customer's stay on their own store (ADR-0002).
-    network_data = True
-
     job = models.ForeignKey(Job, on_delete=models.PROTECT, related_name="chunks")
     index = models.PositiveIntegerField()
     sha256 = models.CharField(max_length=64)
@@ -868,6 +872,12 @@ class JobChunk(CustomerOwned):
 
     def __str__(self) -> str:
         return f"{self.job_id} chunk {self.index}"
+
+    @property
+    def network_data(self) -> bool:
+        # Results hold device data, so an On site customer's stay on their own store
+        # (ADR-0002). A health check's is the collector's own health, which the controller keeps.
+        return self.job.type != Job.Type.HEALTH
 
 
 # The normalized device model (YAN-1656, ADR-0008). Every record belongs to one engagement, so

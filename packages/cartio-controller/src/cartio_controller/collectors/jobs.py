@@ -210,7 +210,9 @@ def next_job(collector: Collector, tls_inspected: bool = False) -> dict | None:
 @sensitive_variables("delivered", "key")
 def _message(collector: Collector, job: Job) -> dict:
     sealed = ""
-    if job.credential_ids or job.type == Job.Type.COLLECT:
+    # An On site collect job carries no secrets: its collector holds its own (ADR-0003).
+    on_site = job.params.get("on_site", False)
+    if job.credential_ids or (job.type == Job.Type.COLLECT and not on_site):
         if not collector.seal_key:
             raise CredentialNotAvailable(
                 "The collector enrolled without a sealing key. Enroll it again to send it "
@@ -325,7 +327,12 @@ def finish_job(job: Job, result: ResultMessage) -> Job:
         job.result_size = size
         job.save(update_fields=["result_id", "result_sha256", "result_size"])
         outcome, error, device_count = result.outcome, result.error_summary, result.device_count
-        if job.type == Job.Type.COLLECT and outcome != CollectionRunResult.Outcome.FAILED:
+        # An On site job's data went to the customer's store; only its status comes here.
+        if (
+            job.type == Job.Type.COLLECT
+            and not job.params.get("on_site")
+            and outcome != CollectionRunResult.Outcome.FAILED
+        ):
             outcome, error, device_count = _store_collected(job, chunks, outcome, error)
         failed = outcome == CollectionRunResult.Outcome.FAILED
         _end(
