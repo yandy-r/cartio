@@ -12,7 +12,7 @@ dependencies = [
     "cryptography>=46",
     "reportlab>=4.4,<6",
     "pillow>=11",
-    "gunicorn>=23",
+    "uvicorn>=0.34",
 ]
 
 [project.scripts]

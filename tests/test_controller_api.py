@@ -15,7 +15,7 @@ from django.core.management import call_command
 from django.test import override_settings
 from django.utils import timezone
 
-from tests.signed import CHECKIN, give_key, signed_post
+from tests.signed import CHECKIN, SEAL_KEY, give_key, signed_post
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,12 @@ def _post(client, path, body, **headers):
 
 def _enroll_body(token, private_key=None):
     private_key = private_key or signing.new_private_key()
-    return {"token": token, "hostname": "vm01", "public_key": signing.public_key_for(private_key)}
+    return {
+        "token": token,
+        "hostname": "vm01",
+        "public_key": signing.public_key_for(private_key),
+        "seal_key": SEAL_KEY,
+    }
 
 
 def _enrolled():
@@ -58,7 +63,11 @@ def test_enroll_stores_the_public_key_and_burns_the_token(client):
     row = Collector.all_customers.filter(pk=collector.pk).values().get()
     assert private_key not in json.dumps(row, default=str)
     event = AuditEvent.objects.for_customer(collector.customer).get(action="collector.enrolled")
-    assert event.detail == {"hostname": "vm01", "public_key": collector.public_key}
+    assert event.detail == {
+        "hostname": "vm01",
+        "public_key": collector.public_key,
+        "seal_key": collector.seal_key,
+    }
 
     again = _post(client, ENROLL_PATH, _enroll_body(token))
     assert again.status_code == 403
@@ -104,7 +113,7 @@ def test_a_revoked_collectors_token_is_refused(client):
 )
 def test_enroll_rejects_a_bad_public_key(client, public_key):
     collector, token = _new_collector()
-    body = {"token": token, "hostname": "vm01", "public_key": public_key}
+    body = {"token": token, "hostname": "vm01", "public_key": public_key, "seal_key": SEAL_KEY}
     assert _post(client, ENROLL_PATH, body).status_code == 400
     collector.refresh_from_db()
     assert collector.enrollment_token_hash != ""
@@ -129,7 +138,7 @@ def test_a_signed_checkin_records_the_collector(client):
 
     response = signed_post(client, collector.id, key, CHECKIN_PATH, CHECKIN)
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "jobs": []}
+    assert response.json() == {"status": "ok"}
 
     collector.refresh_from_db()
     assert collector.last_check_in is not None

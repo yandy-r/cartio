@@ -25,6 +25,8 @@ from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from tests.signed import SEAL_KEY
+
 pytestmark = pytest.mark.django_db
 
 CUSTOMERS = "/api/v1/customers"
@@ -149,6 +151,7 @@ def test_admin_events_are_logged(client):
             "token": token,
             "hostname": "vm01",
             "public_key": signing.public_key_for(signing.new_private_key()),
+            "seal_key": SEAL_KEY,
         },
         content_type="application/json",
     )

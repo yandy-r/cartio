@@ -17,6 +17,7 @@ from django.contrib.auth.signals import user_login_failed
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
+from django.db.models import Count
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -29,10 +30,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
 from cartio_controller.collectors import assessments, audit
+from cartio_controller.collectors import jobs as job_channel
 from cartio_controller.collectors.models import (
     ENROLLMENT_TOKEN_LIFETIME,
     CollectionRun,
     Customer,
+    Job,
     Site,
 )
 
@@ -886,6 +889,14 @@ def collectors(request, customer, engagement=None):
             extra["confirm"] = confirm and operations.find_collector(customer, confirm)
 
     rows = _collectors(customer, revoked=True)
+    open_jobs = dict(
+        Job.objects.for_customer(customer)
+        .filter(status__in=Job.OPEN)
+        .values_list("collector")
+        .annotate(count=Count("pk"))
+    )
+    for row in rows:
+        row.queue = open_jobs.get(row.pk, 0)
     extra.update(
         {
             "collectors": rows,
@@ -920,6 +931,8 @@ def collector_status(request, customer, collector):
     return render(request, "engineers/_collector_waiting.html", {"collector": found})
 
 
+@require_http_methods(["GET", "POST"])
+@csrf_protect
 @never_cache
 @engineer_required
 def jobs(request, customer, engagement=None):
@@ -927,16 +940,33 @@ def jobs(request, customer, engagement=None):
     if not _can_see_jobs(request.user):
         raise PermissionDenied
     customer, engagements, engagement = shell.resolve(customer, engagement)
+    can_cancel = request.user.has_perm("collectors.change_job")
+    if request.method == "POST":
+        if request.POST.get("action") != "cancel":
+            return HttpResponseBadRequest("Cancel a job.")
+        if not can_cancel:
+            raise PermissionDenied
+        job_id = _uuid(request.POST.get("job", ""))
+        job = job_id and Job.objects.for_customer(customer).filter(pk=job_id).first()
+        if not job:
+            raise Http404
+        try:
+            job_channel.cancel_job(job, request.user.get_username())
+        except job_channel.JobClosed as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, "Job cancelled · logged in the audit log")
+        return redirect(shell.screen_url("jobs", customer, engagement))
     runs = (
         CollectionRun.objects.for_customer(customer)
-        .select_related("collector", "engagement", "result")
+        .select_related("collector", "engagement", "result", "job")
         .order_by("-started_at")[:JOBS_SHOWN]
     )
     return render_screen(
         request,
         "jobs",
         "engineers/jobs.html",
-        {"runs": runs, "limit": JOBS_SHOWN},
+        {"runs": runs, "limit": JOBS_SHOWN, "can_cancel": can_cancel},
         customer,
         engagements,
         engagement,
@@ -983,7 +1013,9 @@ def audit_export(request, customer):
         raise PermissionDenied
     customer, _, _ = shell.resolve(customer)
     chunks = audit.export_events(customer, request.user.get_username(), "csv")
-    response = StreamingHttpResponse(chunks, content_type="text/csv; charset=utf-8")
+    response = StreamingHttpResponse(
+        audit.streamed(request, chunks), content_type="text/csv; charset=utf-8"
+    )
     response["Content-Disposition"] = (
         f'attachment; filename="cartio-audit-customer-{customer.pk}.csv"'
     )

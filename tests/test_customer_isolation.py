@@ -19,6 +19,8 @@ from cartio_controller.collectors.models import (
     Engagement,
     Finding,
     Interface,
+    Job,
+    JobChunk,
     Link,
     LoginEvent,
     RawOutput,
@@ -75,7 +77,12 @@ def _records(customer):
     )
     interface = Interface.objects.for_customer(customer).create(device=device, name="Gi1/0/1")
     assessment = AssessmentRun.objects.for_customer(customer).create(engagement=engagement)
+    job = Job.objects.for_customer(customer).create(type="health", collector=collector, run=run)
     return {
+        Job: job,
+        JobChunk: JobChunk.objects.for_customer(customer).create(
+            job=job, index=0, sha256="0" * 64, data=b"result"
+        ),
         Engagement: engagement,
         Site: site,
         Collector: collector,
@@ -146,6 +153,8 @@ def test_every_table_carries_a_customer():
         "AssessmentRun",
         "CheckResult",
         "Finding",
+        "Job",
+        "JobChunk",
     }
     for model in OWNED:
         assert issubclass(model, CustomerOwned), model

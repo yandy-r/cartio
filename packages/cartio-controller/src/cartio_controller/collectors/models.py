@@ -183,6 +183,9 @@ class Customer(Archivable):
     # ADR-0005: whether engineers may see an On site customer's data relayed through the
     # controller. Off until the customer chooses it at onboarding; it means nothing for Hosted.
     live_view_allowed = models.BooleanField(default=False)
+    # ADR-0009: this customer's collectors refuse to run jobs while they see TLS inspection on
+    # their path to the controller, and the controller holds jobs back while one reports it.
+    require_uninspected_path = models.BooleanField(default=False, db_default=False)
     # `Compliance` values, such as ["hipaa"]. Shown as tags on the customer list.
     compliance = models.JSONField(default=list, blank=True, validators=[validate_compliance])
     notes = models.TextField(blank=True)
@@ -400,6 +403,9 @@ class Collector(CustomerOwned):
     # The collector's Ed25519 public key, sent at enrollment. It signs every request with the
     # private key, which never leaves its host (ADR-0009).
     public_key = models.CharField(max_length=64, blank=True)
+    # The collector's X25519 public key, sent at enrollment. Job credentials are sealed to it
+    # (`cartio_core.sealing`), so only this collector can read them.
+    seal_key = models.CharField(max_length=64, blank=True)
 
     hostname = models.CharField(max_length=255, blank=True)
     version = models.CharField(max_length=50, blank=True)
@@ -444,6 +450,7 @@ class Collector(CustomerOwned):
         """
         self.revoked_at = when
         self.public_key = ""
+        self.seal_key = ""
         self.enrollment_token_hash = ""
 
     def scoped(self, model: type[CustomerOwned]) -> CustomerScopedQuerySet:
@@ -654,6 +661,7 @@ class AuditEvent(CustomerOwned):
         REPORT_EXPORTED = "report.exported", "Report exported"
         COMPARE_EXPORTED = "compare.exported", "Config diff exported"
         SITEMAP_EXPORTED = "sitemap.exported", "Site map exported"
+        JOB_CANCELLED = "job.cancelled", "Job cancelled"
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -740,6 +748,103 @@ class CollectionRunResult(CustomerOwned):
 
     def __str__(self) -> str:
         return f"{self.run}: {self.outcome}"
+
+
+class Job(CustomerOwned):
+    """Work queued for one collector, which it fetches over the job channel (YAN-1651).
+
+    Each job has a collection run from the moment it is queued, and the run's result records
+    how it ended. The job holds what the channel needs: state, progress and the result's id.
+    Credentials are named by id only; they are decrypted and sealed to the collector when it
+    fetches the job, and never stored with it.
+    """
+
+    class Type(models.TextChoices):
+        DISCOVER = "discover", "Discovery"
+        COLLECT = "collect", "Config capture"
+        IMPORT_PARSE = "import_parse", "Import"
+        ASSESS = "assess", "Assess"
+        HEALTH = "health", "Health check"
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    OPEN = (Status.QUEUED, Status.RUNNING)
+    MAX_PARAMS_BYTES = 16 * 1024
+    MAX_ERROR = 2000
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    type = models.CharField(max_length=16, choices=Type)
+    collector = models.ForeignKey(Collector, on_delete=models.PROTECT, related_name="jobs")
+    engagement = models.ForeignKey(
+        Engagement, null=True, blank=True, on_delete=models.PROTECT, related_name="jobs"
+    )
+    run = models.OneToOneField(CollectionRun, on_delete=models.PROTECT, related_name="job")
+    # Settings for the collector, such as seeds. Never a secret.
+    params = models.JSONField(default=dict, blank=True)
+    credential_ids = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=16, choices=Status, default=Status.QUEUED)
+    created_by = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # When the collector first fetched it.
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    progress_message = models.CharField(max_length=200, blank=True)
+    progress_percent = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Set once, by the collector's result, so a replayed result is recognised.
+    result_id = models.UUIDField(null=True, blank=True)
+    result_sha256 = models.CharField(max_length=64, blank=True)
+    result_size = models.PositiveBigIntegerField(null=True, blank=True)
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["id", "customer"], name="job_id_customer"),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["queued", "running", "done", "failed", "cancelled"]),
+                name="job_status_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_type_display()} on {self.collector}: {self.status}"
+
+    @property
+    def is_open(self) -> bool:
+        return self.status in self.OPEN
+
+    def result_bytes(self) -> bytes:
+        """The uploaded result, chunks joined in order. Empty when there is none."""
+        if self.result_id is None:
+            return b""
+        chunks = JobChunk.objects.for_customer(self.customer_id).filter(job=self)
+        return b"".join(bytes(c.data) for c in chunks.order_by("index"))
+
+
+class JobChunk(CustomerOwned):
+    """One acknowledged piece of a job's result upload. A dropped upload resumes after the last
+    one stored, and an index is stored once."""
+
+    # Results hold device data, so an On site customer's stay on their own store (ADR-0002).
+    network_data = True
+
+    job = models.ForeignKey(Job, on_delete=models.PROTECT, related_name="chunks")
+    index = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    data = models.BinaryField()
+
+    class Meta(CustomerOwned.Meta):
+        ordering = ["index"]
+        constraints = [
+            models.UniqueConstraint(fields=["job", "index"], name="unique_job_chunk"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.job_id} chunk {self.index}"
 
 
 # The normalized device model (YAN-1656, ADR-0008). Every record belongs to one engagement, so

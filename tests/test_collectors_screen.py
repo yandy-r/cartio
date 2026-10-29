@@ -19,6 +19,8 @@ from cartio_core.protocol import CHECKIN_PATH, ENROLL_PATH
 from django.contrib.auth.models import Permission
 from django.utils import timezone
 
+from tests.signed import SEAL_KEY
+
 from .signed import CHECKIN, signed_post
 from .test_engineer_ui import _engineer, _signed_in
 
@@ -53,7 +55,7 @@ def _post_json(client, path, body, **headers):
 
 def _enroll_body(token, key=None):
     public_key = signing.public_key_for(key or signing.new_private_key())
-    return {"token": token, "hostname": "vm01", "public_key": public_key}
+    return {"token": token, "hostname": "vm01", "public_key": public_key, "seal_key": SEAL_KEY}
 
 
 def _enrolled(customer, name="vm01"):

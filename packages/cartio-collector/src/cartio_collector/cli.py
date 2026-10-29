@@ -8,10 +8,17 @@ import time
 from pathlib import Path
 
 import httpx
+from cartio_core.protocol import MAX_WAIT
 
 from . import __version__
 from .client import ControllerError, Session, enroll
 from .config import CollectorConfig, ConfigError, default_path
+from .jobs import Journal, Worker
+
+_INSPECTED = (
+    "warning: the controller's TLS key isn't the pinned one, so something on the path inspects "
+    "TLS. Reported to the controller."
+)
 
 
 def _cmd_enroll(args: argparse.Namespace) -> int:
@@ -38,16 +45,44 @@ def _cmd_checkin(args: argparse.Namespace) -> int:
                 print(f"warning: check-in failed, retrying: {exc}", file=sys.stderr)
             else:
                 if session.inspected and not reported_inspection:
-                    print(
-                        "warning: the controller's TLS key isn't the pinned one, so something "
-                        "on the path inspects TLS. Reported to the controller.",
-                        file=sys.stderr,
-                    )
+                    print(_INSPECTED, file=sys.stderr)
                 reported_inspection = session.inspected
-                print(f"Checked in: {result.status}, {len(result.jobs)} job(s) waiting.")
+                print(f"Checked in: {result.status}.")
                 if args.once:
                     return 0
             time.sleep(args.interval)
+
+
+def _cmd_run(args: argparse.Namespace) -> int:
+    """Check in every `interval` seconds and, in between, wait for jobs and run them."""
+    config = CollectorConfig.load(args.config)
+    journal = Journal(config.journal_path(args.config))
+    failures = 0
+    last_check_in = None
+    reported_inspection = False
+    with Session(config) as session:
+        worker = Worker(session, journal)
+        while True:
+            try:
+                if last_check_in is None or time.monotonic() - last_check_in >= args.interval:
+                    session.check_in()
+                    last_check_in = time.monotonic()
+                    if session.inspected and not reported_inspection:
+                        print(_INSPECTED, file=sys.stderr)
+                    reported_inspection = session.inspected
+                ran = worker.poll_once(0 if args.once else MAX_WAIT)
+                if ran:
+                    print(f"Ran {ran} job(s).")
+                failures = 0
+            except httpx.TransportError as exc:
+                if args.once:
+                    raise
+                # A network blip shouldn't stop a running collector; a refusal still does.
+                failures += 1
+                print(f"warning: controller unreachable, retrying: {exc}", file=sys.stderr)
+                time.sleep(min(60, 2**failures))
+            if args.once:
+                return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_checkin.add_argument("--once", action="store_true", help="Check in once and exit.")
     p_checkin.add_argument("--interval", type=int, default=60, help="Seconds between check-ins.")
     p_checkin.set_defaults(func=_cmd_checkin)
+
+    p_run = sub.add_parser("run", help="Check in, wait for jobs from the controller and run them.")
+    p_run.add_argument("--once", action="store_true", help="Run the jobs waiting now and exit.")
+    p_run.add_argument("--interval", type=int, default=60, help="Seconds between check-ins.")
+    p_run.set_defaults(func=_cmd_run)
     return parser
 
 

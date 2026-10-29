@@ -25,12 +25,19 @@ class CollectorConfig:
     customer: str
     # The collector's Ed25519 private key. It is made on this host and never sent anywhere.
     private_key: str
+    # The collector's X25519 private key, which opens job credentials sealed to it. It is
+    # made on this host and never sent anywhere either.
+    seal_key: str
     # Pins of the controller's TLS keys. A different key on the path means TLS inspection.
     tls_pins: list[str] = field(default_factory=list)
     # An explicit proxy URL, such as http://user:pass@proxy:3128. Empty: use HTTPS_PROXY.
     proxy: str = ""
     # A CA bundle to trust instead of the operating system's certificate store.
     ca_file: str = ""
+
+    def journal_path(self, path: Path) -> Path:
+        """Where the job journal for the identity saved at `path` is kept."""
+        return path.with_name(path.stem + ".jobs")
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

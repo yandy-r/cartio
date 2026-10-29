@@ -14,6 +14,7 @@ router.register(r"customers/(?P<customer_pk>[0-9]+)/sites", api.SiteViewSet, bas
 router.register(
     r"customers/(?P<customer_pk>[0-9]+)/credentials", api.CredentialViewSet, basename="credential"
 )
+router.register(r"customers/(?P<customer_pk>[0-9]+)/jobs", api.JobViewSet, basename="job")
 router.register(r"customers/(?P<customer_pk>[0-9]+)/runs", api.CollectionRunViewSet, basename="run")
 router.register(
     r"customers/(?P<customer_pk>[0-9]+)/audit-events",
@@ -30,6 +31,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/enroll", views.enroll, name="enroll"),
     path("api/v1/checkin", views.checkin, name="checkin"),
+    path("api/v1/jobs/next", views.jobs_next, name="jobs-next"),
+    path("api/v1/jobs/<str:job_id>/progress", views.job_progress, name="job-progress"),
+    path("api/v1/jobs/<str:job_id>/chunks/<int:index>", views.job_chunk, name="job-chunk"),
+    path("api/v1/jobs/<str:job_id>/result", views.job_result, name="job-result"),
     path("api/v1/", include(router.urls)),
     path("", include("cartio_controller.engineers.urls")),
 ]

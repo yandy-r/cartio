@@ -1,5 +1,5 @@
 #!/bin/sh
-# Enroll once with CARTIO_ENROLL_TOKEN, then check in every minute.
+# Enroll once with CARTIO_ENROLL_TOKEN, then check in every minute and run the jobs it is sent.
 # It shares the controller's network, because the collector only speaks plain http to localhost.
 set -eu
 
@@ -13,4 +13,4 @@ if [ ! -s "$config" ]; then
         --token "$CARTIO_ENROLL_TOKEN"
 fi
 
-exec cartio-collector --config "$config" checkin --interval 60
+exec cartio-collector --config "$config" run --interval 60

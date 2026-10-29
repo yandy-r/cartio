@@ -75,8 +75,8 @@
       {% endif %}
       {# Whether the collector's pin saw another TLS key on the path (ADR-0009). #}
       <dt>TLS path</dt><dd>{% if collector.revoked_at %}Revoked{% elif not collector.last_check_in %}Not reported yet{% elif collector.tls_inspected %}<span class="tls-inspected">Inspected</span>{% else %}Direct{% endif %}</dd>
-      {# The job queue (YAN-1651) isn't built yet. #}
-      <dt>Queue</dt><dd>Not tracked yet</dd>
+      {# Queued and running jobs (YAN-1651). #}
+      <dt>Queue</dt><dd>{% if collector.queue %}{{ collector.queue }} job{{ collector.queue|pluralize }}{% else %}Empty{% endif %}</dd>
     </dl>
     {% if confirm and confirm.pk == collector.pk and not collector.revoked_at %}
     <form method="post" action="{{ here }}" class="confirm" role="alertdialog" aria-labelledby="confirm-{{ collector.pk }}">

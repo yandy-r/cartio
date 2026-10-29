@@ -16,14 +16,22 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from cartio_core import signing
+from cartio_core import sealing, signing
 from cartio_core.protocol import (
     CHECKIN_PATH,
     ENROLL_PATH,
+    JOBS_NEXT_PATH,
+    MAX_WAIT,
     CheckIn,
     CheckInResponse,
     EnrollRequest,
     EnrollResponse,
+    JobPoll,
+    JobPollResponse,
+    JobProgress,
+    JobResult,
+    JobStatus,
+    job_path,
 )
 
 from . import __version__
@@ -32,6 +40,15 @@ from .config import CollectorConfig
 
 class ControllerError(RuntimeError):
     """The controller refused a request or answered with something unexpected."""
+
+    def __init__(self, message: str, status: int | None = None, body: Any = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.body = body if isinstance(body, dict) else {}
+
+
+class JobClosed(ControllerError):
+    """The job already ended on the controller, most often because an engineer cancelled it."""
 
 
 def _require_secure(url: str) -> None:
@@ -128,10 +145,14 @@ def _raise_for_status(response: httpx.Response) -> None:
     if response.is_success:
         return
     try:
-        detail = response.json().get("error", response.text)
+        body = response.json()
+        detail = body.get("error", response.text)
     except (ValueError, AttributeError):
-        detail = response.text
-    raise ControllerError(f"controller answered {response.status_code}: {detail}")
+        body, detail = None, response.text
+    kind = ControllerError
+    if response.status_code == 409 and isinstance(body, dict) and "status" in body:
+        kind = JobClosed
+    raise kind(f"controller answered {response.status_code}: {detail}", response.status_code, body)
 
 
 def _parse(response: httpx.Response, kind: Any) -> Any:
@@ -155,10 +176,12 @@ def enroll(
     _require_secure(controller_url)
     controller_url = controller_url.rstrip("/")
     private_key = signing.new_private_key()
+    seal_key = sealing.new_private_key()
     request = EnrollRequest(
         token=token,
         hostname=socket.gethostname(),
         public_key=signing.public_key_for(private_key),
+        seal_key=sealing.public_key_for(seal_key),
     )
     client = http or new_http(proxy, ca_file)
     try:
@@ -176,6 +199,7 @@ def enroll(
         collector_id=enrolled.collector_id,
         customer=enrolled.customer,
         private_key=private_key,
+        seal_key=seal_key,
         tls_pins=pins,
         proxy=proxy,
         ca_file=ca_file,
@@ -204,8 +228,18 @@ class Session:
     def __exit__(self, *exc_info) -> None:
         self.close()
 
-    def post(self, path: str, body: dict[str, Any]) -> httpx.Response:
-        response = self._http.post(self.config.controller_url + path, json=body, auth=self._signer)
+    def post(
+        self, path: str, body: dict[str, Any] | bytes, timeout: float | None = None
+    ) -> httpx.Response:
+        options: dict[str, Any] = {"auth": self._signer}
+        if isinstance(body, bytes):
+            options["content"] = body
+            options["headers"] = {"Content-Type": "application/octet-stream"}
+        else:
+            options["json"] = body
+        if timeout is not None:
+            options["timeout"] = timeout
+        response = self._http.post(self.config.controller_url + path, **options)
         seen = server_pin(response)
         if seen is not None and self.config.tls_pins:
             self.inspected = seen not in self.config.tls_pins
@@ -229,6 +263,23 @@ class Session:
             if self.inspected == reported:
                 break
         return _parse(response, CheckInResponse)
+
+    def poll(self, wait: int = MAX_WAIT) -> JobPollResponse:
+        """Ask for the next job. The controller holds the request open up to `wait` seconds."""
+        message = JobPoll(wait=wait, tls_inspected=self.inspected)
+        # Leave the controller time to answer an empty poll before giving up on the connection.
+        response = self.post(JOBS_NEXT_PATH, message.to_dict(), timeout=wait + 30)
+        return _parse(response, JobPollResponse)
+
+    def progress(self, job_id: str, message: str, percent: int | None = None) -> JobStatus:
+        response = self.post(job_path(job_id, "progress"), JobProgress(message, percent).to_dict())
+        return _parse(response, JobStatus)
+
+    def upload_chunk(self, job_id: str, index: int, data: bytes) -> None:
+        self.post(job_path(job_id, f"chunks/{index}"), data)
+
+    def finish(self, job_id: str, result: JobResult) -> None:
+        self.post(job_path(job_id, "result"), result.to_dict())
 
 
 def check_in(config: CollectorConfig, *, http: httpx.Client | None = None) -> CheckInResponse:

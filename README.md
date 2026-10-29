@@ -62,6 +62,7 @@ In a second terminal, use the token the `create_collector` command printed:
 ```sh
 uv run cartio-collector enroll --controller http://127.0.0.1:8000 --token <token>
 uv run cartio-collector checkin --once
+uv run cartio-collector run            # check in, wait for jobs and run them
 ```
 
 The token works once and expires after 24 hours (`CARTIO_ENROLLMENT_TOKEN_HOURS`). Enrolling makes
@@ -73,7 +74,17 @@ The collector trusts the operating system's certificate store (`--ca-file` repla
 `HTTPS_PROXY`, or `--proxy http://user:pass@host:port`; basic proxy auth works. It pins the
 controller's TLS key: the ones in the controller's `CARTIO_TLS_PINS` (base64 SHA-256 of each key's
 SubjectPublicKeyInfo), or else the key it saw when it enrolled. A different key on the path, such
-as a TLS-inspecting proxy's, is reported at check-in and shown as "Inspected"; it isn't blocked.
+as a TLS-inspecting proxy's, is reported at check-in and shown as "Inspected"; it isn't blocked,
+unless the customer's "Require uninspected path" setting is on: then its collectors don't run jobs
+while they see inspection.
+
+Jobs (YAN-1651) are queued with `POST /api/v1/customers/<id>/jobs` (a collector, a type such as
+`health`, and optional engagement, settings and credential ids), followed on the Jobs screen, and
+cancelled there or with `.../jobs/<id>/cancel`. `cartio-collector run` long-polls for them over the
+same signed HTTPS (ADR-0009), with credentials sealed to the collector's own key, and uploads
+results in chunks it resumes after a dropped connection. A journal next to the identity file keeps
+a job from running twice. This version runs health jobs; other types are reported as failed until
+they're built.
 
 Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
 enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every
@@ -124,8 +135,8 @@ authenticator app. Things to try:
   changes to the report, then preview it and export PDF or DOCX.
 - New customer: the onboarding wizard. The Audit log shows everything above.
 
-A collector can enroll and check in, so the Collectors screen shows it online. It gets no jobs
-yet (the job channel is YAN-1651), so it collects nothing:
+A collector can enroll, check in and run jobs, so the Collectors screen shows it online. This
+version runs `health` jobs (queue one with the jobs API) and collects nothing from devices yet:
 
 ```sh
 token=$(docker compose exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)
@@ -136,10 +147,11 @@ CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
 
 ### Production example
 
-compose.yml runs PostgreSQL, the controller under gunicorn and [Caddy](https://caddyserver.com/)
-in front of it for TLS and the static files. It builds the image without the source mounts, the
-lab or `load_lab`, and nothing has a default password. It is a starting point, not a hardened
-deployment: add backups of the database and the master key, and monitoring, to suit your site.
+compose.yml runs PostgreSQL, the controller under uvicorn (ASGI, so collectors' job long-polls
+don't each hold a worker) and [Caddy](https://caddyserver.com/) in front of it for TLS and the
+static files. It builds the image without the source mounts, the lab or `load_lab`, and nothing
+has a default password. It is a starting point, not a hardened deployment: add backups of the
+database and the master key, and monitoring, to suit your site.
 
 1. Put the master key in `secrets/master.key`, readable by uid 1000 (the controller's user), and
    back it up on its own ([master key](docs/deploy/master-key.md)). `secrets/` is ignored by git.

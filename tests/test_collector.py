@@ -9,15 +9,16 @@ import pytest
 from cartio_collector import cli, client
 from cartio_collector.client import ControllerError, Session, check_in, enroll
 from cartio_collector.config import CollectorConfig
-from cartio_core import signing
+from cartio_core import sealing, signing
 
 CONFIG = CollectorConfig(
     controller_url="https://controller.example",
     collector_id="00000000-0000-0000-0000-000000000001",
     customer="Acme",
     private_key=signing.new_private_key(),
+    seal_key=sealing.new_private_key(),
 )
-CHECKED_IN = {"status": "ok", "jobs": []}
+CHECKED_IN = {"status": "ok"}
 
 
 def _http(handler) -> httpx.Client:
@@ -51,7 +52,9 @@ def test_enroll_sends_only_the_public_key_and_keeps_the_private_one():
 
     config = enroll("https://controller.example", "token", http=_http(controller))
     assert sent[0]["public_key"] == signing.public_key_for(config.private_key)
+    assert sent[0]["seal_key"] == sealing.public_key_for(config.seal_key)
     assert config.private_key not in json.dumps(sent[0])
+    assert config.seal_key not in json.dumps(sent[0])
     assert config.tls_pins == ["p"]
 
 

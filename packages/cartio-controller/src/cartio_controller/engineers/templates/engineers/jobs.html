@@ -3,16 +3,16 @@
 {% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %} · collectors dial out on 443 and never listen{% endblock %}
 {% block page_title %}Collectors &amp; jobs{% endblock %}
 {% block page_actions %}
-  {# Starting jobs needs the job channel (YAN-1651): discovery from Engagement setup (YAN-1735), health checks (YAN-1725). #}
+  {# Jobs are queued through the API until discovery from Engagement setup (YAN-1735) and health checks (YAN-1725) get their buttons. #}
   <button class="btn" type="button" disabled title="Discovery starts from Engagement setup, which isn't built yet">Start a discovery</button>
-  <button class="btn primary" type="button" disabled title="Health jobs need the job channel, which isn't built yet">Run health check</button>
+  <button class="btn primary" type="button" disabled title="Starting a health check from this screen isn't built yet">Run health check</button>
 {% endblock %}
 {% block content %}
 {% include "engineers/_operations_tabs.html" %}
-<p class="muted">The newest {{ limit }} jobs run by this customer's collectors, for every engagement. Starting a discovery or a health check isn't available yet; it comes with the job channel.</p>
+<p class="muted">The newest {{ limit }} jobs for this customer's collectors, for every engagement. Collectors fetch queued jobs over their outbound connection.</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Jobs">
 <table class="jobs-table">
-  <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Progress</th><th>State</th></tr></thead>
+  <thead><tr><th>Started</th><th>Job</th><th>Collector</th><th>Engagement</th><th>Started by</th><th>Progress</th><th>State</th>{% if can_cancel %}<th><span class="sr-only">Actions</span></th>{% endif %}</tr></thead>
   <tbody>
   {% for run in runs %}
     <tr>
@@ -21,11 +21,17 @@
       <td class="mono">{{ run.collector.name }}</td>
       <td>{{ run.engagement.name|default:"–" }}</td>
       <td>{{ run.started_by|default:"scheduled" }}</td>
+      {% if run.job.is_open %}
+      <td>{% if run.job.status == "queued" %}<span class="muted">Waiting for {{ run.collector.name }}</span>{% else %}{{ run.job.progress_message|default:"Started" }}{% if run.job.progress_percent is not None %} · {{ run.job.progress_percent }}%{% endif %}{% endif %}</td>
+      <td><span class="job-state {{ run.job.status }}">{{ run.job.get_status_display }}</span></td>
+      {% else %}
       <td>{% if run.result %}{% if run.result.device_count %}{{ run.result.device_count }} device{{ run.result.device_count|pluralize }}{% endif %}{% if run.result.error_summary %}{% if run.result.device_count %} · {% endif %}{{ run.result.error_summary }}{% endif %}{% if not run.result.device_count and not run.result.error_summary %}–{% endif %}{% else %}<span class="muted">Waiting for results</span>{% endif %}</td>
       <td>{% if run.result %}<span class="job-state {{ run.result.outcome }}">{{ run.result.get_outcome_display }}</span>{% else %}<span class="job-state running">Running</span>{% endif %}</td>
+      {% endif %}
+      {% if can_cancel %}<td>{% if run.job.is_open %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="cancel"><input type="hidden" name="job" value="{{ run.job.pk }}"><button class="btn danger" type="submit">Cancel</button></form>{% endif %}</td>{% endif %}
     </tr>
   {% empty %}
-    <tr><td colspan="7" class="muted">No jobs yet.</td></tr>
+    <tr><td colspan="{% if can_cancel %}8{% else %}7{% endif %}" class="muted">No jobs yet.</td></tr>
   {% endfor %}
   </tbody>
 </table>
