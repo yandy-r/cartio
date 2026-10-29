@@ -103,9 +103,9 @@ docker compose -f compose.dev.yml exec controller cartio-controller enroll_engin
 
 `./packages` is mounted into the containers, and the controller runs Django's `runserver`, so a
 change to Python code, a template or CSS shows up on the next page load without a rebuild (Python
-changes restart the server in a second or two). Rebuild with `docker compose up -d --build` only
+changes restart the server in a second or two). Rebuild with `docker compose -f compose.dev.yml up -d --build` only
 when dependencies in `pyproject.toml` or `uv.lock` change. For a new migration, run
-`docker compose run --rm migrate`.
+`docker compose -f compose.dev.yml run --rm migrate`.
 
 Startup follows the [database roles](docs/deploy/database.md): `db` creates `cartio_owner` and
 `cartio_app`, `migrate` runs as the owner, and `seed` and the controller run as the app role. The
@@ -128,11 +128,14 @@ A collector can enroll and check in, so the Collectors screen shows it online. I
 yet (the job channel is YAN-1651), so it collects nothing:
 
 ```sh
-token=$(docker compose exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)
-CARTIO_ENROLL_TOKEN=$token docker compose --profile collector up -d collector
+token=$(docker compose -f compose.dev.yml exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)
+CARTIO_ENROLL_TOKEN=$token docker compose -f compose.dev.yml --profile collector up -d collector
 ```
 
-`docker compose -f compose.dev.yml down -v` removes everything, including the database and the master key.
+The database and the master key live in the `db` and `keys` volumes, so the engineer account and
+its authenticator survive `restart`, `down` and `up --build`. `docker compose -f compose.dev.yml
+down -v` removes everything, including the database and the master key, and the engineer then
+needs `enroll_engineer` again.
 
 ### Production example
 
