@@ -83,8 +83,23 @@ Jobs (YAN-1651) are queued with `POST /api/v1/customers/<id>/jobs` (a collector,
 cancelled there or with `.../jobs/<id>/cancel`. `cartio-collector run` long-polls for them over the
 same signed HTTPS (ADR-0009), with credentials sealed to the collector's own key, and uploads
 results in chunks it resumes after a dropped connection. A journal next to the identity file keeps
-a job from running twice. This version runs health jobs; other types are reported as failed until
-they're built.
+a job from running twice. This version runs `health` and `collect` jobs; other types are reported
+as failed until they're built.
+
+A collect job (YAN-1753) names SSH targets in an engagement (host, platform `ios`, `ios-xe` or
+`fortios`, SSH credential). The collector logs in through the read-only driver, masks every output
+and config with the customer's masking key, which reaches it only sealed inside the job, and
+uploads them. The controller scans the result again and stores it as devices, outputs and config
+snapshots, or refuses all of it, fails the job and audit-logs why. Hosted customers only. Until
+engagement setup (YAN-1735) launches one, queue it with:
+
+```sh
+uv run cartio-controller queue_collect --customer Acme --engagement Audit --collector vm01 \
+  --targets targets.json --user <username>
+```
+
+where `targets.json` is a list of `{"host": ..., "platform": "ios", "credential": "<credential
+name>"}`. Host keys must be known to the collector unless you pass `--no-host-key-check`.
 
 Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
 enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every
@@ -136,7 +151,8 @@ authenticator app. Things to try:
 - New customer: the onboarding wizard. The Audit log shows everything above.
 
 A collector can enroll, check in and run jobs, so the Collectors screen shows it online. This
-version runs `health` jobs (queue one with the jobs API) and collects nothing from devices yet:
+version runs `health` jobs (queue one with the jobs API) and `collect` jobs (`queue_collect`, which
+needs devices the collector can reach over SSH):
 
 ```sh
 token=$(docker compose -f compose.dev.yml exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)
@@ -231,6 +247,11 @@ taken over the masked text. If anything that looks like a secret survives maskin
 `UnmaskedSecretError` instead of returning the config; `find_unmasked` runs the same scan on
 configs the controller receives.
 
+The controller holds each customer's masking key (`CustomerDataKey.masking_key_for`), derived from
+the customer's data key so it's never stored on its own and survives a master key rotation. Its
+version (`MASKING_KEY_VERSION`, now `m1`) is in every placeholder. It leaves the controller only
+sealed inside a collect job.
+
 SNMPv1/v2c communities are also judged on the collector, since the controller never sees their
 values. One that is shorter than 8 characters or on a list of well-known defaults (public,
 private, cisco...) gets a marked placeholder, `<masked:<key version>:<digest>:weak>`, and the
@@ -261,8 +282,6 @@ its function and add a `Check` to `CHECKS`; never reuse or rename a check id.
 - Job credentials aren't sealed to the collector's public key yet, and there is no "Require
   uninspected path" setting (ADR-0009). Both come with the job channel (YAN-1651).
 - Check-in returns no jobs yet. Discovery and import arrive in M2.
-- Masking is not wired into collection yet: the collector has no drivers or masking key until
-  discovery (YAN-1656) and credential delivery (YAN-1653) land.
 - Packaging (container image for the VM, Windows build for the laptop) is YAN-1641.
 
 ## Rules from day one

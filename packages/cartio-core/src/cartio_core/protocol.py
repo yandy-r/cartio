@@ -35,6 +35,15 @@ JOB_TYPES = ("discover", "collect", "import_parse", "assess", "health")
 JOB_OUTCOMES = ("succeeded", "partial", "failed")
 
 
+# A collect job's sealed secrets hold, besides its device credentials, one entry of this kind:
+# the customer's masking key, `{"kind": MASKING_KEY_KIND, "version": ..., "secret": base64}`.
+# It travels only that way, so it never leaves the controller unsealed (ADR-0003).
+MASKING_KEY_KIND = "masking_key"
+# The platforms a collect job can reach over SSH, and how many devices one job may name.
+COLLECT_PLATFORMS = ("ios", "ios-xe", "fortios")
+MAX_COLLECT_TARGETS = 500
+
+
 def job_seal_context(job_id: str) -> bytes:
     """What a job's sealed credentials are bound to, so they can't be moved into another job."""
     return f"cartio-job:{job_id}".encode()
@@ -274,4 +283,65 @@ class JobResult:
             sha256=_require(data, "sha256", str),
             device_count=device_count,
             error_summary=_require(data, "error_summary", str),
+        )
+
+
+@dataclass(frozen=True)
+class CollectedDevice:
+    """One device a collect job reached: its masked outputs, by command, and masked config."""
+
+    host: str
+    platform: str
+    outputs: dict[str, str]
+    config: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CollectedDevice:
+        outputs = _require(data, "outputs", dict)
+        if not all(isinstance(k, str) and isinstance(v, str) for k, v in outputs.items()):
+            raise ProtocolError("field outputs must map commands to text")
+        platform = _require(data, "platform", str)
+        if platform not in COLLECT_PLATFORMS:
+            raise ProtocolError(f"field platform must be one of {', '.join(COLLECT_PLATFORMS)}")
+        return cls(
+            host=_require(data, "host", str),
+            platform=platform,
+            outputs=outputs,
+            config=_require(data, "config", str),
+        )
+
+
+@dataclass(frozen=True)
+class CollectFailure:
+    """A device a collect job couldn't reach or read. `error` is the kind of error only."""
+
+    host: str
+    error: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CollectFailure:
+        return cls(host=_require(data, "host", str), error=_require(data, "error", str))
+
+
+@dataclass(frozen=True)
+class CollectResult:
+    """A collect job's uploaded result, as JSON. Everything in it is masked with `key_version`."""
+
+    key_version: str
+    devices: list[CollectedDevice] = field(default_factory=list)
+    failed: list[CollectFailure] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CollectResult:
+        devices = _require(data, "devices", list)
+        failed = _require(data, "failed", list)
+        if not all(isinstance(d, dict) for d in devices + failed):
+            raise ProtocolError("fields devices and failed must be lists of objects")
+        return cls(
+            key_version=_require(data, "key_version", str),
+            devices=[CollectedDevice.from_dict(d) for d in devices],
+            failed=[CollectFailure.from_dict(f) for f in failed],
         )
