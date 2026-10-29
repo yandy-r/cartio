@@ -11,6 +11,8 @@ x-cartio: &cartio
     dockerfile: docker/Dockerfile
     target: dev
   image: cartio-dev
+  env_file:
+    - .env.local
   volumes:
     - keys:/keys
     - ./packages:/app/packages:ro
