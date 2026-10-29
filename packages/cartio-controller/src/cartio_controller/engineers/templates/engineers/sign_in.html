@@ -2,7 +2,7 @@
 {% block title %}Sign in{% endblock %}
 {% block signed_out %}
 <div class="sign-in">
-  <h1>Sign in to Cartio</h1>
+  <h1>Sign in to {{ brand.name }}</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   {% if form.non_field_errors %}<p class="error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
   <form method="post">

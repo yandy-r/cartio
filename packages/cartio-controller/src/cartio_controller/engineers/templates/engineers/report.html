@@ -73,10 +73,10 @@
   <div class="report-pages" aria-label="Report preview">
     {% for page in pages %}
     <article class="report-page">
-      <header class="report-page-head"><span>IT Cloud Network</span><span>{{ customer.name }} · {{ engagement.name }}</span></header>
+      <header class="report-page-head"><span>{{ brand.report }}</span><span>{{ customer.name }} · {{ engagement.name }}</span></header>
       {% for block in page %}
         {% if block.kind == "cover" %}
-        <div class="report-cover"><p class="report-brand">IT Cloud Network</p><h2>{{ block.text }}</h2>{% for line in block.items %}<p>{{ line }}</p>{% endfor %}</div>
+        <div class="report-cover"><p class="report-brand">{{ brand.report }}</p><h2>{{ block.text }}</h2>{% for line in block.items %}<p>{{ line }}</p>{% endfor %}</div>
         {% elif block.kind == "h1" %}<h2 class="report-h1">{{ block.text }}</h2>
         {% elif block.kind == "h2" %}<h4 class="report-h2">{{ block.text }}</h4>
         {% elif block.kind == "finding" %}<h3 class="report-finding"><span class="severity {{ block.severity }}">{{ block.severity|capfirst }}</span> {{ block.text }}</h3>

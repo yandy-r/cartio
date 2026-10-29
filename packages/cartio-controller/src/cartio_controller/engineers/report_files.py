@@ -28,9 +28,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .. import branding
 from . import figures
-
-BRAND = "IT Cloud Network"
 
 # DESIGN.md's tokens, without the "#".
 TEXT = "101828"
@@ -238,7 +237,7 @@ def _docx_body(blocks, media) -> str:
     out = []
     for block in blocks:
         if block.kind == "cover":
-            brand = _run(BRAND, f'<w:color w:val="{ACCENT}"/>')
+            brand = _run(branding.report(), f'<w:color w:val="{ACCENT}"/>')
             out.append(_para(runs=brand, props='<w:spacing w:after="0"/>'))
             out.append(_para(block.text, "Title"))
             out += [_para(line, "Subtitle") for line in block.items]
@@ -292,7 +291,10 @@ def docx(report) -> bytes:
         _XML
         + f"<w:hdr {_W}>"
         + _para(
-            runs=_run(f"{BRAND}  ·  {report.customer.name}  ·  {report.engagement.name}", small)
+            runs=_run(
+                f"{branding.report()}  ·  {report.customer.name}  ·  {report.engagement.name}",
+                small,
+            )
         )
         + "</w:hdr>"
     )
@@ -314,7 +316,7 @@ def docx(report) -> bytes:
         _XML + '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/'
         'metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">'
         f"<dc:title>{escape(_clean(_title(report)))}</dc:title>"
-        f"<dc:creator>{escape(BRAND)}</dc:creator></cp:coreProperties>"
+        f"<dc:creator>{escape(branding.report())}</dc:creator></cp:coreProperties>"
     )
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as package:
@@ -485,7 +487,7 @@ def pdf(report) -> bytes:
         topMargin=margin,
         bottomMargin=margin,
         title=_clean(_title(report)),
-        author=BRAND,
+        author=branding.report(),
         creator="Cartio",
     )
     page_width, page_height = letter
@@ -497,14 +499,14 @@ def pdf(report) -> bytes:
         canvas.rect(0, page_height - 0.5 * inch, page_width, 0.5 * inch, stroke=0, fill=1)
         canvas.setFillColor(_hex("5EC4D6"))
         canvas.setFont("Helvetica-Bold", 11)
-        canvas.drawString(margin, page_height - 0.32 * inch, BRAND)
+        canvas.drawString(margin, page_height - 0.32 * inch, _clean(branding.report()))
         canvas.restoreState()
 
     def page(canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica", 8)
         canvas.setFillColor(_hex(TEXT_2))
-        canvas.drawString(margin, page_height - 0.55 * inch, _clean(BRAND))
+        canvas.drawString(margin, page_height - 0.55 * inch, _clean(branding.report()))
         canvas.drawRightString(
             page_width - margin, page_height - 0.55 * inch, _clean(f"{customer} · {engagement}")
         )

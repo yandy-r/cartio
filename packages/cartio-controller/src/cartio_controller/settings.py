@@ -27,6 +27,9 @@ Everything that differs per environment comes from environment variables:
 - CARTIO_TLS_PROXY: "1" when a reverse proxy terminates TLS in front of the controller and sets
   X-Forwarded-Proto. Only set it if the proxy overwrites that header, and nothing else can reach
   the controller directly.
+- CARTIO_BRAND_NAME: the app name in the sidebar and page titles, "Cartio" by default.
+- CARTIO_BRAND_ORG: the organisation shown under the app name and on assessment reports. Empty by
+  default, and reports then carry the app name.
 """
 
 import os
@@ -82,6 +85,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "cartio_controller.branding.context",
             ],
         },
     },
@@ -122,6 +126,10 @@ SIGN_IN_MAX_FAILURES_PER_ADDRESS = int(
 )
 SIGN_IN_LOCKOUT_MINUTES = int(os.environ.get("CARTIO_SIGN_IN_LOCKOUT_MINUTES", "15"))
 LOGIN_LOG_DAYS = int(os.environ.get("CARTIO_LOGIN_LOG_DAYS", "365"))
+
+# Branding (cartio_controller.branding).
+BRAND_NAME = os.environ.get("CARTIO_BRAND_NAME", "").strip() or "Cartio"
+BRAND_ORG = os.environ.get("CARTIO_BRAND_ORG", "").strip()
 
 # Collectors (ADR-0009). A new collector's one-time enrollment token works for this long.
 ENROLLMENT_TOKEN_HOURS = float(os.environ.get("CARTIO_ENROLLMENT_TOKEN_HOURS", "24"))

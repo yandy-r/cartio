@@ -183,6 +183,10 @@ migration file appearing or changing, with no restart (`docker compose -f compos
 migrate-watch` shows what it applied). To apply them by hand, run
 `docker compose -f compose.dev.yml run --rm migrate`.
 
+To brand the UI and reports, put `CARTIO_BRAND_NAME` and `CARTIO_BRAND_ORG` in a `.env` file next
+to compose.dev.yml (see [Configuration](#configuration)) and run `docker compose -f compose.dev.yml up -d`
+again, which recreates the controller with them.
+
 Startup follows the [database roles](docs/deploy/database.md): `db` creates `cartio_owner` and
 `cartio_app`, `migrate` runs as the owner, and `seed` and the controller run as the app role. The
 master key is generated into the `keys` volume on first start. `seed` creates the staff account
@@ -238,6 +242,7 @@ database and the master key, and monitoring, to suit your site.
    POSTGRES_PASSWORD=...
    CARTIO_OWNER_PASSWORD=...
    CARTIO_APP_PASSWORD=...
+   CARTIO_BRAND_ORG="Example Networks"  # optional: your organisation, on the UI and reports
    ```
 
 3. Start it, then create the first engineer and their enrollment code:
@@ -286,6 +291,8 @@ The controller reads its settings from the environment:
 | `CARTIO_TLS_PROXY` | `1` when a reverse proxy in front of the controller terminates TLS and sets `X-Forwarded-Proto`. Only set it when nothing else can reach the controller. |
 | `CARTIO_ENROLLMENT_TOKEN_HOURS` | How long a new collector's one-time enrollment token works. Defaults to 24. |
 | `CARTIO_TLS_PINS` | Comma-separated pins of the controller's TLS keys (base64 SHA-256 of the SubjectPublicKeyInfo), handed to collectors at enrollment so they can report TLS inspection. Empty: each collector pins the key it sees when it enrolls. |
+| `CARTIO_BRAND_NAME` | The app name in the sidebar, page titles and sign-in page. Defaults to `Cartio`. |
+| `CARTIO_BRAND_ORG` | Your company, agency or team, shown under the app name and on assessment reports (preview, PDF and DOCX). Empty by default, and reports then carry the app name. |
 | `CARTIO_DATA_DIR` | Where the SQLite file and collected static files go. Defaults to the current directory. |
 
 ## Secret masking

@@ -108,7 +108,7 @@ def test_preview_shows_the_pages(client, engineer, assessed):
     engagement, devices, manual = assessed
     page = client.get(_url(engagement)).content.decode()
     assert "Network assessment" in page
-    assert "Prepared by Dana Reyes · IT Cloud Network" in page
+    assert "Prepared by Dana Reyes · Cartio" in page
     assert "October 1, 2026 to October 28, 2026" in page
     # The edited set: the manual finding, the check findings and the engineer's note.
     assert "Spanning tree root on an access switch" in page
@@ -379,3 +379,14 @@ def test_compare_adds_its_changes_to_the_report(client, engineer, two_reviews):
         f"/customers/{q2.customer_id}/engagements/{q2.pk}/compare?baseline={q4.pk}"
     ).content.decode()
     assert "Add to report" not in reversed_page
+
+
+def test_report_carries_the_configured_organisation(client, engineer, assessed, settings):
+    engagement, _devices, _manual = assessed
+    settings.BRAND_ORG = "Example Networks"
+    page = client.get(_url(engagement)).content.decode()
+    assert "Prepared by Dana Reyes · Example Networks" in page
+    assert '<p class="report-brand">Example Networks</p>' in page
+    assert "Example Networks" in _pdf_text(_export(client, engagement, "pdf").content)
+    xml = _docx_text(_export(client, engagement, "docx").content)
+    assert "<dc:creator>Example Networks</dc:creator>" in xml

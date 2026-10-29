@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from django.http import Http404
 from django.utils import timezone
 
+from cartio_controller import branding
 from cartio_controller.collectors import audit
 from cartio_controller.collectors.models import AuditEvent, Collector, Site, Source
 
@@ -28,7 +29,6 @@ from . import report_files, shell
 from .compare import GROUPS, Comparison, ordered
 from .findings import SEVERITIES, SEVERITY_LABELS, Findings
 from .inventory import SOURCE_LABELS
-from .report_files import BRAND
 from .sitemap import SiteMap
 
 READ_ONLY = (
@@ -338,7 +338,8 @@ class Report:
         lines = [self.customer.name, self.engagement.name]
         if self.period():
             lines.append(self.period())
-        by = f"Prepared by {self.prepared_by} · {BRAND}" if self.prepared_by else BRAND
+        brand = branding.report()
+        by = f"Prepared by {self.prepared_by} · {brand}" if self.prepared_by else brand
         lines.append(f"{by} · {_date(self.prepared_on)}")
         return lines
 

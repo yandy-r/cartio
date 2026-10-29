@@ -21,6 +21,9 @@ x-env: &env
   CARTIO_TLS_PROXY: "1"
   CARTIO_DB_APP_ROLE: cartio_app
   CARTIO_MASTER_KEY_FILE: /run/secrets/master_key
+  # Optional branding (README, Configuration).
+  CARTIO_BRAND_NAME: ${CARTIO_BRAND_NAME:-}
+  CARTIO_BRAND_ORG: ${CARTIO_BRAND_ORG:-}
   # The controller and its commands run as the app role (docs/deploy/database.md).
   DATABASE_URL: postgres://cartio_app:${CARTIO_APP_PASSWORD:?set CARTIO_APP_PASSWORD}@db/cartio
 
