@@ -88,7 +88,10 @@ These come from the ADRs and from what the screens are for. Every screen keeps t
 Every screen has the same frame (`Main.dc.html` shows it best):
 
 * **Sidebar, left, fixed width.** In order:
-  * The Cartio mark and "IT Cloud Network".
+  * The Cartio mark, the app name and the organisation under it. Both come from configuration
+    (`CARTIO_BRAND_NAME`, default "Cartio", and `CARTIO_BRAND_ORG`, hidden when empty) so each
+    deployment carries its own name; the prototype shows "IT Cloud Network". Reports carry the
+    organisation, or the app name when none is set.
   * The **global search button** ("Search…  ⌘K").
   * **Workspace:** Customers, Site map, Inventory, Findings, Compare, Report.
   * **Operations:** Collectors & jobs, Integrations, Audit log (the audit tab of Collectors).

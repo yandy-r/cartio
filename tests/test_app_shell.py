@@ -35,7 +35,6 @@ def _engagements(customer, *rows):
 def test_sidebar_has_the_design_sections(client, engineer):
     page = client.get("/").content.decode()
     for text in (
-        "IT Cloud Network",
         "Search…",
         "Workspace",
         "Site map",
@@ -206,3 +205,16 @@ def test_templates_extend_the_shell():
     for template in (TEMPLATES / "engineers").glob("[!_]*.html"):
         if template.name != "base.html":
             assert template.read_text().startswith('{% extends "engineers/base.html" %}')
+
+
+def test_branding_comes_from_settings(client, engineer, settings):
+    page = client.get("/").content.decode()
+    assert '<span class="brand-name">Cartio</span>' in page
+    assert "brand-org" not in page
+
+    settings.BRAND_NAME = "Netscope"
+    settings.BRAND_ORG = "Example Networks"
+    page = client.get("/").content.decode()
+    assert '<span class="brand-name">Netscope</span>' in page
+    assert '<span class="brand-org">Example Networks</span>' in page
+    assert "· Netscope</title>" in page

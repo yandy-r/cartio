@@ -19,6 +19,9 @@ x-env: &env
   CARTIO_DEBUG: "1"
   CARTIO_DB_APP_ROLE: cartio_app
   CARTIO_MASTER_KEY_FILE: /keys/master.key
+  # Branding: set these in .env next to this file (README, Configuration).
+  CARTIO_BRAND_NAME: ${CARTIO_BRAND_NAME:-}
+  CARTIO_BRAND_ORG: ${CARTIO_BRAND_ORG:-}
   # The controller and its commands run as the app role (docs/deploy/database.md).
   DATABASE_URL: postgres://cartio_app:${CARTIO_APP_PASSWORD:-cartio-app-local}@db/cartio
 

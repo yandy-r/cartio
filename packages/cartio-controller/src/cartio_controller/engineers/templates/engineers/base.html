@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Cartio{% endblock %} · Cartio</title>
+  <title>{% block title %}{{ brand.name }}{% endblock %} · {{ brand.name }}</title>
   {# Fonts, styles and htmx come from the controller's static files: no third-party requests. #}
   <link rel="stylesheet" href="{% static 'engineers/css/cartio.css' %}">
   <script src="{% static 'engineers/js/htmx-2.0.4.min.js' %}" defer></script>
@@ -16,7 +16,7 @@
   <nav class="sidebar" aria-label="Main">
     <a class="brand" href="{% url 'engineers:customers' %}">
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="12" stroke="#5EC4D6" stroke-width="2"></circle><circle cx="14" cy="14" r="3" fill="#5EC4D6"></circle><path d="M14 2v6M14 20v6M2 14h6M20 14h6" stroke="#5EC4D6" stroke-width="2"></path></svg>
-      <span><span class="brand-name">Cartio</span><br><span class="brand-org">IT Cloud Network</span></span>
+      <span><span class="brand-name">{{ brand.name }}</span>{% if brand.org %}<br><span class="brand-org">{{ brand.org }}</span>{% endif %}</span>
     </a>
     <button type="button" class="search-button" data-search-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
