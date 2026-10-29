@@ -651,6 +651,9 @@ class AuditEvent(CustomerOwned):
         AUDIT_EXPORTED = "audit.exported", "Audit log exported"
         MASTER_KEY_ROTATED = "master_key.rotated", "Data key rewrapped by a new master key"
         OUTPUTS_STORED = "outputs.stored", "Device outputs stored and parsed"
+        OUTPUTS_REJECTED = "outputs.rejected", "Device outputs refused: unmasked secret"
+        CONFIG_STORED = "config.stored", "Config snapshot stored"
+        CONFIG_REJECTED = "config.rejected", "Config refused: unmasked secret"
         SOURCE_REPARSED = "source.reparsed", "Source outputs parsed again"
         INVENTORY_EXPORTED = "inventory.exported", "Inventory exported"
         ASSESSMENT_RUN = "assessment.run", "Assessment checks run"
@@ -1178,6 +1181,13 @@ class ConfigSnapshot(CustomerOwned):
     content = models.TextField()
     # Of the masked content, so an unchanged config is easy to spot.
     sha256 = models.CharField(max_length=64, editable=False)
+    # A `cartio_core.masking.Platform` value: the masking rules the content was scanned with.
+    platform = models.CharField(max_length=32, blank=True)
+    # The version of the customer's masking key that made the placeholders in `content`.
+    key_version = models.CharField(max_length=16, blank=True)
+    # The first snapshot of the device after a masking key rotation: its placeholders changed
+    # with the key, so they say nothing about a changed secret (ADR-0003 point 5).
+    key_rotated = models.BooleanField(default=False)
     collected_at = models.DateTimeField(auto_now_add=True)
 
     class Meta(CustomerOwned.Meta):

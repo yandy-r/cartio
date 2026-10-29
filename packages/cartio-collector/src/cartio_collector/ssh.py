@@ -19,9 +19,16 @@ import sys
 from collections.abc import Mapping
 from typing import Any, Protocol
 
-from cartio_core.masking import MaskingKey, Platform, mask_config
+from cartio_core.masking import MaskedConfig, MaskingKey, Platform, mask_config
 from cartio_core.parsers import COMMANDS
 from cartio_core.readonly import ReadOnlyDriver
+
+# The command that shows a device's whole running config, by platform.
+CONFIG_COMMANDS = {
+    Platform.IOS: "show running-config",
+    Platform.IOS_XE: "show running-config",
+    Platform.FORTIOS: "show full-configuration",
+}
 
 # FortiOS prompts: "edge-fw1 # ", or "edge-fw1 (root) # " inside a VDOM.
 _FORTIOS_PROMPT = r"^[\w.-]{1,64}(?: \([\w.-]{1,32}\))? [#$]\s*$"
@@ -102,3 +109,8 @@ def collect(driver: ReadOnlyDriver, key: MaskingKey) -> Mapping[str, str]:
         command: mask_config(driver.run(command), driver.platform, key).text
         for command in COMMANDS[driver.platform]
     }
+
+
+def capture_config(driver: ReadOnlyDriver, key: MaskingKey) -> MaskedConfig:
+    """The device's running config, masked with the customer's key before it goes anywhere."""
+    return mask_config(driver.run(CONFIG_COMMANDS[driver.platform]), driver.platform, key)
