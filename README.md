@@ -130,7 +130,10 @@ docker compose -f compose.dev.yml exec controller cartio-controller enroll_engin
 `./packages` is mounted into the containers, and the controller runs Django's `runserver`, so a
 change to Python code, a template or CSS shows up on the next page load without a rebuild (Python
 changes restart the server in a second or two). Rebuild with `docker compose -f compose.dev.yml up -d --build` only
-when dependencies in `pyproject.toml` or `uv.lock` change. For a new migration, run
+when dependencies in `pyproject.toml` or `uv.lock` change. New migrations are applied for you:
+the `migrate-watch` service runs `migrate` as the owner role within a couple of seconds of a
+migration file appearing or changing, with no restart (`docker compose -f compose.dev.yml logs
+migrate-watch` shows what it applied). To apply them by hand, run
 `docker compose -f compose.dev.yml run --rm migrate`.
 
 Startup follows the [database roles](docs/deploy/database.md): `db` creates `cartio_owner` and
