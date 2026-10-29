@@ -24,7 +24,7 @@ from cartio_controller.collectors.models import (
     RoutingNeighbor,
     Source,
 )
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 
 pytestmark = pytest.mark.django_db
 
@@ -143,7 +143,8 @@ def test_a_routing_neighbor_stays_in_its_customer_and_engagement(acme):
 
 def test_on_site_customers_refuse_routing_neighbors(acme):
     device, _ = _device(_engagement(acme))
-    Customer.objects.filter(pk=acme.pk).update(data_mode=Customer.DataMode.ON_SITE)
+    # Past the data mode action: these rows predate the switch, which would delete them.
+    models.QuerySet.update(Customer.objects.filter(pk=acme.pk), data_mode="on_site")
     with pytest.raises(OnSiteDataError):
         RoutingNeighbor.objects.for_customer(acme).create(
             device=device, protocol="ospf", address="192.0.2.1"

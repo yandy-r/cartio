@@ -34,6 +34,7 @@ from cartio_core.checks import (
 from cartio_core.masking import Platform
 from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
+from django.db import models
 from django.utils import timezone
 
 from tests.test_parsers import FIXTURES, LAB, outputs
@@ -239,7 +240,8 @@ def test_results_are_append_only(acme):
 
 def test_on_site_customers_keep_results_in_their_own_store(acme):
     engagement = _engagement(acme)
-    Customer.objects.filter(pk=acme.pk).update(data_mode=Customer.DataMode.ON_SITE)
+    # Past the data mode action: these rows predate the switch, which would delete them.
+    models.QuerySet.update(Customer.objects.filter(pk=acme.pk), data_mode="on_site")
     with pytest.raises(OnSiteDataError):
         run_assessment(engagement)
     assert not AssessmentRun.all_customers.exists()

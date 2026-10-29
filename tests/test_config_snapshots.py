@@ -23,6 +23,7 @@ from cartio_controller.collectors.models import (
 )
 from cartio_controller.engineers.compare import Comparison
 from cartio_core.masking import MaskingKey
+from django.db import models
 
 from tests.test_parsers import outputs
 
@@ -178,7 +179,8 @@ def test_a_key_rotation_alone_is_not_a_config_change(acme):
 
 def test_on_site_customers_cant_store_configs(acme):
     device, source = _device(_engagement(acme, "Q2", (2026, 4, 1)))
-    Customer.objects.filter(pk=acme.pk).update(data_mode=Customer.DataMode.ON_SITE)
+    # Past the data mode action: these rows predate the switch, which would delete them.
+    models.QuerySet.update(Customer.objects.filter(pk=acme.pk), data_mode="on_site")
     source = Source.objects.for_customer(acme).select_related("customer").get(pk=source.pk)
     with pytest.raises(OnSiteDataError):
         store_config(source, device, "ios", "hostname rtr-1\n", key_version="k1")
