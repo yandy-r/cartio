@@ -14,6 +14,7 @@ from cartio_core import sealing
 from cartio_core.protocol import MAX_CHUNK_BYTES, MAX_CHUNKS, job_seal_context
 from cartio_core.protocol import Job as JobMessage
 from cartio_core.protocol import JobResult as ResultMessage
+from cartio_core.sealing import SealError
 from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
@@ -177,8 +178,10 @@ def next_job(collector: Collector, tls_inspected: bool = False) -> dict | None:
                 job.save(update_fields=["status", "started_at"])
             try:
                 return _message(collector, job)
-            except (CredentialNotAvailable, VaultError, ImproperlyConfigured) as exc:
+            except (CredentialNotAvailable, VaultError, ImproperlyConfigured, SealError) as exc:
                 error = str(exc) if isinstance(exc, CredentialNotAvailable) else ""
+                if isinstance(exc, SealError):
+                    error = "The collector's sealing key isn't usable. Enroll it again."
                 _end(
                     job,
                     Job.Status.FAILED,

@@ -72,7 +72,7 @@ services:
         condition: service_completed_successfully
 
   # Optional: docker compose --profile collector up. Needs CARTIO_ENROLL_TOKEN from
-  # create_collector. It only enrolls and checks in until the job channel lands (YAN-1651).
+  # create_collector. It enrolls, checks in and runs the jobs it is sent (health jobs for now).
   collector:
     <<: *cartio
     profiles: ["collector"]

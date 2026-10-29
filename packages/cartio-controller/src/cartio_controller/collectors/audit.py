@@ -115,6 +115,27 @@ def export_events(customer, actor: str, fmt: str):
     return _csv_lines(customer) if fmt == "csv" else _json_items(customer)
 
 
+def streamed(request, chunks):
+    """`chunks` in the form the server streams without reading them all into memory first.
+
+    Under ASGI (uvicorn), Django would consume a plain iterator whole before sending it, so it
+    gets an async one that pulls each chunk in the thread the database work runs in.
+    """
+    from asgiref.sync import sync_to_async
+    from django.core.handlers.asgi import ASGIRequest
+
+    if not isinstance(getattr(request, "_request", request), ASGIRequest):
+        return chunks
+    iterator = iter(chunks)
+    pull = sync_to_async(next, thread_sensitive=True)
+
+    async def stream():
+        while (chunk := await pull(iterator, None)) is not None:
+            yield chunk
+
+    return stream()
+
+
 def _ip(request) -> str | None:
     if request is None:
         return None

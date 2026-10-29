@@ -1013,7 +1013,9 @@ def audit_export(request, customer):
         raise PermissionDenied
     customer, _, _ = shell.resolve(customer)
     chunks = audit.export_events(customer, request.user.get_username(), "csv")
-    response = StreamingHttpResponse(chunks, content_type="text/csv; charset=utf-8")
+    response = StreamingHttpResponse(
+        audit.streamed(request, chunks), content_type="text/csv; charset=utf-8"
+    )
     response["Content-Disposition"] = (
         f'attachment; filename="cartio-audit-customer-{customer.pk}.csv"'
     )

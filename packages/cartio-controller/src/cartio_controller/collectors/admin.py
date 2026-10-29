@@ -96,6 +96,8 @@ class CollectorAdmin(admin.ModelAdmin):
         "tls_inspected",
         # Set by the collector at enrollment; changing it would hand the identity to another key.
         "public_key",
+        # Also set at enrollment: job credentials are sealed to it.
+        "seal_key",
         "enrollment_expires_at",
     ]
     exclude = ["enrollment_token_hash"]

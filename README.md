@@ -136,8 +136,8 @@ authenticator app. Things to try:
   changes to the report, then preview it and export PDF or DOCX.
 - New customer: the onboarding wizard. The Audit log shows everything above.
 
-A collector can enroll and check in, so the Collectors screen shows it online. It gets no jobs
-yet (the job channel is YAN-1651), so it collects nothing:
+A collector can enroll, check in and run jobs, so the Collectors screen shows it online. This
+version runs `health` jobs (queue one with the jobs API) and collects nothing from devices yet:
 
 ```sh
 token=$(docker compose exec -T controller cartio-controller create_collector --customer Lab --name lab-vm | tail -1)

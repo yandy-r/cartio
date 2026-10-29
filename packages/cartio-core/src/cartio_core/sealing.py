@@ -56,7 +56,13 @@ def check_public_key(text: str) -> str:
     raw = _b64decode(text)
     if len(raw) != _KEY_BYTES:
         raise SealError("an X25519 public key is 32 bytes")
-    return _b64encode(X25519PublicKey.from_public_bytes(raw).public_bytes_raw())
+    key = X25519PublicKey.from_public_bytes(raw)
+    try:
+        # A low-order point gives an all-zero shared secret, which `exchange` refuses.
+        X25519PrivateKey.generate().exchange(key)
+    except ValueError as exc:
+        raise SealError("not a usable X25519 public key") from exc
+    return _b64encode(key.public_bytes_raw())
 
 
 def _key(shared: bytes, ephemeral: bytes, recipient: bytes) -> bytes:

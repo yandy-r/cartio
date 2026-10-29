@@ -355,7 +355,9 @@ class AuditEventViewSet(
         customer = self.get_customer()
         chunks = audit.export_events(customer, request.user.get_username(), fmt)
         content_type = "text/csv" if fmt == "csv" else "application/json"
-        response = StreamingHttpResponse(chunks, content_type=f"{content_type}; charset=utf-8")
+        response = StreamingHttpResponse(
+            audit.streamed(request, chunks), content_type=f"{content_type}; charset=utf-8"
+        )
         filename = f"cartio-audit-customer-{customer.pk}.{fmt}"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response

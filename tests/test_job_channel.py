@@ -449,3 +449,26 @@ def test_jobs_screen_cancel_needs_the_permission(client, acme, globex):
     assert response.status_code == 404
     queued.refresh_from_db()
     assert queued.status == "queued"
+
+
+def test_a_low_order_sealing_key_is_refused():
+    with pytest.raises(sealing.SealError):
+        sealing.check_public_key(sealing._b64encode(bytes(32)))
+
+
+def test_audit_export_streams_under_asgi(acme):
+    """Under uvicorn, Django would read a plain iterator whole; the export hands it an async one."""
+    from asgiref.sync import async_to_sync
+    from django.test import AsyncClient
+
+    user = get_user_model().objects.create_user("auditor", password="x", is_staff=True)
+    user.user_permissions.set(Permission.objects.filter(codename="view_auditevent"))
+    client = AsyncClient()
+    async_to_sync(client.aforce_login)(user)
+
+    async def export():
+        response = await client.post(f"/api/v1/customers/{acme.pk}/audit-events/export?type=csv")
+        assert response.status_code == 200 and response.is_async
+        return b"".join([chunk async for chunk in response.streaming_content])
+
+    assert b"audit.exported" in async_to_sync(export)()
