@@ -7,6 +7,11 @@ by reading it back and comparing its SHA-256 before saying it was stored.
 
 A job's result is written once: writing the same job again with the same content is a no-op,
 and with other content is refused, so a retried job never changes what was stored.
+
+When a Hosted customer moves On site (YAN-1712), the controller hands its copy of their network
+data to the collector as one export document. `write_export` keeps it the same way, write-once
+and read back, and returns its checksum: the controller deletes its own copy only when that
+checksum matches the one it takes of the data it is about to delete.
 """
 
 from __future__ import annotations
@@ -20,10 +25,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from cartio_core.protocol import CollectResult
+from cartio_core.protocol import CollectResult, canonical_json
 
 KINDS = ("postgres", "folder")
 TABLE = "cartio_collect_results"
+EXPORTS_TABLE = "cartio_exports"
 
 
 class StoreError(RuntimeError):
@@ -48,9 +54,8 @@ def document(job_id: str, engagement: int | None, result: CollectResult) -> dict
     }
 
 
-def canonical(doc: dict[str, Any]) -> bytes:
-    """The bytes a store's checksum covers: the same for a document read back."""
-    return json.dumps(doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+# The bytes a store's checksum covers: the same for a document read back.
+canonical = canonical_json
 
 
 def _digest(doc: dict[str, Any]) -> str:
@@ -65,6 +70,9 @@ class Store(Protocol):
 
     def write(self, job_id: str, engagement: int | None, result: CollectResult) -> Receipt:
         """Store one job's result and confirm it by reading it back."""
+
+    def write_export(self, job_id: str, doc: dict[str, Any]) -> str:
+        """Store an export from the controller, read it back, and return its checksum."""
 
 
 class FolderStore:
@@ -116,6 +124,28 @@ class FolderStore:
         except OSError as exc:
             raise StoreError(f"Can't write to {self.root}: {exc.strerror or exc}.") from exc
         return Receipt(doc["job"], digest, len(result.devices))
+
+    def write_export(self, job_id: str, doc: dict[str, Any]) -> str:
+        folder = self.root / "exports" / str(uuid.UUID(job_id))
+        path, digest_path = folder / "export.json", folder / "export.sha256"
+        digest = _digest(doc)
+        try:
+            if not digest_path.exists():
+                folder.mkdir(parents=True, exist_ok=True)
+                self._write_file(path, canonical(doc))
+            stored = json.loads(path.read_bytes())
+            if _digest(stored) != digest:
+                if digest_path.exists():
+                    raise StoreError(f"The store already holds another export for job {job_id}.")
+                raise StoreError("What was written to the folder didn't read back the same.")
+            if not digest_path.exists():
+                # Written last: an export with a digest file was stored whole.
+                self._write_file(digest_path, f"{digest}  export.json\n".encode())
+            elif digest_path.read_text(encoding="ascii").split()[0] != digest:
+                raise StoreError(f"{path} doesn't match its checksum.")
+        except OSError as exc:
+            raise StoreError(f"Can't write to {self.root}: {exc.strerror or exc}.") from exc
+        return digest
 
     def _existing(self, doc: dict[str, Any], path: Path, digest_path: Path) -> Receipt:
         stored = json.loads(path.read_bytes())
@@ -211,6 +241,42 @@ class PostgresStore:
         if _digest({**doc, "collected_at": stored["collected_at"]}) != stored_digest:
             raise StoreError(f"The store already holds other content for job {doc['job']}.")
         return Receipt(doc["job"], stored_digest, len(result.devices))
+
+    def write_export(self, job_id: str, doc: dict[str, Any]) -> str:
+        import psycopg
+        from psycopg.types.json import Jsonb
+
+        job = str(uuid.UUID(job_id))
+        digest = _digest(doc)
+        try:
+            with self._connect() as conn:
+                conn.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {EXPORTS_TABLE} (
+                        job uuid PRIMARY KEY,
+                        exported_at timestamptz NOT NULL DEFAULT now(),
+                        document jsonb NOT NULL,
+                        sha256 char(64) NOT NULL
+                    )
+                    """
+                )
+                conn.execute(
+                    f"INSERT INTO {EXPORTS_TABLE} (job, document, sha256) "  # noqa: S608
+                    "VALUES (%s, %s, %s) ON CONFLICT (job) DO NOTHING",
+                    [job, Jsonb(doc), digest],
+                )
+                row = conn.execute(
+                    f"SELECT document, sha256 FROM {EXPORTS_TABLE} WHERE job = %s",  # noqa: S608
+                    [job],
+                ).fetchone()
+        except psycopg.Error as exc:
+            raise StoreError(f"Can't write to the on-site database: {type(exc).__name__}.") from exc
+        stored, stored_digest = row
+        if stored_digest != digest:
+            raise StoreError(f"The store already holds another export for job {job}.")
+        if _digest(stored) != digest:
+            raise StoreError(f"The stored export of job {job} doesn't match its checksum.")
+        return digest
 
 
 def open_store(settings: dict[str, str]) -> Store:

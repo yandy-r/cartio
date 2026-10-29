@@ -35,6 +35,7 @@ urlpatterns = [
     path("api/v1/jobs/<str:job_id>/progress", views.job_progress, name="job-progress"),
     path("api/v1/jobs/<str:job_id>/chunks/<int:index>", views.job_chunk, name="job-chunk"),
     path("api/v1/jobs/<str:job_id>/result", views.job_result, name="job-result"),
+    path("api/v1/jobs/<str:job_id>/export", views.job_export, name="job-export"),
     path("api/v1/", include(router.urls)),
     path("", include("cartio_controller.engineers.urls")),
 ]

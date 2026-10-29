@@ -18,7 +18,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
-from . import audit, jobs
+from . import audit, data_mode, jobs
 from .credentials import create_credential, delete_credential, update_credential
 from .models import (
     AuditEvent,
@@ -30,13 +30,14 @@ from .models import (
     Job,
     Site,
 )
-from .permissions import JobPermissions, ViewModelPermissions
+from .permissions import ChangeDataModePermission, JobPermissions, ViewModelPermissions
 from .runs import RunNotAllowed
 from .serializers import (
     AuditEventSerializer,
     CollectionRunSerializer,
     CredentialSerializer,
     CustomerSerializer,
+    DataModeChangeSerializer,
     EngagementSerializer,
     JobSerializer,
     SiteSerializer,
@@ -134,6 +135,44 @@ class CustomerViewSet(ArchivableViewSet):
 
     def get_queryset(self):
         return self.filter_archived(Customer.objects.all())
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="data-mode",
+        permission_classes=[IsAdminUser, ChangeDataModePermission],
+    )
+    def data_mode(self, request, *args, **kwargs):
+        """Change the customer's data mode (YAN-1712, ADR-0002).
+
+        To On site: `{"to": "on_site", "collector": <id>, "live_view_allowed": false}` queues
+        the export and answers 202 with its job; the mode changes when the collector's store
+        confirms it. To Hosted: `{"to": "hosted", "confirmed_by": "<who approved>"}`.
+        """
+        customer = self.get_object()
+        if customer.is_archived:
+            raise serializers.ValidationError("Restore this customer before changing it.")
+        change = DataModeChangeSerializer(data=request.data)
+        change.is_valid(raise_exception=True)
+        data = change.validated_data
+        actor = request.user.get_username()
+        try:
+            if data["to"] == Customer.DataMode.HOSTED:
+                customer = data_mode.move_hosted(customer, actor, data["confirmed_by"])
+                return Response(self.get_serializer(customer).data)
+            collector = (
+                Collector.objects.for_customer(customer).filter(pk=data["collector"]).first()
+            )
+            if collector is None:
+                raise serializers.ValidationError(
+                    {"collector": "No such collector for this customer."}
+                )
+            job = data_mode.start_on_site(
+                customer, collector, actor, live_view_allowed=data["live_view_allowed"]
+            )
+        except (data_mode.DataModeError, jobs.JobError, RunNotAllowed) as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        return Response(JobSerializer(job).data, status=202)
 
 
 class CustomerScopeMixin:

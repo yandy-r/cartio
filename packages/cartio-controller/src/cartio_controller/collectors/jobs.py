@@ -334,6 +334,11 @@ def finish_job(job: Job, result: ResultMessage) -> Job:
             and outcome != CollectionRunResult.Outcome.FAILED
         ):
             outcome, error, device_count = _store_collected(job, chunks, outcome, error)
+        if job.type == Job.Type.EXPORT:
+            from . import data_mode
+
+            receipt = b"".join(bytes(data) for _, _, data in chunks)
+            outcome, error = data_mode.finish_export(job, receipt, outcome, error)
         failed = outcome == CollectionRunResult.Outcome.FAILED
         _end(
             job,

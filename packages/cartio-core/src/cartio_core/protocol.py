@@ -15,6 +15,7 @@ reconnect doesn't duplicate anything.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -30,7 +31,7 @@ MAX_CHUNK_BYTES = 1024 * 1024
 MAX_CHUNKS = 1024
 
 # The kinds of job a controller can queue (YAN-1651).
-JOB_TYPES = ("discover", "collect", "import_parse", "assess", "health")
+JOB_TYPES = ("discover", "collect", "import_parse", "assess", "health", "export")
 # How a collector says a job ended. Cancelling is the controller's to record.
 JOB_OUTCOMES = ("succeeded", "partial", "failed")
 
@@ -50,8 +51,17 @@ def job_seal_context(job_id: str) -> bytes:
 
 
 def job_path(job_id: str, action: str) -> str:
-    """The path for `action` ("progress", "result" or "chunks/<n>") on one job."""
+    """The path for `action` ("progress", "result", "chunks/<n>" or "export") on one job."""
     return f"{API_PREFIX}/jobs/{job_id}/{action}"
+
+
+def canonical_json(doc: Any) -> bytes:
+    """The one byte form of a JSON document that checksums cover, on both sides.
+
+    A document read back from a store (a file, or PostgreSQL JSONB, which reorders keys) gives
+    the same bytes again, so a checksum taken before writing can be compared after.
+    """
+    return json.dumps(doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
 class ProtocolError(ValueError):
@@ -345,3 +355,24 @@ class CollectResult:
             devices=[CollectedDevice.from_dict(d) for d in devices],
             failed=[CollectFailure.from_dict(f) for f in failed],
         )
+
+
+@dataclass(frozen=True)
+class ExportReceipt:
+    """An export job's uploaded result (YAN-1712): what the on-site store confirmed it holds.
+
+    `sha256` is the checksum of the export as the collector read it back from the store, in
+    `canonical_json` form. The controller deletes its copy only when it matches its own.
+    """
+
+    sha256: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ExportReceipt:
+        digest = _require(data, "sha256", str)
+        if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+            raise ProtocolError("field sha256 must be a SHA-256 hex digest")
+        return cls(sha256=digest)

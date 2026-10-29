@@ -281,6 +281,10 @@ class Session:
     def finish(self, job_id: str, result: JobResult) -> None:
         self.post(job_path(job_id, "result"), result.to_dict())
 
+    def export(self, job_id: str) -> bytes:
+        """An export job's document: the network data the controller hands to the on-site store."""
+        return self.post(job_path(job_id, "export"), {}).content
+
 
 def check_in(config: CollectorConfig, *, http: httpx.Client | None = None) -> CheckInResponse:
     """Check in once."""

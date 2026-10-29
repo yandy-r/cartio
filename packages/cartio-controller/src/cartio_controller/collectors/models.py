@@ -58,6 +58,16 @@ class AppendOnlyError(RuntimeError):
     """A change to a record that may only ever be added, such as an audit event."""
 
 
+class DataModeLocked(RuntimeError):
+    """A plain save or update that would change a customer's data mode (ADR-0002, YAN-1712)."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "A customer's data mode changes only through its data mode action "
+            "(`collectors.data_mode`), which moves its data and logs the change."
+        )
+
+
 def _customer_pk(customer) -> int:
     pk = getattr(customer, "pk", customer)
     if pk is None:
@@ -170,6 +180,18 @@ class CustomerScopedManager(models.Manager.from_queryset(CustomerScopedQuerySet)
         return queryset
 
 
+class CustomerQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        if "data_mode" in kwargs:
+            raise DataModeLocked
+        return super().update(**kwargs)
+
+    def bulk_update(self, objs, fields, *args, **kwargs):
+        if "data_mode" in fields:
+            raise DataModeLocked
+        return super().bulk_update(objs, fields, *args, **kwargs)
+
+
 class Customer(Archivable):
     """An organization we assess. No data, collector or credential crosses customers."""
 
@@ -197,8 +219,11 @@ class Customer(Archivable):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = CustomerQuerySet.as_manager()
+
     class Meta:
         ordering = ["name"]
+        permissions = [("change_data_mode", "Can change a customer's data mode")]
         constraints = [
             models.UniqueConstraint(Lower("name"), name="unique_customer_name_ci"),
             models.CheckConstraint(
@@ -209,6 +234,33 @@ class Customer(Archivable):
 
     def __str__(self) -> str:
         return self.name
+
+    @classmethod
+    def from_db(cls, db, field_names, values, **kwargs):
+        instance = super().from_db(db, field_names, values, **kwargs)
+        instance._saved_data_mode = instance.__dict__.get("data_mode")
+        return instance
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get("update_fields")
+        if not self._state.adding and (update_fields is None or "data_mode" in update_fields):
+            saved = getattr(self, "_saved_data_mode", None)
+            if saved is None:
+                saved = (
+                    Customer.objects.filter(pk=self.pk).values_list("data_mode", flat=True).first()
+                )
+            if saved is not None and saved != self.data_mode:
+                raise DataModeLocked
+        super().save(*args, **kwargs)
+        self._saved_data_mode = self.data_mode
+
+    def _set_data_mode(self, data_mode: str, **fields) -> None:
+        """Change the data mode. Only `data_mode.py` calls this, in the change's transaction."""
+        for name, value in {"data_mode": data_mode, **fields}.items():
+            setattr(self, name, value)
+        # Past CustomerQuerySet.update, which refuses data mode changes everywhere else.
+        models.QuerySet.update(Customer.objects.filter(pk=self.pk), data_mode=data_mode, **fields)
+        self._saved_data_mode = data_mode
 
     @property
     def is_on_site(self) -> bool:
@@ -692,6 +744,15 @@ class AuditEvent(CustomerOwned):
         COMPARE_EXPORTED = "compare.exported", "Config diff exported"
         SITEMAP_EXPORTED = "sitemap.exported", "Site map exported"
         JOB_CANCELLED = "job.cancelled", "Job cancelled"
+        DATA_MODE_CHANGE_STARTED = (
+            "customer.data_mode_change_started",
+            "Data mode change started: exporting to the on-site store",
+        )
+        DATA_MODE_CHANGED = "customer.data_mode_changed", "Data mode changed"
+        DATA_MODE_CHANGE_FAILED = (
+            "customer.data_mode_change_failed",
+            "Data mode change failed: the controller kept its copy",
+        )
 
     at = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=64, choices=Action)
@@ -795,6 +856,8 @@ class Job(CustomerOwned):
         IMPORT_PARSE = "import_parse", "Import"
         ASSESS = "assess", "Assess"
         HEALTH = "health", "Health check"
+        # Hands a customer's network data to its on-site store when it moves On site (YAN-1712).
+        EXPORT = "export", "Export to the on-site store"
 
     class Status(models.TextChoices):
         QUEUED = "queued", "Queued"
@@ -876,8 +939,9 @@ class JobChunk(CustomerOwned):
     @property
     def network_data(self) -> bool:
         # Results hold device data, so an On site customer's stay on their own store
-        # (ADR-0002). A health check's is the collector's own health, which the controller keeps.
-        return self.job.type != Job.Type.HEALTH
+        # (ADR-0002). A health check's is the collector's own health, which the controller keeps,
+        # and an export's is the store's receipt: a checksum.
+        return self.job.type not in (Job.Type.HEALTH, Job.Type.EXPORT)
 
 
 # The normalized device model (YAN-1656, ADR-0008). Every record belongs to one engagement, so

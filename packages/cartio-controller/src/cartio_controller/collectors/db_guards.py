@@ -34,6 +34,69 @@ END;
 $$;
 """
 
+# Moving a customer On site (YAN-1712) deletes their network data from the controller, including
+# rows of append-only tables, once the on-site store confirmed it holds the export. The app role
+# can't delete those rows, and the trigger refuses everyone else, so the deletion goes through
+# `cartio_purge_network_rows`: it runs as the owner (SECURITY DEFINER), only for these tables,
+# only for a customer that is On site, and only with that customer's `customer.data_mode_changed`
+# audit event, which can't be deleted afterwards. While it runs, the trigger lets the owner
+# delete that customer's rows and nothing else.
+PURGEABLE_TABLES = (
+    "collectors_source",
+    "collectors_rawoutput",
+    "collectors_configsnapshot",
+    "collectors_assessmentrun",
+    "collectors_checkresult",
+)
+PURGE_FUNCTION = "cartio_purge_network_rows"
+
+_APPEND_ONLY_WITH_PURGE = """
+CREATE OR REPLACE FUNCTION cartio_append_only() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE'
+        AND current_setting('cartio.purge_customer', true) = OLD.customer_id::text
+        AND EXISTS (
+            SELECT 1 FROM pg_tables WHERE schemaname = TG_TABLE_SCHEMA
+            AND tablename = TG_TABLE_NAME AND tableowner = current_user
+        ) THEN
+        RETURN OLD;
+    END IF;
+    RAISE EXCEPTION '% rows can''t be changed or deleted.', TG_TABLE_NAME
+        USING ERRCODE = 'restrict_violation';
+END;
+$$;
+"""
+
+_PURGE = """
+CREATE OR REPLACE FUNCTION cartio_purge_network_rows(
+    p_table text, p_customer bigint, p_event bigint
+) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, {schema}, pg_temp AS $$
+DECLARE
+    deleted bigint;
+BEGIN
+    IF NOT p_table = ANY (ARRAY[{tables}]) THEN
+        RAISE EXCEPTION '% isn''t network data.', p_table USING ERRCODE = 'restrict_violation';
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM collectors_customer WHERE id = p_customer AND data_mode = 'on_site'
+    ) OR NOT EXISTS (
+        SELECT 1 FROM collectors_auditevent WHERE id = p_event AND customer_id = p_customer
+        AND action = 'customer.data_mode_changed'
+    ) THEN
+        RAISE EXCEPTION 'Only a customer that moved On site has its network data deleted.'
+            USING ERRCODE = 'restrict_violation';
+    END IF;
+    PERFORM set_config('cartio.purge_customer', p_customer::text, true);
+    EXECUTE format('DELETE FROM %I WHERE customer_id = $1', p_table) USING p_customer;
+    GET DIAGNOSTICS deleted = ROW_COUNT;
+    PERFORM set_config('cartio.purge_customer', '', true);
+    RETURN deleted;
+END;
+$$;
+"""
+
 IMMUTABLE_TRIGGER = "cartio_customer_id_immutable"
 APPEND_ONLY_TRIGGER = "cartio_append_only"
 
@@ -106,3 +169,20 @@ def make_append_only(schema_editor, table: str) -> None:
 def unmake_append_only(schema_editor, table: str) -> None:
     if _postgres(schema_editor):
         schema_editor.execute(f"DROP TRIGGER IF EXISTS {APPEND_ONLY_TRIGGER} ON {table}")
+
+
+def create_purge_function(schema_editor) -> None:
+    if _postgres(schema_editor):
+        with schema_editor.connection.cursor() as cursor:
+            cursor.execute("SELECT current_schema()")
+            schema = schema_editor.connection.ops.quote_name(cursor.fetchone()[0])
+        tables = ", ".join(f"'{table}'" for table in PURGEABLE_TABLES)
+        schema_editor.execute(_APPEND_ONLY_WITH_PURGE, params=None)
+        schema_editor.execute(_PURGE.format(schema=schema, tables=tables), params=None)
+
+
+def drop_purge_function(schema_editor) -> None:
+    if _postgres(schema_editor):
+        schema_editor.execute(f"DROP FUNCTION IF EXISTS {PURGE_FUNCTION}(text, bigint, bigint)")
+        # Back to refusing every change.
+        schema_editor.execute(_FUNCTIONS, params=None)

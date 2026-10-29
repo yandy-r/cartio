@@ -12,6 +12,14 @@ log, collection runs and their results). It can delete from the sign-in log, whi
 `purge_login_events` needs for retention, but it can't change an entry there either. The
 migration history is read-only to it.
 
+One exception, and only through the database's own rules: when a customer moves from Hosted to
+On site (YAN-1712), the controller deletes that customer's append-only network data (sources,
+device outputs, configs, assessment runs and check results) after the on-site store confirmed
+the export. It does so through `cartio_purge_network_rows`, a function the migration installs
+that runs as the owner. The function refuses any other table, a customer that isn't On site,
+and a call without that customer's `customer.data_mode_changed` audit event, which can never be
+deleted. The audit log and collection runs are never deleted.
+
 ## Set up the roles
 
 Run this once as a PostgreSQL superuser, with your own passwords:

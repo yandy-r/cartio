@@ -42,7 +42,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         # admin action. It can't be changed with a plain update.
         if self.instance is not None and value != self.instance.data_mode:
             raise serializers.ValidationError(
-                "Data mode is set when the customer is created and can't be changed here."
+                "Data mode is set when the customer is created. Change it with the customer's "
+                "data-mode action, which moves its data and logs the change."
             )
         return value
 
@@ -320,3 +321,32 @@ class JobSerializer(serializers.ModelSerializer):
             "result_id",
             "result_size",
         ]
+
+    def validate_type(self, value):
+        if value == Job.Type.EXPORT:
+            raise serializers.ValidationError(
+                "An export is started by changing the customer's data mode, not queued directly."
+            )
+        return value
+
+
+class DataModeChangeSerializer(serializers.Serializer):
+    """A data mode change (YAN-1712): to On site through a collector, or back to Hosted."""
+
+    to = serializers.ChoiceField(choices=Customer.DataMode.choices)
+    # To On site: the collector whose on-site store takes the export.
+    collector = serializers.UUIDField(required=False)
+    live_view_allowed = serializers.BooleanField(required=False, default=False)
+    # To Hosted: who at the customer approved keeping their network data on the controller.
+    confirmed_by = serializers.CharField(required=False, allow_blank=True, max_length=150)
+
+    def validate(self, attrs):
+        if attrs["to"] == Customer.DataMode.ON_SITE and "collector" not in attrs:
+            raise serializers.ValidationError(
+                {"collector": "Name the collector whose on-site store takes the export."}
+            )
+        if attrs["to"] == Customer.DataMode.HOSTED and not attrs.get("confirmed_by", "").strip():
+            raise serializers.ValidationError(
+                {"confirmed_by": "Name who at the customer approved moving to Hosted."}
+            )
+        return attrs

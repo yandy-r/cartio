@@ -1,4 +1,4 @@
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import BasePermission, DjangoModelPermissions
 
 
 class ArchivableModelPermissions(DjangoModelPermissions):
@@ -48,3 +48,14 @@ class JobPermissions(ViewModelPermissions):
                 return False
             return request.user.has_perms(self.get_required_permissions("PATCH", view.model))
         return super().has_permission(request, view)
+
+
+class ChangeDataModePermission(BasePermission):
+    """Changing a customer's data mode moves or deletes its network data: its own permission."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.has_perm("collectors.change_data_mode")
+        )
