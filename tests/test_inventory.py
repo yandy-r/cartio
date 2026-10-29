@@ -15,6 +15,7 @@ from cartio_controller.collectors.models import (
     Source,
 )
 from cartio_core.parsers import ParseError
+from django.db import models
 
 from tests.test_parsers import LAB, outputs
 
@@ -373,7 +374,8 @@ def test_on_site_customers_keep_device_data_on_site():
 def test_on_site_customers_cant_store_or_reparse_outputs(acme):
     source = _source(acme)
     _store(source, "core-sw1")
-    Customer.objects.filter(pk=acme.pk).update(data_mode=Customer.DataMode.ON_SITE)
+    # Past the data mode action: these rows predate the switch, which would delete them.
+    models.QuerySet.update(Customer.objects.filter(pk=acme.pk), data_mode="on_site")
     acme.refresh_from_db()
     source = Source.objects.for_customer(acme).get(pk=source.pk)
     with pytest.raises(OnSiteDataError):

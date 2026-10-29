@@ -37,6 +37,7 @@ from cartio_core.protocol import (
     CollectedDevice,
     CollectFailure,
     CollectResult,
+    ExportReceipt,
     Job,
     JobResult,
     job_seal_context,
@@ -185,6 +186,33 @@ def _collect_on_site(job: Job, on_site: OnSite | None, report: Report) -> Outcom
     return Outcome(outcome, b"", receipt.devices, summary)
 
 
+def _export(job: Job, session: Session, on_site: OnSite | None, report: Report) -> Outcome:
+    """Write the controller's copy of the customer's network data to the on-site store (YAN-1712).
+
+    The controller deletes its copy only after this reports the checksum of what the store
+    holds, read back, and it matches the controller's own. The export is checked against the
+    checksum the job names before anything is written.
+    """
+    if on_site is None:
+        return Outcome(
+            "failed",
+            error_summary="This collector has no on-site store. Set one up with "
+            "'cartio-collector store set'.",
+        )
+    report("Fetching the export", 10)
+    data = session.export(job.id)
+    if hashlib.sha256(data).hexdigest() != job.params.get("sha256"):
+        return Outcome(
+            "failed", error_summary="The export didn't arrive whole: its checksum doesn't match."
+        )
+    report("Writing the export to the on-site store", 60)
+    try:
+        digest = on_site.store.write_export(job.id, json.loads(data))
+    except StoreError as exc:
+        return Outcome("failed", error_summary=f"Nothing was stored: {exc}")
+    return Outcome("succeeded", json.dumps(ExportReceipt(digest).to_dict()).encode())
+
+
 def _masking_key(credentials: list[dict[str, Any]]) -> MaskingKey:
     for entry in credentials:
         if entry.get("kind") == MASKING_KEY_KIND:
@@ -330,6 +358,8 @@ class Worker:
             if job.type == "collect" and (job.params.get("on_site") or self.on_site):
                 # On site either way: the job's or this collector's. Nothing is uploaded.
                 outcome = _collect_on_site(job, self.on_site, report)
+            elif job.type == "export":
+                outcome = _export(job, self.session, self.on_site, report)
             elif handler is None:
                 outcome = Outcome(
                     "failed", error_summary=f"This collector version can't run {job.type} jobs."

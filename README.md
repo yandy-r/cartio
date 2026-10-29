@@ -122,7 +122,31 @@ per job with the masked result as JSONB. A folder store gets `engagement-<id>/<j
 and its `result.sha256`. Both read back what they wrote and check its SHA-256 before the job is
 reported as stored. Secrets are prompted for, can be replaced or removed but never shown, and
 every change and use is appended to `collector.site-audit.log` next to the identity file. Queue
-the job with `queue_collect` without `--targets`. Changing a customer's data mode is YAN-1712.
+the job with `queue_collect` without `--targets`.
+
+### Changing a customer's data mode
+
+A customer's data mode changes only through its own action (YAN-1712, ADR-0002), never through a
+plain update, the admin or the ORM: `POST /api/v1/customers/<id>/data-mode`, which needs the
+`collectors.change_data_mode` permission. Every step is in the customer's audit log
+(`customer.data_mode_change_started`, `customer.data_mode_changed` or
+`customer.data_mode_change_failed`, with who, from and to).
+
+* **Hosted to On site:** `{"to": "on_site", "collector": "<id>", "live_view_allowed": false}`.
+  Set up the collector's on-site store first. The controller builds an export of the customer's
+  network data (devices, interfaces, links, neighbors, outputs, configs, check results, findings
+  and their sources), takes its SHA-256 and queues an `export` job (answer 202). The collector
+  fetches the export, checks it against that checksum, writes it to the store
+  (`exports/<job>/export.json` and `export.sha256` in a folder, or the `cartio_exports` table),
+  reads it back and reports the store's checksum. Only when that matches, and the controller's
+  data still gives the same checksum, does the customer switch to On site and the controller
+  delete its copy, with its credentials, data key and collected job results. Otherwise nothing is
+  deleted, the job fails with the reason, and the change can simply be started again.
+  Credentials aren't exported: add them on the collector (`cartio-collector credential add`).
+* **On site to Hosted:** `{"to": "hosted", "confirmed_by": "<who at the customer approved>"}`.
+  Nothing moves: what was collected On site stays in the customer's store, and only what is
+  collected afterwards reaches the controller. Live view is switched off, and the collector
+  needs setting up again without a store, since a collector with a store refuses Hosted jobs.
 
 Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
 enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every
@@ -237,10 +261,11 @@ signed-in staff session (sign in at `/sign-in`, with the authenticator code), wr
 
 | Path | What it does |
 | -- | -- |
-| `customers` | List (add `?archived=true` to include archived) and create. `data_mode` is `hosted` (default) or `on_site` (ADR-0002). `live_view_allowed` (default false) lets engineers see an On site customer through the controller (ADR-0005). Neither can be changed after creation. |
+| `customers` | List (add `?archived=true` to include archived) and create. `data_mode` is `hosted` (default) or `on_site` (ADR-0002). `live_view_allowed` (default false) lets engineers see an On site customer through the controller (ADR-0005). Neither can be changed by an update: data mode has its own action, below. |
 | `customers/<id>` | Read and update. |
 | `customers/<id>/engagements`, `customers/<id>/sites` | List and create, always within that customer. A site's `seed_hints` are IP addresses, networks no wider than /16 (IPv4) or /48 (IPv6), or host names. |
 | `.../<id>/archive`, `.../<id>/restore` | Archive or restore any of the above. Archived records, and everything under an archived customer, are read-only. Nothing is deleted, through the API or the admin. |
+| `customers/<id>/data-mode` | POST: change the customer's data mode (see [Changing a customer's data mode](#changing-a-customers-data-mode)). The only way network data leaves the controller. |
 
 The collector only accepts plain `http` for a controller on the same machine. Any other controller URL must use `https`.
 

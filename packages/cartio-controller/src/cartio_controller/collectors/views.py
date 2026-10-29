@@ -22,14 +22,14 @@ from cartio_core.sealing import check_public_key as check_seal_key
 from cartio_core.signing import SignatureError, check_public_key
 from django.conf import settings
 from django.db import connection, transaction
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from . import audit, jobs
+from . import audit, data_mode, jobs
 from .auth import NotAuthenticated, signed_collector
-from .models import AuditEvent, Collector, OnSiteDataError
+from .models import AuditEvent, Collector, Job, OnSiteDataError
 from .models import CheckIn as CheckInRecord
 
 
@@ -269,3 +269,24 @@ def job_result(request: HttpRequest, job_id: str) -> JsonResponse:
     except jobs.ResultIncomplete as exc:
         return JsonResponse({"error": str(exc), "missing": exc.missing}, status=409)
     return JsonResponse({"status": job.status, "result_id": str(job.result_id)})
+
+
+@csrf_exempt
+@require_POST
+def job_export(request: HttpRequest, job_id: str) -> HttpResponse:
+    """An open export job's document (YAN-1712): the customer's network data, built now.
+
+    The collector checks it against the checksum in the job before writing it, and the
+    controller checks the store's checksum against the data again before deleting anything.
+    """
+    job, _, error = _job_request(request, job_id)
+    if error:
+        return error
+    if job.type != Job.Type.EXPORT:
+        return _error(404, "this job has no export")
+    if not job.is_open:
+        return _closed(job)
+    customer = job.collector.customer
+    if customer.is_on_site:
+        return _error(409, "this customer is already On site")
+    return HttpResponse(data_mode.export_bytes(customer), content_type="application/json")
