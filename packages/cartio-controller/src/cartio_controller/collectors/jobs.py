@@ -89,7 +89,7 @@ def queue_job(
     if job_type not in Job.Type.values:
         raise JobError(f"Unknown job type {job_type!r}.")
     params = params or {}
-    if len(json.dumps(params)) > Job.MAX_PARAMS_BYTES:
+    if job_type != Job.Type.COLLECT and len(json.dumps(params)) > Job.MAX_PARAMS_BYTES:
         raise JobError("The job's settings are too large.")
     try:
         ids = list(dict.fromkeys(str(uuid.UUID(str(c))) for c in credential_ids))
@@ -103,6 +103,9 @@ def queue_job(
             ids = collect.target_credentials(collector.customer, params)
         except ValueError as exc:
             raise JobError(str(exc)) from exc
+        # Measured cleaned: the most targets, at their longest, fit.
+        if len(json.dumps(params)) > collect.MAX_PARAMS_BYTES:
+            raise JobError("The job's settings are too large.")
     with transaction.atomic():
         # Another customer's credential looks the same as a made-up one.
         if collector.scoped(Credential).filter(pk__in=ids).count() != len(ids):

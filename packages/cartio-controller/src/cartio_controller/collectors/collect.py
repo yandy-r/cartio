@@ -37,6 +37,8 @@ from .models import (
     Source,
 )
 
+# A collect job's cleaned settings: room for the most targets with the longest host names.
+MAX_PARAMS_BYTES = 256 * 1024
 # The credentials a collect job can log in with.
 SSH_KINDS = (Credential.Kind.SSH_PASSWORD, Credential.Kind.SSH_KEY)
 
@@ -64,7 +66,8 @@ def collect_params(customer: Customer, engagement, params: dict) -> dict:
         host = target.get("host")
         if not isinstance(host, str) or not 0 < len(host) <= 253 or host != host.strip():
             raise ValueError("Each target needs a host name or address.")
-        if any(c.isspace() or c in "@/;" for c in host):
+        # A leading "-" would reach the ssh command line as an option.
+        if host.startswith("-") or any(c.isspace() or c in "@/;" for c in host):
             raise ValueError(f"{host!r} isn't a host name or address.")
         platform = target.get("platform")
         if platform not in COLLECT_PLATFORMS:

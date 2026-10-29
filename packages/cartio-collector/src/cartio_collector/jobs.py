@@ -95,6 +95,9 @@ def _collect(job: Job, credentials: list[dict[str, Any]], report: Report) -> Out
         host = target["host"]
         report(f"Collecting device {number} of {len(targets)}", 100 * (number - 1) // len(targets))
         try:
+            if host.startswith("-"):
+                # It would reach the ssh command line as an option.
+                raise ValueError("not a host name")
             outputs, config = _collect_one(target, by_id[target["credential"]], key, verify)
         except Exception as exc:  # noqa: BLE001 (one device failing never stops the others)
             failed.append(CollectFailure(host, type(exc).__name__))

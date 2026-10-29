@@ -341,6 +341,8 @@ def test_queueing_a_collect_job_refuses_what_it_cant_run(acme, audit_engagement)
     assert "platform" in refused(params=bad)
     bad = _targets(ssh, "admin@" + HOST)
     assert "isn't a host" in refused(params=bad)
+    assert "isn't a host" in refused(params=_targets(ssh, "-oProxyCommand=x"))
+
     assert not Job.all_customers.exists()
 
 
@@ -370,3 +372,10 @@ def test_queue_collect_command(acme, audit_engagement, tmp_path):
     targets.write_text(json.dumps([{"host": HOST, "platform": "ios", "credential": "nope"}]))
     with pytest.raises(CommandError, match="no credential"):
         call_command("queue_collect", *common, "--targets", str(targets), "--user", "engineer")
+
+
+def test_the_most_targets_with_the_longest_host_names_fit(acme, audit_engagement):
+    vm = Enrolled(acme)
+    longest = "h" * 63 + "." + "a" * 63 + "." + "b" * 63 + "." + "c" * 61
+    job = _queue(vm, audit_engagement, _ssh(acme), *[longest] * 500)
+    assert len(job.params["targets"]) == 500
