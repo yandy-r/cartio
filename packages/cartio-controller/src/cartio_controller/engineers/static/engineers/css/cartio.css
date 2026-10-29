@@ -426,9 +426,9 @@ code.command { display: block; margin-top: 10px; padding: 10px 12px; font-size: 
 @keyframes toast-out { 0%, 85% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 .banner.warning { background: #FFFBEB; border-color: #FCD34D; color: #713F12; }
-.add-collector { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.add-collector, .health-check { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .add-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-.add-head h2 { margin: 0; }
+.add-head h2, .health-check h2 { margin: 0; }
 .add-steps { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; margin: 0; padding: 0; font-size: 13px;
              color: var(--text-2); }
 .add-steps li { display: flex; align-items: center; gap: 8px; }

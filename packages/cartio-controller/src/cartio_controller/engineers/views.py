@@ -38,6 +38,7 @@ from cartio_controller.collectors.models import (
     Job,
     Site,
 )
+from cartio_controller.collectors.runs import RunNotAllowed
 
 from . import compare as compare_screen
 from . import findings as findings_screen
@@ -940,10 +941,30 @@ def jobs(request, customer, engagement=None):
     if not _can_see_jobs(request.user):
         raise PermissionDenied
     customer, engagements, engagement = shell.resolve(customer, engagement)
+    here = shell.screen_url("jobs", customer, engagement)
     can_cancel = request.user.has_perm("collectors.change_job")
+    # The same permission queuing a job through the API asks for.
+    can_start = request.user.has_perm("collectors.add_job") and not customer.is_archived
+    if request.method == "POST" and request.POST.get("action") == "health":
+        if not can_start:
+            raise PermissionDenied
+        collector_id = _uuid(request.POST.get("collector", ""))
+        collector = operations.find_collector(customer, collector_id)
+        if collector is None:
+            raise Http404
+        try:
+            # A health check is about the collector, not an engagement's network.
+            job_channel.queue_job(collector, Job.Type.HEALTH, request.user.get_username())
+        except (job_channel.JobError, RunNotAllowed) as exc:
+            messages.error(request, f"{collector.name}: {exc}")
+        else:
+            messages.success(
+                request, f"Health check queued for {collector.name} · logged in the audit log"
+            )
+        return redirect(here)
     if request.method == "POST":
         if request.POST.get("action") != "cancel":
-            return HttpResponseBadRequest("Cancel a job.")
+            return HttpResponseBadRequest("Start a health check or cancel a job.")
         if not can_cancel:
             raise PermissionDenied
         job_id = _uuid(request.POST.get("job", ""))
@@ -956,7 +977,7 @@ def jobs(request, customer, engagement=None):
             messages.error(request, str(exc))
         else:
             messages.success(request, "Job cancelled · logged in the audit log")
-        return redirect(shell.screen_url("jobs", customer, engagement))
+        return redirect(here)
     runs = (
         CollectionRun.objects.for_customer(customer)
         .select_related("collector", "engagement", "result", "job")
@@ -966,7 +987,15 @@ def jobs(request, customer, engagement=None):
         request,
         "jobs",
         "engineers/jobs.html",
-        {"runs": runs, "limit": JOBS_SHOWN, "can_cancel": can_cancel},
+        {
+            "runs": runs,
+            "limit": JOBS_SHOWN,
+            "can_cancel": can_cancel,
+            "can_start": can_start,
+            "starting": can_start and "health" in request.GET,
+            "ready": operations.ready_collectors(customer) if can_start else [],
+            "here": here,
+        },
         customer,
         engagements,
         engagement,

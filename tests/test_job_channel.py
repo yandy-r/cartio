@@ -451,6 +451,103 @@ def test_jobs_screen_cancel_needs_the_permission(client, acme, globex):
     assert queued.status == "queued"
 
 
+def _jobs_engineer(client, *codenames):
+    user = _engineer()
+    user.user_permissions.add(
+        *Permission.objects.filter(codename__in=["view_collectionrun", *codenames])
+    )
+    _signed_in(client, user)
+    return user
+
+
+def test_run_health_check_from_the_jobs_screen(client, acme):
+    """YAN-1725: an engineer queues a health job, the collector runs it, Jobs shows the outcome."""
+    user = _jobs_engineer(client, "add_job")
+    vm = Enrolled(acme)
+    gone = Enrolled(acme, "gone-vm").collector
+    Collector.objects.for_customer(acme).filter(pk=gone.pk).update(revoked_at=timezone.now())
+    Collector.objects.for_customer(acme).create(name="new-vm")  # not enrolled yet
+    url = f"/customers/{acme.pk}/jobs"
+
+    page = client.get(url).content.decode()
+    assert f'href="{url}?health=1"' in page
+    card = client.get(f"{url}?health=1").content.decode()
+    assert f'value="{vm.collector.pk}">vm01' in card
+    assert "gone-vm" not in card and "new-vm" not in card
+
+    response = client.post(url, {"action": "health", "collector": str(vm.collector.pk)})
+    assert response.status_code == 302 and response.url == url
+    job = Job.objects.for_customer(acme).get()
+    assert (job.type, job.status, job.created_by, job.engagement) == (
+        "health",
+        "queued",
+        user.username,
+        None,
+    )
+    event = AuditEvent.objects.for_customer(acme).get(action="run.started")
+    assert event.actor == user.username and event.object_id == str(job.run.pk)
+    page = client.get(url).content.decode()
+    assert "Health check queued for vm01" in page and "Waiting for vm01" in page
+
+    # The collector picks it up and reports back; Jobs shows how it ended.
+    assert [j["id"] for j in vm.poll(client)["jobs"]] == [str(job.pk)]
+    assert vm.chunk(client, str(job.pk), 0, b"{}").status_code == 200
+    assert vm.result(client, str(job.pk), [b"{}"]).status_code == 200
+    page = client.get(url).content.decode()
+    assert '<span class="job-state succeeded">' in page
+
+
+def test_run_health_check_needs_the_permission(client, acme):
+    _jobs_engineer(client)
+    vm = Enrolled(acme)
+    url = f"/customers/{acme.pk}/jobs"
+    page = client.get(url).content.decode()
+    assert "Run health check" not in page
+    assert "Queue health check" not in client.get(f"{url}?health=1").content.decode()
+    response = client.post(url, {"action": "health", "collector": str(vm.collector.pk)})
+    assert response.status_code == 403
+    assert not Job.objects.for_customer(acme).exists()
+    assert not AuditEvent.objects.for_customer(acme).exists()
+
+
+def test_run_health_check_stays_within_the_customer(client, acme, globex):
+    _jobs_engineer(client, "add_job")
+    theirs = Enrolled(globex, "globex-vm")
+    assert "globex-vm" not in client.get(f"/customers/{acme.pk}/jobs?health=1").content.decode()
+    for collector in (str(theirs.collector.pk), "nope", ""):
+        response = client.post(
+            f"/customers/{acme.pk}/jobs", {"action": "health", "collector": collector}
+        )
+        assert response.status_code == 404
+    assert not Job.objects.for_customer(globex).exists()
+    assert not Job.objects.for_customer(acme).exists()
+
+
+def test_run_health_check_on_a_revoked_collector_says_why(client, acme):
+    _jobs_engineer(client, "add_job")
+    vm = Enrolled(acme)
+    Collector.objects.for_customer(acme).filter(pk=vm.collector.pk).update(
+        revoked_at=timezone.now()
+    )
+    url = f"/customers/{acme.pk}/jobs"
+    assert "has no enrolled collector yet" in client.get(f"{url}?health=1").content.decode()
+    response = client.post(
+        url, {"action": "health", "collector": str(vm.collector.pk)}, follow=True
+    )
+    assert "vm01: The collector was revoked." in response.content.decode()
+    assert not Job.objects.for_customer(acme).exists()
+
+
+def test_no_health_check_for_an_archived_customer(client, acme):
+    _jobs_engineer(client, "add_job")
+    vm = Enrolled(acme)
+    Customer.objects.filter(pk=acme.pk).update(archived_at=timezone.now())
+    url = f"/customers/{acme.pk}/jobs"
+    assert "Run health check" not in client.get(url).content.decode()
+    response = client.post(url, {"action": "health", "collector": str(vm.collector.pk)})
+    assert response.status_code == 403
+
+
 def test_a_low_order_sealing_key_is_refused():
     with pytest.raises(sealing.SealError):
         sealing.check_public_key(sealing._b64encode(bytes(32)))

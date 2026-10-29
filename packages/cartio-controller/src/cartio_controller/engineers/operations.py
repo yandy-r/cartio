@@ -18,7 +18,13 @@ _A = AuditEvent.Action
 AUDIT_KINDS = {
     "jobs": (
         "Jobs",
-        [_A.RUN_STARTED, _A.RUN_FINISHED, _A.OUTPUTS_STORED, _A.SOURCE_REPARSED],
+        [
+            _A.RUN_STARTED,
+            _A.RUN_FINISHED,
+            _A.JOB_CANCELLED,
+            _A.OUTPUTS_STORED,
+            _A.SOURCE_REPARSED,
+        ],
     ),
     "collectors": (
         "Collectors",
@@ -57,6 +63,15 @@ def find_collector(customer, collector_id):
         Collector.objects.for_customer(customer).filter(pk=collector_id).first()
         if collector_id
         else None
+    )
+
+
+def ready_collectors(customer) -> list:
+    """The customer's collectors that can take a job: enrolled and not revoked."""
+    return list(
+        Collector.objects.for_customer(customer)
+        .filter(enrolled_at__isnull=False, revoked_at__isnull=True)
+        .order_by("name")
     )
 
 

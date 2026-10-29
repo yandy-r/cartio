@@ -3,12 +3,36 @@
 {% block page_context %}{{ customer.name }}{% if engagement %} · {{ engagement.name }}{% endif %} · collectors dial out on 443 and never listen{% endblock %}
 {% block page_title %}Collectors &amp; jobs{% endblock %}
 {% block page_actions %}
-  {# Jobs are queued through the API until discovery from Engagement setup (YAN-1735) and health checks (YAN-1725) get their buttons. #}
+  {# Discovery gets its button with Engagement setup (YAN-1735). #}
   <button class="btn" type="button" disabled title="Discovery starts from Engagement setup, which isn't built yet">Start a discovery</button>
-  <button class="btn primary" type="button" disabled title="Starting a health check from this screen isn't built yet">Run health check</button>
+  {% if can_start and not starting %}<a class="btn primary" href="{{ here }}?health=1">Run health check</a>{% endif %}
 {% endblock %}
 {% block content %}
 {% include "engineers/_operations_tabs.html" %}
+
+{% for message in messages %}<div class="toast" role="status">{{ message }}</div>{% endfor %}
+
+{% if starting %}
+<section class="card health-check" aria-labelledby="health-title">
+  <h2 id="health-title">Run a health check for {{ customer.name }}</h2>
+  {% if ready %}
+  <p class="muted">The collector reports its hostname, version and platform over its outbound connection. It doesn't contact any customer device. The job and its outcome show below.</p>
+  <form method="post" action="{{ here }}" class="add-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="health">
+    <label class="field">Collector
+      <select name="collector" required autofocus>
+        {% for collector in ready %}<option value="{{ collector.pk }}">{{ collector.name }}{% if collector.site %} · {{ collector.site.name }}{% endif %}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="add-footer"><span></span><span class="add-buttons"><a class="btn" href="{{ here }}">Cancel</a><button class="btn primary" type="submit">Queue health check</button></span></div>
+  </form>
+  {% else %}
+  <p class="muted">{{ customer.name }} has no enrolled collector yet. Add one on the Collectors tab first.</p>
+  <div class="add-footer"><span></span><a class="btn" href="{{ here }}">Close</a></div>
+  {% endif %}
+</section>
+{% endif %}
 <p class="muted">The newest {{ limit }} jobs for this customer's collectors, for every engagement. Collectors fetch queued jobs over their outbound connection.</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="Jobs">
 <table class="jobs-table">

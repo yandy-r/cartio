@@ -257,7 +257,7 @@ def test_jobs_tab_shows_state_and_progress(client, engineer, acme):
     start_run(collector, "discovery", started_by="engineer")
 
     page = client.get(f"/customers/{acme.pk}/jobs").content.decode()
-    for text in ("Discovery", "vm01", "Running", "Waiting for results", "Run health check"):
+    for text in ("Discovery", "vm01", "Running", "Waiting for results", "Start a discovery"):
         assert text in page
 
 
