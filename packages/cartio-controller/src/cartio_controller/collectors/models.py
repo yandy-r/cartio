@@ -1,10 +1,12 @@
 import hashlib
+import hmac
 import ipaddress
 import json
 import secrets
 import uuid
 from datetime import timedelta
 
+from cartio_core.masking import MaskingKey
 from django.conf import settings
 from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Length, Lower
@@ -16,6 +18,10 @@ from .validators import validate_compliance, validate_seed_hints
 
 # How long a new collector's enrollment token works (CARTIO_ENROLLMENT_TOKEN_HOURS).
 ENROLLMENT_TOKEN_LIFETIME = timedelta(hours=settings.ENROLLMENT_TOKEN_HOURS)
+# The version of every customer's masking key, which goes into each placeholder made with it.
+# Rotating masking keys means a new version here (ADR-0003); the first snapshot after it is
+# then marked `key_rotated`.
+MASKING_KEY_VERSION = "m1"
 
 
 def _hash(value: str) -> str:
@@ -544,6 +550,20 @@ class CustomerDataKey(CustomerOwned):
         # The current master key, or the previous one while a rotation is under way. Any other
         # key is a clear error naming the key that's missing.
         return vault.master_key_for(record.master_key_id).unwrap(record.wrapped_key, context)
+
+    @classmethod
+    @sensitive_variables("data_key", "secret")
+    def masking_key_for(cls, customer_id) -> MaskingKey:
+        """The customer's masking key (ADR-0003): an HMAC key held where its credentials are.
+
+        It's derived from the data key, so it is never stored on its own and a master key
+        rotation leaves it, and every placeholder made with it, unchanged. A customer's key is
+        its own, so the same secret at two customers gives different placeholders.
+        """
+        data_key = cls.key_for(customer_id)
+        label = f"cartio masking key {MASKING_KEY_VERSION}".encode()
+        secret = hmac.new(data_key, label, hashlib.sha256).digest()
+        return MaskingKey(MASKING_KEY_VERSION, secret)
 
 
 class Credential(CustomerOwned):

@@ -11,12 +11,14 @@ reports how it ended. A local journal makes this safe across dropped connections
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
 import platform
 import socket
 import sys
+import tempfile
 import time
 import uuid
 from collections.abc import Callable
@@ -26,10 +28,22 @@ from typing import Any
 
 import httpx
 from cartio_core import sealing
-from cartio_core.protocol import CHUNK_BYTES, MAX_WAIT, Job, JobResult, job_seal_context
+from cartio_core.masking import MaskingKey
+from cartio_core.protocol import (
+    CHUNK_BYTES,
+    MASKING_KEY_KIND,
+    MAX_WAIT,
+    CollectedDevice,
+    CollectFailure,
+    CollectResult,
+    Job,
+    JobResult,
+    job_seal_context,
+)
 
 from . import __version__
 from .client import JobClosed, Session
+from .ssh import ScrapliDriver, capture_config, collect
 
 # Attempts for each request before a dropped connection is given up on, and the pause between.
 ATTEMPTS = 5
@@ -65,8 +79,78 @@ def _health(job: Job, credentials: list[dict[str, Any]], report: Report) -> Outc
     return Outcome("succeeded", json.dumps(payload).encode())
 
 
+def _collect(job: Job, credentials: list[dict[str, Any]], report: Report) -> Outcome:
+    """Collect each target's outputs and config over SSH, masked before they're kept (YAN-1753).
+
+    A device that can't be reached or read is listed with the kind of error only, never its
+    message, which could carry device output. Some devices failing makes the job partial.
+    """
+    key = _masking_key(credentials)
+    by_id = {c["id"]: c for c in credentials if "id" in c}
+    targets = job.params.get("targets") or []
+    verify = job.params.get("verify_host_keys", True)
+    devices: list[CollectedDevice] = []
+    failed: list[CollectFailure] = []
+    for number, target in enumerate(targets, 1):
+        host = target["host"]
+        report(f"Collecting device {number} of {len(targets)}", 100 * (number - 1) // len(targets))
+        try:
+            outputs, config = _collect_one(target, by_id[target["credential"]], key, verify)
+        except Exception as exc:  # noqa: BLE001 (one device failing never stops the others)
+            failed.append(CollectFailure(host, type(exc).__name__))
+            continue
+        devices.append(CollectedDevice(host, target["platform"], dict(outputs), config))
+    payload = json.dumps(CollectResult(key.version, devices, failed).to_dict()).encode()
+    summary = ""
+    if failed:
+        listed = ", ".join(f"{f.host} ({f.error})" for f in failed[:10])
+        more = f" and {len(failed) - 10} more" if len(failed) > 10 else ""
+        summary = f"Couldn't collect {len(failed)} of {len(targets)} devices: {listed}{more}."
+    outcome = "succeeded" if not failed else "partial" if devices else "failed"
+    return Outcome(outcome, payload, len(devices), summary)
+
+
+def _masking_key(credentials: list[dict[str, Any]]) -> MaskingKey:
+    for entry in credentials:
+        if entry.get("kind") == MASKING_KEY_KIND:
+            return MaskingKey(entry["version"], base64.b64decode(entry["secret"]))
+    raise MissingMaskingKey
+
+
+class MissingMaskingKey(Exception):
+    """A collect job came without the customer's masking key, so nothing may be collected."""
+
+
+def _collect_one(
+    target: dict[str, Any], credential: dict[str, Any], key: MaskingKey, verify: bool
+) -> tuple[dict[str, str], str]:
+    with tempfile.TemporaryDirectory(prefix="cartio-") as directory:
+        key_file = ""
+        if credential.get("private_key"):
+            # scrapli reads the key from a file: one only this user can read, gone afterwards.
+            key_file = os.path.join(directory, "key")
+            fd = os.open(key_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(credential["private_key"])
+        with ScrapliDriver.open(
+            target["platform"],
+            target["host"],
+            username=credential.get("username", ""),
+            password=credential.get("password", ""),
+            private_key=key_file,
+            passphrase=credential.get("passphrase", ""),
+            port=target.get("port", 22),
+            known_hosts_file=verify,
+        ) as driver:
+            outputs = collect(driver, key)
+            return dict(outputs), capture_config(driver, key).text
+
+
 # The job types this collector version can run. Others are reported as failed, not dropped.
-HANDLERS: dict[str, Callable[[Job, list[dict[str, Any]], Report], Outcome]] = {"health": _health}
+HANDLERS: dict[str, Callable[[Job, list[dict[str, Any]], Report], Outcome]] = {
+    "health": _health,
+    "collect": _collect,
+}
 
 
 class Journal:
@@ -180,6 +264,12 @@ class Worker:
         except sealing.SealError:
             outcome = Outcome(
                 "failed", error_summary="The job's credentials weren't sealed to this collector."
+            )
+        except MissingMaskingKey:
+            outcome = Outcome(
+                "failed",
+                error_summary="The job came without the customer's masking key, so nothing "
+                "was collected.",
             )
         except httpx.TransportError:
             raise

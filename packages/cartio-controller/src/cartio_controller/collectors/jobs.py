@@ -6,12 +6,14 @@ chunk index and a result id are each stored once, so a collector that replays af
 connection never duplicates anything.
 """
 
+import base64
 import hashlib
 import json
+import logging
 import uuid
 
 from cartio_core import sealing
-from cartio_core.protocol import MAX_CHUNK_BYTES, MAX_CHUNKS, job_seal_context
+from cartio_core.protocol import MASKING_KEY_KIND, MAX_CHUNK_BYTES, MAX_CHUNKS, job_seal_context
 from cartio_core.protocol import Job as JobMessage
 from cartio_core.protocol import JobResult as ResultMessage
 from cartio_core.sealing import SealError
@@ -20,19 +22,22 @@ from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 from django.views.decorators.debug import sensitive_variables
 
-from . import audit
+from . import audit, collect
 from .credentials import CredentialNotAvailable, deliver_credentials
 from .models import (
     AuditEvent,
     CollectionRunResult,
     Collector,
     Credential,
+    CustomerDataKey,
     Engagement,
     Job,
     JobChunk,
 )
 from .runs import finish_run, start_run
 from .vault import VaultError
+
+log = logging.getLogger(__name__)
 
 
 class JobError(ValueError):
@@ -90,6 +95,14 @@ def queue_job(
         ids = list(dict.fromkeys(str(uuid.UUID(str(c))) for c in credential_ids))
     except ValueError as exc:
         raise JobError("One or more credentials aren't available.") from exc
+    if job_type == Job.Type.COLLECT:
+        if ids:
+            raise JobError("A collect job takes its credentials from its targets.")
+        try:
+            params = collect.collect_params(collector.customer, engagement, params)
+            ids = collect.target_credentials(collector.customer, params)
+        except ValueError as exc:
+            raise JobError(str(exc)) from exc
     with transaction.atomic():
         # Another customer's credential looks the same as a made-up one.
         if collector.scoped(Credential).filter(pk__in=ids).count() != len(ids):
@@ -191,16 +204,26 @@ def next_job(collector: Collector, tls_inspected: bool = False) -> dict | None:
         # That job failed; try the next one.
 
 
-@sensitive_variables("delivered")
+@sensitive_variables("delivered", "key")
 def _message(collector: Collector, job: Job) -> dict:
     sealed = ""
-    if job.credential_ids:
+    if job.credential_ids or job.type == Job.Type.COLLECT:
         if not collector.seal_key:
             raise CredentialNotAvailable(
                 "The collector enrolled without a sealing key. Enroll it again to send it "
                 "credentials."
             )
         delivered = deliver_credentials(collector, job.credential_ids, job=str(job.pk))
+        if job.type == Job.Type.COLLECT:
+            # Only ever sealed, with the job's credentials (ADR-0003).
+            key = CustomerDataKey.masking_key_for(job.customer_id)
+            delivered.append(
+                {
+                    "kind": MASKING_KEY_KIND,
+                    "version": key.version,
+                    "secret": base64.b64encode(key.secret).decode(),
+                }
+            )
         sealed = sealing.seal(
             collector.seal_key, json.dumps(delivered).encode(), job_seal_context(str(job.pk))
         )
@@ -298,12 +321,37 @@ def finish_job(job: Job, result: ResultMessage) -> Job:
         job.result_sha256 = whole.hexdigest() if result.chunks else ""
         job.result_size = size
         job.save(update_fields=["result_id", "result_sha256", "result_size"])
-        failed = result.outcome == CollectionRunResult.Outcome.FAILED
+        outcome, error, device_count = result.outcome, result.error_summary, result.device_count
+        if job.type == Job.Type.COLLECT and outcome != CollectionRunResult.Outcome.FAILED:
+            outcome, error, device_count = _store_collected(job, chunks, outcome, error)
+        failed = outcome == CollectionRunResult.Outcome.FAILED
         _end(
             job,
             Job.Status.FAILED if failed else Job.Status.DONE,
-            result.outcome,
-            result.error_summary,
-            result.device_count,
+            outcome,
+            error,
+            device_count,
         )
     return job
+
+
+def _store_collected(job: Job, chunks, outcome: str, error: str) -> tuple[str, str, int]:
+    """Store a collect job's result. Returns the outcome, error and device count to record.
+
+    A refused result stores nothing and fails the job; the refusal is logged in the caller's
+    transaction, so it is kept with the job's end.
+    """
+    failed = CollectionRunResult.Outcome.FAILED
+    try:
+        result = collect.read_result(b"".join(bytes(data) for _, _, data in chunks))
+        collect.check_result(job, result)
+    except collect.ResultRefused as exc:
+        return failed, str(exc), 0
+    try:
+        # A savepoint, so a result that can't be stored leaves nothing behind.
+        count = collect.store_result(job, result)
+    except Exception as exc:  # noqa: BLE001 (any failure fails the job, never the request)
+        # The kind of error only: a message could carry device output.
+        log.error("Storing collect job %s failed: %s", job.pk, type(exc).__name__)
+        return failed, f"The controller couldn't store the result: {type(exc).__name__}.", 0
+    return outcome, error, count

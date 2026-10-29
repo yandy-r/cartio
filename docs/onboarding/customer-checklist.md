@@ -16,10 +16,10 @@ the placeholders in angle brackets.
   command needs changing. On IOS-XE, check that `show running-config view full` works as the
   `cartio` user.
 - Collector sizing and packaging are still open (YAN-1641).
-- Parts 4 to 6 describe how v1 is designed to work, and some of it isn't built yet. Before the
-  pilot (YAN-1669), check that these have shipped: secret masking during collection (YAN-1656 and
-  YAN-1661), the read-only command allow-list (YAN-1656), per-collector certificates and collector
-  revocation (YAN-1650). Until they have, remove the matching sentences before you send.
+- Parts 4 to 6 describe how v1 is designed to work. Secret masking during collection (YAN-1661,
+  YAN-1753), the read-only command allow-list (YAN-1656) and per-collector keys with revocation
+  (YAN-1650) have shipped. Before the pilot (YAN-1669), check anything else those parts promise
+  and remove sentences about what hasn't shipped before you send.
 - If the customer's proxy inspects TLS, write it down. How the collector works through an
   inspecting proxy is still being tested (YAN-1640).
 

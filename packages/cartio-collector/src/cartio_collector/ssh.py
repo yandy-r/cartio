@@ -58,11 +58,15 @@ class ScrapliDriver(ReadOnlyDriver):
         username: str,
         password: str = "",
         private_key: str = "",
+        passphrase: str = "",
         port: int = 22,
         known_hosts_file: str | bool = True,
         timeout: float = 30.0,
     ) -> ScrapliDriver:
-        """Connect to `host`. Its host key must be known, unless `known_hosts_file` is False."""
+        """Connect to `host`. Its host key must be known, unless `known_hosts_file` is False.
+
+        `private_key` is the path of a key file, as scrapli takes it.
+        """
         platform = Platform(platform)
         options: dict[str, Any] = {
             "host": host,
@@ -70,6 +74,7 @@ class ScrapliDriver(ReadOnlyDriver):
             "auth_username": username,
             "auth_password": password,
             "auth_private_key": private_key,
+            "auth_private_key_passphrase": passphrase,
             "auth_strict_key": known_hosts_file is not False,
             "ssh_known_hosts_file": known_hosts_file,
             "timeout_ops": timeout,
