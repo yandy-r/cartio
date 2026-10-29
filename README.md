@@ -90,8 +90,8 @@ A collect job (YAN-1753) names SSH targets in an engagement (host, platform `ios
 `fortios`, SSH credential). The collector logs in through the read-only driver, masks every output
 and config with the customer's masking key, which reaches it only sealed inside the job, and
 uploads them. The controller scans the result again and stores it as devices, outputs and config
-snapshots, or refuses all of it, fails the job and audit-logs why. Hosted customers only. Until
-engagement setup (YAN-1735) launches one, queue it with:
+snapshots, or refuses all of it, fails the job and audit-logs why. Until engagement setup
+(YAN-1735) launches one, queue it with:
 
 ```sh
 uv run cartio-controller queue_collect --customer Acme --engagement Audit --collector vm01 \
@@ -100,6 +100,29 @@ uv run cartio-controller queue_collect --customer Acme --engagement Audit --coll
 
 where `targets.json` is a list of `{"host": ..., "platform": "ios", "credential": "<credential
 name>"}`. Host keys must be known to the collector unless you pass `--no-host-key-check`.
+
+### On site customers
+
+An On site customer's collector (YAN-1670, ADR-0002, ADR-0003) keeps its own device credentials,
+targets and masking key, encrypted under a key made on its host that never leaves it, and writes
+what it collects to the customer's store: a PostgreSQL database or a folder on a mounted SMB/NFS
+share. The controller refuses to store that customer's network data, credentials or data key,
+and gets only collector health and each job's status (how many devices were stored, and how many
+failed by kind of error, never which). On the collector:
+
+```sh
+cartio-collector store set --folder /mnt/cartio      # or: --postgres "host=db.example dbname=cartio user=cartio"
+cartio-collector credential add ro-ssh --username cartio-ro          # prompts for the password
+cartio-collector target add 192.0.2.10 --platform ios --credential ro-ssh
+```
+
+Keep a PostgreSQL password in `PGPASSWORD` or `~/.pgpass`, not in the connection string; the
+collector's database user needs to create and write the `cartio_collect_results` table, one row
+per job with the masked result as JSONB. A folder store gets `engagement-<id>/<job>/result.json`
+and its `result.sha256`. Both read back what they wrote and check its SHA-256 before the job is
+reported as stored. Secrets are prompted for, can be replaced or removed but never shown, and
+every change and use is appended to `collector.site-audit.log` next to the identity file. Queue
+the job with `queue_collect` without `--targets`. Changing a customer's data mode is YAN-1712.
 
 Sign in at http://127.0.0.1:8000/ with the superuser's password. The first sign-in asks for the
 enrollment code `enroll_engineer` printed, then shows a key to add to an authenticator app; every

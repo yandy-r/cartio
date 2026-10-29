@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 import uuid
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,7 +44,9 @@ from cartio_core.protocol import (
 
 from . import __version__
 from .client import JobClosed, Session
+from .site import Site, SiteError
 from .ssh import ScrapliDriver, capture_config, collect
+from .store import Store, StoreError
 
 # Attempts for each request before a dropped connection is given up on, and the pause between.
 ATTEMPTS = 5
@@ -89,6 +92,25 @@ def _collect(job: Job, credentials: list[dict[str, Any]], report: Report) -> Out
     by_id = {c["id"]: c for c in credentials if "id" in c}
     targets = job.params.get("targets") or []
     verify = job.params.get("verify_host_keys", True)
+    devices, failed = _collect_targets(targets, by_id, key, verify, report)
+    payload = json.dumps(CollectResult(key.version, devices, failed).to_dict()).encode()
+    summary = ""
+    if failed:
+        listed = ", ".join(f"{f.host} ({f.error})" for f in failed[:10])
+        more = f" and {len(failed) - 10} more" if len(failed) > 10 else ""
+        summary = f"Couldn't collect {len(failed)} of {len(targets)} devices: {listed}{more}."
+    outcome = "succeeded" if not failed else "partial" if devices else "failed"
+    return Outcome(outcome, payload, len(devices), summary)
+
+
+def _collect_targets(
+    targets: list[dict[str, Any]],
+    credentials: dict[str, dict[str, Any]],
+    key: MaskingKey,
+    verify: bool,
+    report: Report,
+) -> tuple[list[CollectedDevice], list[CollectFailure]]:
+    """Collect each target with the credential it names. One failing never stops the others."""
     devices: list[CollectedDevice] = []
     failed: list[CollectFailure] = []
     for number, target in enumerate(targets, 1):
@@ -98,19 +120,69 @@ def _collect(job: Job, credentials: list[dict[str, Any]], report: Report) -> Out
             if host.startswith("-"):
                 # It would reach the ssh command line as an option.
                 raise ValueError("not a host name")
-            outputs, config = _collect_one(target, by_id[target["credential"]], key, verify)
+            outputs, config = _collect_one(target, credentials[target["credential"]], key, verify)
         except Exception as exc:  # noqa: BLE001 (one device failing never stops the others)
             failed.append(CollectFailure(host, type(exc).__name__))
             continue
         devices.append(CollectedDevice(host, target["platform"], dict(outputs), config))
-    payload = json.dumps(CollectResult(key.version, devices, failed).to_dict()).encode()
+    return devices, failed
+
+
+@dataclass(frozen=True)
+class OnSite:
+    """An On site collector's own secrets and store (ADR-0002, ADR-0003)."""
+
+    site: Site
+    store: Store
+
+
+def _collect_on_site(job: Job, on_site: OnSite | None, report: Report) -> Outcome:
+    """Collect the targets kept on this collector and write the result to the on-site store.
+
+    The controller gets the job's status only: how many devices were stored, and how many
+    failed by kind of error. No host, output, config or credential leaves the customer network.
+    """
+    if not job.params.get("on_site"):
+        return Outcome(
+            "failed",
+            error_summary="This collector keeps device data on site, so it doesn't upload it to "
+            "the controller.",
+        )
+    if on_site is None:
+        return Outcome(
+            "failed",
+            error_summary="This collector has no on-site store. Set one up with "
+            "'cartio-collector store set'.",
+        )
+    targets, credentials, key = on_site.site.for_collect()
+    if not targets:
+        return Outcome(
+            "failed",
+            error_summary="No targets are set up on the collector. Add them with "
+            "'cartio-collector target add'.",
+        )
+    verify = job.params.get("verify_host_keys", True)
+    for name in sorted({t["credential"] for t in targets}):
+        on_site.site.audit("credential.used", name=name, job=job.id)
+    devices, failed = _collect_targets(targets, credentials, key, verify, report)
+    report("Writing to the on-site store", 100)
+    try:
+        receipt = on_site.store.write(
+            job.id, job.engagement, CollectResult(key.version, devices, failed)
+        )
+    except StoreError as exc:
+        # Its own message names the store, never device data.
+        return Outcome("failed", error_summary=f"Nothing was stored: {exc}")
     summary = ""
     if failed:
-        listed = ", ".join(f"{f.host} ({f.error})" for f in failed[:10])
-        more = f" and {len(failed) - 10} more" if len(failed) > 10 else ""
-        summary = f"Couldn't collect {len(failed)} of {len(targets)} devices: {listed}{more}."
+        kinds = Counter(f.error for f in failed)
+        listed = ", ".join(f"{error} ({count})" for error, count in sorted(kinds.items()))
+        summary = (
+            f"Couldn't collect {len(failed)} of {len(targets)} devices: {listed}. The on-site "
+            "store lists which."
+        )
     outcome = "succeeded" if not failed else "partial" if devices else "failed"
-    return Outcome(outcome, payload, len(devices), summary)
+    return Outcome(outcome, b"", receipt.devices, summary)
 
 
 def _masking_key(credentials: list[dict[str, Any]]) -> MaskingKey:
@@ -196,9 +268,10 @@ class Journal:
 class Worker:
     """Fetches jobs over a session and runs them one at a time."""
 
-    def __init__(self, session: Session, journal: Journal) -> None:
+    def __init__(self, session: Session, journal: Journal, on_site: OnSite | None = None) -> None:
         self.session = session
         self.journal = journal
+        self.on_site = on_site
 
     def _call(self, request, *args):
         """Send one request, again after a dropped connection: every request is safe to repeat."""
@@ -254,7 +327,10 @@ class Worker:
 
         handler = HANDLERS.get(job.type)
         try:
-            if handler is None:
+            if job.type == "collect" and (job.params.get("on_site") or self.on_site):
+                # On site either way: the job's or this collector's. Nothing is uploaded.
+                outcome = _collect_on_site(job, self.on_site, report)
+            elif handler is None:
                 outcome = Outcome(
                     "failed", error_summary=f"This collector version can't run {job.type} jobs."
                 )
@@ -274,6 +350,8 @@ class Worker:
                 error_summary="The job came without the customer's masking key, so nothing "
                 "was collected.",
             )
+        except SiteError as exc:
+            outcome = Outcome("failed", error_summary=f"The on-site secrets can't be used: {exc}")
         except httpx.TransportError:
             raise
         except Exception as exc:  # noqa: BLE001 (any failure ends the job, never the collector)

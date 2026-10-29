@@ -34,6 +34,9 @@ class CollectorConfig:
     proxy: str = ""
     # A CA bundle to trust instead of the operating system's certificate store.
     ca_file: str = ""
+    # For an On site customer: where collected data is written (`store.open_store`), such as
+    # {"kind": "folder", "path": "/mnt/cartio"}. Empty for a Hosted customer.
+    store: dict[str, str] = field(default_factory=dict)
 
     def journal_path(self, path: Path) -> Path:
         """Where the job journal for the identity saved at `path` is kept."""

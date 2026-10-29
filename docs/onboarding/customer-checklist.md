@@ -8,9 +8,9 @@ the placeholders in angle brackets.
 
 - Fill in `<controller-host>` (the controller's host name) and `<collector-address>` (the
   collector's management address, once the customer gives it).
-- Pick the data mode with the customer (Part 4). Only Hosted works today. On site is planned for
-  v1 (YAN-1670) and isn't available yet, so don't promise a date. Changing the mode after
-  onboarding isn't built yet either (YAN-1712).
+- Pick the data mode with the customer (Part 4). For On site, set up the store and the
+  credentials on the collector (README, "On site customers"). On site customers can't get a
+  report from the controller yet. Changing the mode after onboarding isn't built yet (YAN-1712).
 - The device commands in Part 3 follow vendor documentation and haven't been run in our test lab
   yet (YAN-1647). Check them against the customer's software versions, and tell us in Linear if a
   command needs changing. On IOS-XE, check that `show running-config view full` works as the

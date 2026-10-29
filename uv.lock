@@ -104,8 +104,10 @@ version = "0.1.0"
 source = { editable = "packages/cartio-collector" }
 dependencies = [
     { name = "cartio-core" },
+    { name = "cryptography" },
     { name = "httpx" },
     { name = "platformdirs" },
+    { name = "psycopg", extra = ["binary"] },
     { name = "scrapli", extra = ["paramiko"] },
     { name = "truststore" },
 ]
@@ -113,8 +115,10 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cartio-core", editable = "packages/cartio-core" },
+    { name = "cryptography", specifier = ">=46" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "platformdirs", specifier = ">=4.13" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3" },
     { name = "scrapli", extras = ["paramiko"], specifier = ">=2025.1.30,<2026" },
     { name = "truststore", specifier = ">=0.10" },
 ]

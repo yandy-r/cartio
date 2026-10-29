@@ -3,6 +3,9 @@
 The targets file is JSON: a list of `{"host": ..., "platform": "ios" | "ios-xe" | "fortios",
 "credential": <credential name>, "port": 22}`. Credentials are named, never given here: their
 secrets stay in the controller's vault and reach the collector sealed inside the job.
+
+An On site customer's collector keeps its own targets and credentials (YAN-1670), so its job
+takes no targets file.
 """
 
 import json
@@ -29,7 +32,9 @@ class Command(BaseCommand):
         parser.add_argument("--customer", required=True, help="Customer name.")
         parser.add_argument("--engagement", required=True, help="Engagement name.")
         parser.add_argument("--collector", required=True, help="Collector name.")
-        parser.add_argument("--targets", required=True, type=Path, help="Targets JSON file.")
+        parser.add_argument(
+            "--targets", type=Path, help="Targets JSON file. Hosted customers only."
+        )
         parser.add_argument("--user", required=True, help="Engineer username, for the audit log.")
         parser.add_argument(
             "--no-host-key-check",
@@ -57,6 +62,16 @@ class Command(BaseCommand):
         )
         if collector is None:
             raise CommandError(f"{customer.name} has no collector {options['collector']}.")
+        params = {"verify_host_keys": not options["no_host_key_check"]}
+        if customer.is_on_site:
+            if options["targets"]:
+                raise CommandError(
+                    f"{customer.name} is On site: its targets are kept on its collector."
+                )
+            self._queue(collector, engagement, options["user"], params, "its on-site targets")
+            return
+        if not options["targets"]:
+            raise CommandError("A Hosted customer's collect job needs --targets.")
         try:
             targets = json.loads(options["targets"].read_text(encoding="utf-8"))
         except (OSError, ValueError) as error:
@@ -70,19 +85,12 @@ class Command(BaseCommand):
             if credential is None:
                 raise CommandError(f"{customer.name} has no credential {name!r}.")
             target["credential"] = str(credential.pk)
+        params["targets"] = targets
+        self._queue(collector, engagement, options["user"], params, f"{len(targets)} devices")
+
+    def _queue(self, collector, engagement, user, params, what):
         try:
-            job = queue_job(
-                collector,
-                Job.Type.COLLECT,
-                options["user"],
-                engagement=engagement,
-                params={
-                    "targets": targets,
-                    "verify_host_keys": not options["no_host_key_check"],
-                },
-            )
+            job = queue_job(collector, Job.Type.COLLECT, user, engagement=engagement, params=params)
         except (JobError, RunNotAllowed) as error:
             raise CommandError(str(error)) from error
-        self.stdout.write(
-            f"Queued collect job {job.pk} on {collector.name} for {len(targets)} devices."
-        )
+        self.stdout.write(f"Queued collect job {job.pk} on {collector.name} for {what}.")
